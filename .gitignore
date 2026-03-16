@@ -1,0 +1,31 @@
+# Results (large binary files)
+results/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Parquet / data files at root level (large)
+*.parquet
+
+# Large data and reference directories
+CO2/
+paper/
+
+# Claude memory (managed separately)
+.claude/

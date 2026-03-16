@@ -1,0 +1,12 @@
+#Meyer (2015) > Dew-Point Measurements for Water in Compressed Carbon Dioxide
+P [bar]    xc_W    yw_C
+5	   X       0.0054788
+10	   X       0.0028883
+15	   X       0.0020413
+20	   X       0.0016239
+25	   X       0.0013849
+30	   X       0.0012332
+35	   X       0.0011338
+40	   X       0.0010738
+45	   X       0.0010445
+50	   X       0.0010244

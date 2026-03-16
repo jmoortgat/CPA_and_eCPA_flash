@@ -1,0 +1,10 @@
+#Guo (2014) > Quantitative Raman spectroscopic investigation of geo-ﬂuids high-pressure phase equilibria: Part I. Accurate calibration and determination of CO 2 solubility in water from 273.15 to 573.15 K and from 10 to 120 MPa
+P [bar]    xc_W    yw_C
+100	0.0125     X
+200	0.0238     X
+300	0.0327     X
+400	0.0398     X
+500	0.0450     X
+600	0.0510     X
+900	0.0632     X
+1200	0.0703     X
