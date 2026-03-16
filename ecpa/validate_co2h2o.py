@@ -34,8 +34,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Minimum ms in solution table — used as "near-zero salt" for eCPA binary runs
-MS_EVAL = 0.1          # mol/kg NaCl
+# Near-zero salt molality for eCPA binary runs.
+# ms=1e-4 gives essentially salt-free CO2-H2O results (DH/Born contribution
+# negligible) while staying above the m_tot=0 guard in the flash functions.
+# The solution table (ms_min=0.1) provides the warm-start guess, which is
+# sufficiently close for fast SSI convergence.
+MS_EVAL = 1e-4         # mol/kg NaCl
 Z_CO2_DEFAULT = 0.5    # feed composition for stability/flash
 
 
@@ -86,16 +90,24 @@ def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
 
 # ── eCPA flash (reservoir-simulator workflow) ──────────────────────────────────
 
+# Minimum ms in the solution table grid — used to clamp hint queries
+_MS_TABLE_MIN = 0.1
+
+
 def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
                    fallback_guess_table_fn=None):
     """
     eCPA flash using solution-table warm start + Michelsen stability + SSI.
-    This is the same path a reservoir simulator would take.
+    This mirrors the reservoir-simulator workflow.
 
     Parameters
     ----------
     ms : float
-        Salt molality [mol/kg].  Use MS_EVAL (=0.1) for near-zero-salt runs.
+        Salt molality [mol/kg].  Default MS_EVAL = 1e-4 for near-zero-salt runs.
+        When ms < _MS_TABLE_MIN (=0.1), the table is queried at _MS_TABLE_MIN
+        for the phase hint and warm-start guess (the ELV solution barely differs
+        at these low salt levels), then the flash is solved at the actual ms.
+        This avoids triggering the expensive Michelsen stability test every call.
 
     Returns dict:
         xc_W, yw_C      : float or NaN
@@ -112,10 +124,20 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
     z_co2 = float(z_co2); ms = float(ms)
     t0 = time.perf_counter()
 
+    # When ms is below the table range, clamp the guess-function query to
+    # _MS_TABLE_MIN so the interpolant returns a valid hint and warm-start sol.
+    if ms < _MS_TABLE_MIN:
+        _ms_hint = _MS_TABLE_MIN
+        def _clamped_guess_fn(T_, P_, z_, m_):
+            return solution_guess_fn(T_, P_, z_, _ms_hint)
+        effective_guess_fn = _clamped_guess_fn
+    else:
+        effective_guess_fn = solution_guess_fn
+
     try:
         r = flash_co2_h2o_salt_fast(
             T=T, P_bar=P_bar, z_co2=z_co2, m_tot=ms,
-            solution_guess_fn=solution_guess_fn,
+            solution_guess_fn=effective_guess_fn,
             params=params,
             fallback_guess_table_fn=fallback_guess_table_fn,
             force_stability_check=False,
