@@ -327,4 +327,155 @@ At high $T$, thermal effects overcome SPCE overpolarization.
     (radial distribution functions, coordination numbers).
 \end{enumerate}
 
+% ==============================================================================
+\section{Supporting Information}
+
+\subsection*{Table S1: Pure Component Parameters}
+
+\begin{center}
+\begin{tabular}{lcccccccccccc}
+\hline
+ & $a_0$ & $c_1$ & $b$ & $\varepsilon/k_B$ & $\kappa$ & $\sigma$ & $R_B$ & $\mu_0$ & $\alpha_0$ & $\gamma$ & $\theta$ \\
+ & (J\,m³/mol²) & & (cm³/mol) & (K) & & (Å) & (Å) & (D) & (Å³) & (mN/m) & (deg) \\
+\hline
+H$_2$O & 0.1228 & 0.6736 & 14.52 & 2003 & 1.004 & 1.855 & 2.36 & 1.67 & 1.613 & 63.5 & 94.8 \\
+CO$_2$ & 0.3508 & 0.7602 & 27.20 & --- & --- & --- & --- & --- & --- & --- & --- \\
+Na$^+$ & --- & --- & 16.49 & --- & --- & 3.19 & 1.83 & --- & --- & --- & --- \\
+Cl$^-$ & --- & --- & 40.83 & --- & --- & 3.557 & --- & --- & --- & --- & --- \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent NaCl Peneloux volume shift: $\Upsilon = -53.5$~cm$^3$/mol.
+
+Parameters:
+\begin{itemize}
+  \item $a_0$, $c_1$: SRK energy parameter and Mathias-Copeman constant
+  \item $b$: co-volume (cm³/mol)
+  \item $\varepsilon/k_B$: association energy / Boltzmann constant (K); H$_2$O uses 4C scheme
+  \item $\kappa$: association volume; H$_2$O only
+  \item $\sigma$: hard-sphere diameter for DH term (Å)
+  \item $R_B$: Born radius (Å)
+  \item $\mu_0$: dipole moment (Debye); H$_2$O only
+  \item $\alpha_0$, $\gamma$, $\theta$: polarizability (Å³), surface tension (mN/m), H-O-H angle (deg); H$_2$O only
+\end{itemize}
+
+\subsection*{Table S2: MD Force-Field Parameters}
+
+\paragraph{SPC/E water (rigid):}
+\begin{center}
+\begin{tabular}{lccc}
+\hline
+Site & $\sigma$ (Å) & $\varepsilon$ (kJ/mol) & $q$ (e) \\
+\hline
+O$_w$ & 3.166 & 0.6502 & $-0.8476$ \\
+H$_w$ & 0 & 0 & $+0.4238$ \\
+\hline
+\end{tabular}
+\end{center}
+O--H bond: 1.0 Å; H--O--H angle: 109.47°.
+
+\paragraph{EPM2 CO$_2$ (semiflexible: rigid bonds, harmonic angle):}
+\begin{center}
+\begin{tabular}{lccc}
+\hline
+Site & $\sigma$ (Å) & $\varepsilon$ (kJ/mol) & $q$ (e) \\
+\hline
+C$_c$ & 2.757 & 0.2339 & $+0.6512$ \\
+O$_c$ & 3.033 & 0.6693 & $-0.3256$ \\
+\hline
+\end{tabular}
+\end{center}
+C--O bond: 1.149 Å; O--C--O angle equilibrium: 180°; angle force constant $k_\theta = 1236$~kJ\,mol$^{-1}$\,rad$^{-2}$.
+
+\paragraph{Na$^+$ and Cl$^-$:} Classical integer charges ($q = \pm1$).
+From Joung \& Cheatham (2008) adapted for SPC/E.
+
+\subsection*{Table S3: Unlike Lennard-Jones Parameters}
+
+\begin{center}
+\begin{tabular}{lccccc}
+\hline
+Pair & \multicolumn{2}{c}{Lorentz--Berthelot (LB)} & \multicolumn{2}{c}{Optimised (OPT)} \\
+ & $\sigma$ (Å) & $\varepsilon$ (kJ/mol) & $\sigma$ (Å) & $\varepsilon$ (kJ/mol) \\
+\hline
+C$_c$--O$_w$ & 2.962 & 0.389 & 2.840 & 0.550 \\
+O$_c$--O$_w$ & 3.100 & 0.660 & 3.162 & 0.660 \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent OPT parameters from Vlcek et al.\ (2011). The OPT parameters reduce the C$_c$--O$_w$ distance
+by $\sim$4\% and increase the well depth by $\sim$41\% relative to LB, improving CO$_2$ solubility
+predictions at high temperature.
+
+\subsection*{Supporting Equations (Fugacity Coefficients)}
+
+The compressibility factor for a mixture is:
+\begin{equation}
+  Z = \frac{PV}{NkT} = 1 + \frac{B(\mathbf{x},T)}{V} + \cdots
+\end{equation}
+
+The residual Helmholtz energy per mole is:
+\begin{equation}
+  A^\mathrm{res} = A^\mathrm{phys} + A^\mathrm{assoc} + A^\mathrm{DH} + A^\mathrm{Born}
+\end{equation}
+
+The fugacity coefficient of component $i$ in the mixture:
+\begin{equation}
+  \ln \hat{\phi}_i = \frac{1}{RT}\left(\frac{\partial (nA^\mathrm{res})}{\partial n_i}\right)_{T,V,n_{j\neq i}}
+    - \ln Z
+\end{equation}
+
+\paragraph{Physical term (SRK):}
+\begin{align}
+  \frac{A^\mathrm{phys}}{NkT} &= -\ln\!\left(1 - \frac{b}{V}\right)
+    - \frac{a}{bRT}\ln\!\left(1 + \frac{b}{V}\right) \\
+  \ln\hat{\phi}_i^\mathrm{phys} &= \frac{b_i}{b}(Z-1) - \ln\!\left(Z - \frac{Pb}{RT}\right)
+    - \frac{a}{bRT}\left(\frac{2\sum_j x_j a_{ij}}{a} - \frac{b_i}{b}\right)
+    \ln\!\left(1 + \frac{Pb}{ZRT}\right)
+\end{align}
+
+\paragraph{Association term:}
+\begin{equation}
+  \frac{A^\mathrm{assoc}}{NkT} = \sum_i x_i \sum_{A_i}
+    \left[\ln X^{A_i} - \frac{X^{A_i}}{2} + \frac{1}{2}\right]
+\end{equation}
+where $X^{A_i}$ is the fraction of site $A$ on molecule $i$ not bonded:
+\begin{equation}
+  X^{A_i} = \frac{1}{1 + \rho \sum_j x_j \sum_{B_j} X^{B_j} \Delta^{A_i B_j}}
+\end{equation}
+\begin{equation}
+  \Delta^{A_i B_j} = g^\mathrm{hs}(\sigma_{ij}) \left[\exp\!\left(\frac{\varepsilon^{A_i B_j}}{k_B T}\right) - 1\right]
+    \kappa^{A_i B_j} b_{ij}
+\end{equation}
+
+\paragraph{Debye--Hückel term:}
+\begin{equation}
+  \frac{A^\mathrm{DH}}{NkT} = -\frac{\kappa^3 V}{3\pi N_A}
+  \cdot \frac{1}{1 + \kappa \bar{a}}
+  \cdot \frac{1}{4\pi\varepsilon_0 \varepsilon_r k_B T}
+\end{equation}
+with inverse screening length:
+\begin{equation}
+  \kappa^2 = \frac{e^2}{\varepsilon_0 \varepsilon_r k_B T} \sum_i \rho_i z_i^2
+\end{equation}
+The DH contribution to $\ln\hat{\phi}_i$ involves derivatives of $\kappa$ and $\varepsilon_r$ w.r.t.\ composition.
+
+\paragraph{Born term:}
+\begin{equation}
+  \frac{A^\mathrm{Born}}{NkT} = -\frac{e^2}{8\pi\varepsilon_0 k_B T}
+    \sum_i \frac{n_i z_i^2}{R_{B,i}}\left(\frac{1}{\varepsilon_r} - 1\right)
+\end{equation}
+\begin{equation}
+  \ln\hat{\phi}_i^\mathrm{Born} = -\frac{e^2 z_i^2}{8\pi\varepsilon_0 k_B T R_{B,i}}
+    \left(\frac{1}{\varepsilon_r} - 1\right)
+    + \frac{e^2}{8\pi\varepsilon_0 k_B T}\sum_j \frac{n_j z_j^2}{R_{B,j}}
+    \frac{1}{\varepsilon_r^2}\frac{\partial \varepsilon_r}{\partial n_i}
+\end{equation}
+
+\noindent The relative permittivity $\varepsilon_r$ is computed from the water fraction and temperature
+via the Johnson--Uematsu--Franck correlation, with a Clausius--Mossotti correction for the CO$_2$
+contribution using its dipole polarizability.
+
 \end{document}
