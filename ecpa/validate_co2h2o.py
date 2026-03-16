@@ -376,14 +376,28 @@ _COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 
+import re as _re
+
+def _short_ref(ref):
+    """Extract 'Author (Year)' from a full reference string."""
+    # Look for a 4-digit year
+    m = _re.search(r'([A-Z][A-Z\-]+)\s+\((\d{4})\)', str(ref))
+    if m:
+        author = m.group(1).capitalize()
+        return f'{author} ({m.group(2)})'
+    # Fallback: capitalise first word only
+    first = str(ref).split()[0].capitalize() if ref else ref
+    return first
+
+
 def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
     """
-    Log-log plot for a single temperature:
-    Left panel  : P [bar] vs xc_W (CO₂ in aqueous)
-    Right panel : P [bar] vs yw_C (H₂O in CO₂-rich)
+    Log-log plot for a single temperature.
+    Left panel  : xc_W (CO₂ in aqueous) vs P [bar]
+    Right panel : yw_C (H₂O in CO₂-rich) vs P [bar]
 
-    Experimental data are shown as scatter (coloured by reference).
-    CPA and eCPA are shown as smooth lines from smooth_df.
+    Experimental data are shown as scatter (coloured by reference, legend shows
+    'Author (Year)' only).  CPA and eCPA are smooth lines from smooth_df.
     """
     sub_val    = results_df[np.abs(results_df['T_K'] - T_K) < 0.5]
     sub_smooth = smooth_df[np.abs(smooth_df['T_K'] - T_K) < 0.5].sort_values('P_bar')
@@ -397,7 +411,7 @@ def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
          r'$y_{\mathrm{H_2O}}^{\mathrm{CO_2\text{-}rich}}$ (H₂O in CO₂-rich)'),
     ]
 
-    for ax, (qty, exp_col, cpa_col, ecpa_col, xlabel) in zip(axes, panel_specs):
+    for ax, (qty, exp_col, cpa_col, ecpa_col, ylabel) in zip(axes, panel_specs):
         # — Experimental scatter, coloured by reference —
         refs = sub_val['reference'].unique()
         for ci, ref in enumerate(refs):
@@ -405,31 +419,30 @@ def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
             mask = grp[exp_col].notna() & (grp[exp_col] > 0)
             if mask.sum() == 0:
                 continue
-            label = ref[:30] if len(ref) <= 30 else ref[:28] + '…'
-            ax.scatter(grp.loc[mask, exp_col], grp.loc[mask, 'P_bar'],
+            ax.scatter(grp.loc[mask, 'P_bar'], grp.loc[mask, exp_col],
                        color=_COLORS[ci % len(_COLORS)],
-                       s=25, zorder=5, label=label)
+                       s=25, zorder=5, label=_short_ref(ref))
 
         # — CPA smooth line —
         cpa_mask = sub_smooth[cpa_col].notna() & (sub_smooth[cpa_col] > 0) \
                    & (sub_smooth['P_bar'] > 0)
         if cpa_mask.sum() > 1:
-            ax.plot(sub_smooth.loc[cpa_mask, cpa_col],
-                    sub_smooth.loc[cpa_mask, 'P_bar'],
+            ax.plot(sub_smooth.loc[cpa_mask, 'P_bar'],
+                    sub_smooth.loc[cpa_mask, cpa_col],
                     'k-', lw=1.8, label='CPA', zorder=3)
 
         # — eCPA smooth line —
         ecpa_mask = sub_smooth[ecpa_col].notna() & (sub_smooth[ecpa_col] > 0) \
                     & (sub_smooth['P_bar'] > 0)
         if ecpa_mask.sum() > 1:
-            ax.plot(sub_smooth.loc[ecpa_mask, ecpa_col],
-                    sub_smooth.loc[ecpa_mask, 'P_bar'],
+            ax.plot(sub_smooth.loc[ecpa_mask, 'P_bar'],
+                    sub_smooth.loc[ecpa_mask, ecpa_col],
                     'r--', lw=1.8, label=f'eCPA (ms={ms})', zorder=3)
 
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_xlabel(xlabel, fontsize=10)
-        ax.set_ylabel('P [bar]', fontsize=10)
+        ax.set_xlabel('P [bar]', fontsize=10)
+        ax.set_ylabel(ylabel, fontsize=10)
         ax.legend(fontsize=7, loc='best')
         ax.grid(True, which='both', ls=':', alpha=0.4)
 
