@@ -25,7 +25,9 @@ venv/
 
 # Large data and reference directories
 CO2/
-paper/
+paper/*.pdf
+paper/*.html
+paper/*.webarchive
 
 # Claude memory (managed separately)
 .claude/
