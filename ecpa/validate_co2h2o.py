@@ -9,8 +9,8 @@ Columns: T_K, P_bar, xc_W (CO₂ in aqueous), yw_C (H₂O in CO₂-rich),
 
 Model predictions
 -----------------
-CPA   : CPA2.flash_co2_h2o_tpz(kij12=0, swc=0)  — old CPA parameters, no
-        temperature-dependent cross-association, no salt terms.
+CPA   : CPA2.flash_co2_h2o_tpz()  — eCPA binary parameters (T-dependent kij
+        and cross-association swc), no salt/electrolyte terms (DH, Born).
 eCPA  : flash_co2_h2o_salt_fast at ms=MS_EVAL mol/kg using the solution-table
         interpolant as the initial-guess provider, exactly as a reservoir
         simulator would.  At ms=MS_EVAL (default 0.1), the DH/Born salting-out
@@ -41,13 +41,14 @@ import matplotlib.pyplot as plt
 # sufficiently close for fast SSI convergence.
 MS_EVAL = 1e-4         # mol/kg NaCl
 Z_CO2_DEFAULT = 0.5    # feed composition for stability/flash
+T_MAX_ECPA = 623.0     # solution table now covers 283–623 K
 
 
-# ── CPA binary flash (old CPA parameters) ─────────────────────────────────────
+# ── CPA binary flash (eCPA binary parameters, no electrolyte terms) ───────────
 
 def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
     """
-    Run CPA2 flash with old CPA parameters (kij=0, swc=0) for binary CO₂–H₂O.
+    Run CPA2 flash with eCPA binary parameters (T-dependent kij and swc) for binary CO₂–H₂O.
 
     Returns dict:
         xc_W, yw_C  : float or NaN (NaN if single-phase or failed)
@@ -62,8 +63,7 @@ def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            r = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P_bar, z_co2=z_co2,
-                                        kij12=0.0, swc=0.0)
+            r = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P_bar, z_co2=z_co2)
     except Exception as exc:
         t_ms = (time.perf_counter() - t0) * 1e3
         return dict(xc_W=np.nan, yw_C=np.nan, phase='error',
@@ -180,7 +180,7 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
 
 def run_validation(exp_df, solution_guess_fn, params,
                    ms=MS_EVAL, z_co2=Z_CO2_DEFAULT,
-                   T_max_ecpa=523.0,
+                   T_max_ecpa=T_MAX_ECPA,
                    verbose=True):
     """
     Run CPA and eCPA predictions at every experimental (T, P) condition.
@@ -260,7 +260,7 @@ def run_validation(exp_df, solution_guess_fn, params,
 def run_smooth_curves(T_vals, solution_guess_fn, params,
                       ms=MS_EVAL, z_co2=Z_CO2_DEFAULT,
                       n_P=100, P_min=1.0, P_max=1500.0,
-                      T_max_ecpa=523.0,
+                      T_max_ecpa=T_MAX_ECPA,
                       verbose=True):
     """
     Compute CPA and eCPA predictions on a log-spaced P grid for each T.
@@ -412,7 +412,8 @@ def _short_ref(ref):
     return first
 
 
-def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
+def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL,
+                      elv_df=None, salty_curves=None):
     """
     Log-log plot for a single temperature.
     Left panel  : xc_W (CO₂ in aqueous) vs P [bar]
@@ -420,20 +421,61 @@ def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
 
     Experimental data are shown as scatter (coloured by reference, legend shows
     'Author (Year)' only).  CPA and eCPA are smooth lines from smooth_df.
+
+    Parameters
+    ----------
+    elv_df : pd.DataFrame, optional
+        CPA_ELV_all.parquet (eCPA ms=0 pre-computed results).  Expected columns:
+        T_K, P_bar, xw_W (H₂O in aqueous), xw_C (H₂O in CO₂-rich).
+        When provided, plotted as a third line labelled 'eCPA (ms=0, ELV)'.
+    salty_curves : list of (ms_label, smooth_df) tuples, optional
+        Additional eCPA smooth curves at non-zero molalities.  Each entry is
+        (ms_value, dataframe) where the dataframe has the same schema as smooth_df.
+        Plotted as dashed lines in a salt colormap (light→dark orange for
+        increasing ms).  Only plotted if the dataframe contains data for T_K.
     """
     sub_val    = results_df[np.abs(results_df['T_K'] - T_K) < 0.5]
     sub_smooth = smooth_df[np.abs(smooth_df['T_K'] - T_K) < 0.5].sort_values('P_bar')
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5))
+    # ELV reference curve: find nearest T in elv_df
+    sub_elv = None
+    if elv_df is not None:
+        T_arr = np.sort(elv_df['T_K'].unique())
+        T_near = T_arr[np.argmin(np.abs(T_arr - T_K))]
+        if abs(T_near - T_K) <= 8:
+            sub_elv = elv_df[elv_df['T_K'] == T_near].sort_values('P_bar').copy()
+            sub_elv['xc_W'] = 1.0 - sub_elv['xw_W']  # CO₂ in aqueous
+            sub_elv['yw_C'] = sub_elv['xw_C']          # H₂O in CO₂-rich
+
+    import matplotlib.colors as mcolors
+
+    # Determine if we are using the rainbow mode (ms_rainbow_list) or legacy mode
+    has_rainbow = salty_curves is not None and len(salty_curves) > 0
+
+    # Rainbow colormap setup
+    if has_rainbow:
+        cmap = plt.cm.rainbow
+        ms_min, ms_max = 0.0, 6.0
+        cnorm = mcolors.Normalize(vmin=ms_min, vmax=ms_max)
+        # Build figure with explicit axes to leave room for colorbar
+        fig = plt.figure(figsize=(12, 5))
+        ax0 = fig.add_axes([0.07, 0.12, 0.40, 0.80])
+        ax1 = fig.add_axes([0.54, 0.12, 0.40, 0.80])
+        cax = fig.add_axes([0.96, 0.12, 0.016, 0.80])
+        axes = [ax0, ax1]
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(11, 5))
 
     panel_specs = [
         ('xc_W', 'exp_xc_W', 'cpa_xc_W', 'ecpa_xc_W',
-         r'$x_{\mathrm{CO_2}}^{\mathrm{aq}}$ (CO₂ in aqueous)'),
+         r'$x_{\mathrm{CO_2}}$'),
         ('yw_C', 'exp_yw_C', 'cpa_yw_C', 'ecpa_yw_C',
-         r'$y_{\mathrm{H_2O}}^{\mathrm{CO_2\text{-}rich}}$ (H₂O in CO₂-rich)'),
+         r'$y_{\mathrm{H_2O}}$'),
     ]
 
     for ax, (qty, exp_col, cpa_col, ecpa_col, ylabel) in zip(axes, panel_specs):
+        ecpa_s_col = f'ecpa_{qty}'   # column name in salty smooth DataFrames
+
         # — Experimental scatter, coloured by reference —
         refs = sub_val['reference'].unique()
         for ci, ref in enumerate(refs):
@@ -443,37 +485,143 @@ def plot_validation_T(T_K, results_df, smooth_df, save_path=None, ms=MS_EVAL):
                 continue
             ax.scatter(grp.loc[mask, 'P_bar'], grp.loc[mask, exp_col],
                        color=_COLORS[ci % len(_COLORS)],
-                       s=25, zorder=5, label=_short_ref(ref))
+                       s=30, zorder=6, label=_short_ref(ref))
 
-        # — CPA smooth line —
+        # — Rainbow salty eCPA curves (ms = 0 … 6) —
+        if has_rainbow:
+            for ms_val, sc_df in sorted(salty_curves, key=lambda x: x[0]):
+                sc_sub = sc_df[np.abs(sc_df['T_K'] - T_K) < 0.5].sort_values('P_bar')
+                if len(sc_sub) == 0:
+                    continue
+                col_name = ecpa_s_col if ecpa_s_col in sc_sub.columns else ecpa_col
+                sc_mask = sc_sub[col_name].notna() & (sc_sub[col_name] > 0) & (sc_sub['P_bar'] > 0)
+                if sc_mask.sum() < 2:
+                    continue
+                color = cmap(cnorm(ms_val))
+                ax.plot(sc_sub.loc[sc_mask, 'P_bar'], sc_sub.loc[sc_mask, col_name],
+                        '--', color=color, lw=1.5, zorder=3)
+
+        # — CPA smooth line (solid, prominent, on top) —
         cpa_mask = sub_smooth[cpa_col].notna() & (sub_smooth[cpa_col] > 0) \
                    & (sub_smooth['P_bar'] > 0)
         if cpa_mask.sum() > 1:
             ax.plot(sub_smooth.loc[cpa_mask, 'P_bar'],
                     sub_smooth.loc[cpa_mask, cpa_col],
-                    'k-', lw=1.8, label='CPA', zorder=3)
+                    'k-', lw=2.5, label='CPA (salt-free)', zorder=5)
 
-        # — eCPA smooth line —
-        ecpa_mask = sub_smooth[ecpa_col].notna() & (sub_smooth[ecpa_col] > 0) \
-                    & (sub_smooth['P_bar'] > 0)
-        if ecpa_mask.sum() > 1:
-            ax.plot(sub_smooth.loc[ecpa_mask, 'P_bar'],
-                    sub_smooth.loc[ecpa_mask, ecpa_col],
-                    'r--', lw=1.8, label=f'eCPA (ms={ms})', zorder=3)
+        # — eCPA ms≈0 solid line (only in legacy / non-rainbow mode) —
+        if not has_rainbow:
+            ecpa_mask = sub_smooth[ecpa_col].notna() & (sub_smooth[ecpa_col] > 0) \
+                        & (sub_smooth['P_bar'] > 0)
+            if ecpa_mask.sum() > 1:
+                ax.plot(sub_smooth.loc[ecpa_mask, 'P_bar'],
+                        sub_smooth.loc[ecpa_mask, ecpa_col],
+                        'r--', lw=1.8, label=f'eCPA (ms={ms})', zorder=4)
+
+            # ELV reference line (legacy only)
+            if sub_elv is not None:
+                elv_mask = sub_elv[qty].notna() & (sub_elv[qty] > 0) \
+                           & (sub_elv['P_bar'] > 0)
+                if elv_mask.sum() > 1:
+                    ax.plot(sub_elv.loc[elv_mask, 'P_bar'],
+                            sub_elv.loc[elv_mask, qty],
+                            'b:', lw=1.5, label='eCPA (ms=0, ELV)', zorder=3)
 
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_xlabel('P [bar]', fontsize=10)
-        ax.set_ylabel(ylabel, fontsize=10)
-        ax.legend(fontsize=7, loc='best')
+        ax.set_xlabel('P [bar]', fontsize=12, fontweight='bold')
+        ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
+        ax.tick_params(labelsize=10)
+        ax.legend(fontsize=9, loc='best', framealpha=0.9)
         ax.grid(True, which='both', ls=':', alpha=0.4)
 
-    fig.suptitle(f'CO₂–H₂O VLE   T = {T_K:.0f} K', fontsize=12, fontweight='bold')
-    fig.tight_layout()
+    # Colorbar for rainbow mode
+    if has_rainbow:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=cnorm)
+        sm.set_array([])
+        cb = fig.colorbar(sm, cax=cax, label=r'$m_s$ [mol kg$^{-1}$]')
+        cb.ax.tick_params(labelsize=9)
+        # Tick at each ms_val plotted
+        ms_plotted = sorted(set(mv for mv, _ in salty_curves))
+        cb.set_ticks(ms_plotted)
+    else:
+        fig.tight_layout()
 
     if save_path:
         fig.savefig(save_path, dpi=150, bbox_inches='tight')
 
+    return fig
+
+
+# ── CO2-H2O binary parity plot ────────────────────────────────────────────────
+
+def plot_co2h2o_parity(results_df, save_path=None):
+    """
+    Two-panel parity plot for the CO2+H2O binary validation.
+    Left panel: CPA predictions vs experimental.
+    Right panel: eCPA predictions vs experimental.
+    Both xc_W (circles) and yw_C (triangles) shown on log-log axes.
+    Single shared colorbar by temperature on the right.
+    ±10% and ±20% error bands.
+    """
+    import matplotlib.colors as mcolors
+
+    df = results_df.copy()
+    T_vals = sorted(df['T_K'].unique())
+    T_norm = mcolors.Normalize(vmin=min(T_vals), vmax=max(T_vals))
+    cmap = plt.cm.plasma
+
+    fig = plt.figure(figsize=(11, 5))
+    ax0 = fig.add_axes([0.07, 0.12, 0.40, 0.80])
+    ax1 = fig.add_axes([0.54, 0.12, 0.40, 0.80])
+    cax = fig.add_axes([0.96, 0.12, 0.016, 0.80])
+    axes_models = [(ax0, 'cpa_xc_W', 'cpa_yw_C', 'CPA'),
+                   (ax1, 'ecpa_xc_W', 'ecpa_yw_C', 'eCPA')]
+
+    for ax, col_xc, col_yw, model_label in axes_models:
+        # Combine xc_W and yw_C into one parity set per model
+        all_exp, all_pred, all_T = [], [], []
+
+        for qty_exp, qty_pred in [('exp_xc_W', col_xc), ('exp_yw_C', col_yw)]:
+            mask = (df[qty_exp].notna() & df[qty_pred].notna()
+                    & (df[qty_exp] > 0) & (df[qty_pred] > 0))
+            all_exp.append(df.loc[mask, qty_exp].values)
+            all_pred.append(df.loc[mask, qty_pred].values)
+            all_T.append(df.loc[mask, 'T_K'].values)
+
+        exp_arr  = np.concatenate(all_exp)
+        pred_arr = np.concatenate(all_pred)
+        T_arr    = np.concatenate(all_T)
+
+        vmin = exp_arr.min() * 0.8
+        vmax = max(exp_arr.max(), pred_arr.max()) * 1.2
+        lv = np.logspace(np.log10(max(vmin, 1e-6)), np.log10(vmax), 200)
+        ax.plot(lv, lv, 'k-', lw=1.2, zorder=2)
+        ax.fill_between(lv, lv * 0.8, lv * 1.2, color='orange', alpha=0.15, label='±20%')
+        ax.fill_between(lv, lv * 0.9, lv * 1.1, color='green',  alpha=0.20, label='±10%')
+
+        sc = ax.scatter(exp_arr, pred_arr, c=T_arr, cmap=cmap, norm=T_norm,
+                        s=18, zorder=4, linewidths=0.2, edgecolors='k')
+
+        are = np.abs(pred_arr - exp_arr) / exp_arr
+        aare = are.mean() * 100
+        ax.set_xscale('log'); ax.set_yscale('log')
+        ax.set_xlim(vmin, vmax); ax.set_ylim(vmin, vmax)
+        ax.set_xlabel(r'Experimental', fontsize=12, fontweight='bold')
+        ax.set_ylabel(r'Predicted', fontsize=12, fontweight='bold')
+        ax.set_title(f'{model_label}  (N={len(exp_arr)}, AARE={aare:.1f}%)', fontsize=11)
+        ax.legend(fontsize=8, loc='upper left', framealpha=0.9)
+        ax.tick_params(labelsize=10)
+        ax.set_aspect('equal')
+        ax.grid(True, which='both', ls=':', alpha=0.4)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=T_norm)
+    sm.set_array([])
+    cb = fig.colorbar(sm, cax=cax, label='T [K]')
+    cb.ax.tick_params(labelsize=9)
+
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches='tight')
     return fig
 
 
@@ -503,7 +651,7 @@ def metrics_to_latex(metrics_df, path='results/co2h2o_metrics.tex', ms=MS_EVAL):
         r'\small',
         r'\begin{center}',
         r'\textbf{CO$_2$--H$_2$O VLE validation: CPA vs eCPA accuracy}\\[4pt]',
-        rf'\textit{{eCPA at $m_s = {ms}$ mol/kg NaCl; CPA uses $k_{{ij}}=0$, $S_{{14}}=0$.}}\\[2pt]',
+        rf'\textit{{eCPA at $m_s = {ms}$ mol/kg NaCl; CPA uses T-dependent $k_{{ij}}(T)$ and $S_{{14}}(T)$, no electrolyte terms.}}\\[2pt]',
         r'\textit{AARE: avg.\ absolute relative error (\%); '
         r'Bias: mean signed relative error (\%); $R^2$: coeff.\ of determination.}',
         r'\end{center}',
@@ -567,6 +715,110 @@ def metrics_to_latex(metrics_df, path='results/co2h2o_metrics.tex', ms=MS_EVAL):
     with open(path, 'w') as fh:
         fh.write('\n'.join(lines))
     print(f"Wrote {path}")
+
+
+def perf_to_latex(smooth_df, path='results/co2h2o_metrics.tex', ms=MS_EVAL,
+                  append=True):
+    """
+    Append (or write) a computational performance table to a LaTeX file.
+    Based on smooth_df (uniform P grid per T) for representative statistics.
+
+    Columns per T: CPA conv/total, avg iterations, avg CPU [ms];
+                   eCPA conv/total, avg SSI iters, avg CPU [ms], % stability.
+    """
+
+    def _fmt(v, d=1):
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            return r'\text{---}'
+        return f'{v:.{d}f}'
+
+    def _pct(num, den):
+        if den == 0:
+            return r'\text{---}'
+        return f'{100*num/den:.0f}'
+
+    # Group by T
+    T_vals = sorted(smooth_df['T_K'].unique())
+
+    def _row(grp):
+        n_tot  = len(grp)
+        # CPA
+        n_cpa  = int(grp['cpa_converged'].sum())
+        it_cpa = grp['cpa_n_iter'].mean()
+        t_cpa  = grp['cpa_t_ms'].mean()
+        # eCPA (only where available)
+        eg = grp[grp['ecpa_available']]
+        n_ecpa_tot = len(eg)
+        if n_ecpa_tot > 0:
+            n_ecpa  = int(eg['ecpa_converged'].sum())
+            it_ecpa = eg['ecpa_n_iter_ms'].mean()
+            t_ecpa  = eg['ecpa_t_ms'].mean()
+            n_stab  = int(eg['ecpa_stability_run'].sum())
+        else:
+            n_ecpa = n_ecpa_tot = 0
+            it_ecpa = t_ecpa = np.nan
+            n_stab = 0
+        return n_tot, n_cpa, it_cpa, t_cpa, n_ecpa_tot, n_ecpa, it_ecpa, t_ecpa, n_stab
+
+    lines = [
+        '',
+        r'\clearpage',
+        r'\begin{center}',
+        r'\textbf{CO$_2$--H$_2$O VLE: computational performance (smooth P grid)}\\[4pt]',
+        rf'\textit{{CPA: CPA2 tie-line solver. '
+        rf'eCPA: solution-table warm-start SSI at $m_s={ms}$ mol/kg.}}',
+        r'\end{center}',
+        r'\vspace{4pt}',
+        r'\begin{table}[ht]',
+        r'\centering',
+        r'\caption{Computational performance per temperature (100 P-points per T)}',
+        r'\begin{tabular}{l rrrr rrrr}',
+        r'\toprule',
+        r'$T$ [K] & \multicolumn{4}{c}{CPA} & \multicolumn{4}{c}{eCPA} \\',
+        r'\cmidrule(lr){2-5}\cmidrule(lr){6-9}',
+        r'& conv & avg iter & avg $t$ [ms] & '
+        r'& conv & avg SSI & avg $t$ [ms] & stab (\%) \\',
+        r'\midrule',
+    ]
+
+    # Overall row
+    n_tot, n_cpa, it_cpa, t_cpa, n_ecpa_tot, n_ecpa, it_ecpa, t_ecpa, n_stab = \
+        _row(smooth_df)
+    lines.append(
+        rf"\textbf{{All}} & {n_cpa}/{n_tot} & {_fmt(it_cpa,1)} & {_fmt(t_cpa,1)} & "
+        rf"& {n_ecpa}/{n_ecpa_tot} & {_fmt(it_ecpa,1)} & {_fmt(t_ecpa,1)} & "
+        rf"{_pct(n_stab, n_ecpa_tot)} \\"
+    )
+    lines.append(r'\midrule')
+
+    for T_K in T_vals:
+        grp = smooth_df[np.abs(smooth_df['T_K'] - T_K) < 0.5]
+        n_tot, n_cpa, it_cpa, t_cpa, n_ecpa_tot, n_ecpa, it_ecpa, t_ecpa, n_stab = \
+            _row(grp)
+        ecpa_conv_str = f'{n_ecpa}/{n_ecpa_tot}' if n_ecpa_tot > 0 else r'\text{---}'
+        lines.append(
+            rf"{int(T_K)} & {n_cpa}/{n_tot} & {_fmt(it_cpa,1)} & {_fmt(t_cpa,1)} & "
+            rf"& {ecpa_conv_str} & {_fmt(it_ecpa,1)} & {_fmt(t_ecpa,1)} & "
+            rf"{_pct(n_stab, n_ecpa_tot)} \\"
+        )
+
+    lines += [
+        r'\bottomrule',
+        r'\end{tabular}',
+        r'\end{table}',
+        r'\end{document}',
+    ]
+
+    mode = 'a' if append else 'w'
+    with open(path, 'r') as fh:
+        content = fh.read()
+    # Remove existing \end{document} and append performance table
+    content = content.rstrip()
+    if content.endswith(r'\end{document}'):
+        content = content[:-len(r'\end{document}')].rstrip()
+    with open(path, 'w') as fh:
+        fh.write(content + '\n' + '\n'.join(lines) + '\n')
+    print(f"Appended performance table → {path}")
 
 
 # ── Computational performance summary ─────────────────────────────────────────
