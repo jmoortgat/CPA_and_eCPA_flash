@@ -1,0 +1,331 @@
+\newpage
+\section{CPA Equation of State}
+\subsection{Compressibility Factor}
+The density of the mixture can be obtained from the compressibility factor, which can be derived from the residual Helmholtz free energy:
+\begin{equation}
+     Z = 1 - \frac{v}{RT}\left (  \frac{\partial A^r}{\partial V} \right )_{T,N_i}.
+    \label{Eq:Z}
+\end{equation}
+
+The compressibility factor can be divided into terms representing different interactions. We also add a term related to the change in the relative permittivity (perm), which is from the DH and Born term (more details on the origin of this term are presented afterward):
+\begin{equation}
+        Z = Z^\text{phys} + Z^\text{assoc}  + Z^\text{DH} + Z^\text{Born} + Z^\text{Perm}.
+        \label{Eq:Z_eCPA}
+\end{equation}
+
+The compressibility factor expression for the physical term is given by:
+\begin{equation}
+        Z^\text{phys} = \frac{Z}{Z-B} - \frac{A}{Z+B},
+        \label{Eq:Z_phys}
+\end{equation}
+where $A$ and $B$ are the dimensionless SRK parameters:
+\begin{equation}
+    A=\frac{aP}{R^2T^2},
+    \label{Eq:CPA_A}
+\end{equation}
+\begin{equation}
+    B=\frac{bP}{RT}.
+    \label{Eq:CPA_B}
+\end{equation}
+
+The association expression for the compressibility factor is given by:
+\begin{equation}
+        Z^\text{assoc} =  \frac{1}{2}\left ( 1+\frac{\eta }{g_\eta}\frac{\mathrm{d} g_\eta}{\mathrm{d} \eta} \right )\sum_i x_i \sum_{A \in i}  \left ( \chi_{A_i} -1 \right ).
+        \label{Eq:Z_assoc}
+\end{equation}
+
+In the DH and Born terms, we split them into a contribution at fixed relative permittivity and varying relative permittivity, which originates $Z^\text{Perm}$:
+\begin{equation}
+        - \frac{v}{RT}\left (  \frac{\partial A^\text{DH}}{\partial V} \right )_{T,N_i} = - \frac{v}{RT}\left (  \frac{\partial A^\text{DH}}{\partial V} \right )_{T,N_i,\epsilon_r} - \frac{v}{RT}\left (  \frac{\partial A^\text{DH}}{\partial \epsilon_r} \right )_{T, V, N_i}\left (  \frac{\partial \epsilon_r}{\partial V} \right )_{T, N_i},
+        \label{Eq:ZDH_cont}
+\end{equation}
+\begin{equation}
+        Z^\text{DH} = - \frac{v}{RT}\left (  \frac{\partial A^\text{DH}}{\partial V} \right )_{T,N_i,\epsilon_r} = \frac{v}{4\pi N_A  \sum_j x_j z_j^2}\sum_j x_j z_j^2 \left [ X_j - \frac{\kappa^3}{2\left ( 1 + \kappa \sigma_j  \right )} \right ],
+        \label{Eq:ZDH}
+\end{equation}
+\begin{equation}
+        - \frac{v}{RT}\left (  \frac{\partial A^\text{Born}}{\partial V} \right )_{T,N_i} = - \frac{v}{RT}\left (  \frac{\partial A^\text{Born}}{\partial V} \right )_{T,N_i,\epsilon_r} - \frac{v}{RT}\left (  \frac{\partial A^\text{Born}}{\partial \epsilon_r} \right )_{T, V, N_i}\left (  \frac{\partial \epsilon_r}{\partial V} \right )_{T, N_i},
+        \label{Eq:ZBorn_cont}
+\end{equation}
+\begin{equation}
+        Z^\text{Born}  = - \frac{v}{RT}\left (  \frac{\partial A^\text{Born}}{\partial V} \right )_{T,N_i,\epsilon_r} = 0,
+        \label{Eq:ZBorn}
+\end{equation}
+\begin{equation}
+        Z^\text{Perm} = - \frac{v}{RT}\left [ \left (  \frac{\partial A^\text{DH}}{\partial \epsilon_r} \right )_{T, V, N_i}  +\left (  \frac{\partial A^\text{Born}}{\partial \epsilon_r} \right )_{T, V, N_i} \right ]\left (  \frac{\partial \epsilon_r}{\partial V} \right )_{T, N_i},
+        \label{Eq:ZPerm_cont}
+\end{equation}
+\begin{equation}
+        Z^{\text{Perm}} =  -\left [ \frac{\kappa^2}{8\pi N_A c \epsilon_r \sum_j x_j z_j^2}\sum_j \left (  \frac{\kappa x_j z_j^2}{1+\kappa \sigma_j} - \frac{ x_j z_j^2}{R_{B,j}} \right )  \right ] V \left  (  \frac{\partial \epsilon_r}{\partial V} \right )_{T, N_i}.
+        \label{Eq:ZPerm}
+\end{equation} 
+
+We, therefore, need an expression for the variation of the dielectric constant with volume.
+
+\subsection{Fugacity Coefficient}
+When two phases are in equilibrium, temperature, pressure, and fugacity of each component in both phases are equal. In terms of chemical equilibrium, the fugacity equality of component $i$ between phases I and II is given by:
+\begin{equation}
+     x_i^{I}\phi_i^I = x_i^{II}\phi_i^{II},
+    \label{Eq:xPHIxPHI}
+\end{equation}
+where $\phi_i$ is the fugacity coefficient of component $i$, which can be derived from the residual Helmholtz free energy as:
+\begin{equation}
+     \ln{\phi_i} =   \frac{1}{RT}\left (  \frac{\partial A^r}{\partial N_i} \right )_{T,V,N_j} - \ln{Z}.
+    \label{Eq:lnPHI}
+\end{equation} 
+
+Similarly to the compressibility factor, the fugacity coefficient can be divided into terms representing each one of the interactions:
+\begin{equation}
+    \ln{\phi_i} = \ln{\phi_i^\text{phys}} + \ln{\phi_i^\text{assoc}}  + \ln{\phi_i^\text{DH}}  + \ln{\phi_i^\text{Born}}  + \ln{\phi_i^\text{Perm}}.
+    \label{Eq:eCPA_phi}
+\end{equation}
+
+Separating the relative permittivity contribution as done in the compressibility factor, the expressions for the physical, association, DH and Born and relative permittivity fugacity coefficients are given, respectively, by:
+\begin{equation}
+\begin{aligned}
+\ln{\phi_i^{\text{phys}}} = &  -\ln{\left ( Z-B \right )}+\frac{B_i}{B}\left ( \frac{B}{Z-B}-\frac{A}{Z+B} \right ) \  \\
+      &   -\left \{ \frac{A_i}{B_i}+\frac{1}{B\ln{2}}\left [ B_i\frac{g^{E\infty}}{RT} - \sum_jx_j\left ( B_i\frac{\Delta U_{ij}}{RT} + B_j\frac{\Delta U_{ji}}{RT} \right ) \right ] \right \}\ln{\left (1+\frac{B}{Z}  \right )},
+      \label{Eq:eCPA_phi_phys}
+\end{aligned}
+\end{equation}
+\begin{equation}
+    \ln{\phi_i^{\text{assoc}}}  = \sum_{A \in i} \eta_{A_i}\ln\chi_{A_i}+\frac{B_i}{8g_{\eta}Z}\frac{\mathrm{d} g_\eta}{\mathrm{d} \eta} \sum_j x_j  \sum_{A \in j}\left (\chi_{A_j}-1\right ),
+    \label{Eq:CPA_phi_assoc}
+\end{equation}
+\begin{equation}
+    \ln{\phi_i^{\text{DH}}} = \frac{z_i^2v}{4\pi N_A  \sum_j x_j z_j^2} \left [  \frac{\sum_j x_j z_j^2 X_j}{\sum_j x_j z_j^2} - X_i - \frac{\kappa^3}{2 \sum_j x_j z_j^2} \sum_j \left (  \frac{x_jz_j^2}{1+\kappa\sigma_j}\right ) \right ],
+    \label{Eq:Phi_DH}
+\end{equation}
+\begin{equation}
+    \ln{\phi_i^{\text{Born}}}  =   \frac{N_A e^2 z_i^2}{8\pi \epsilon_0RT R_{B,i} } \left ( \frac{1}{\epsilon_r} - 1\right ),
+    \label{Eq:Phi_Born}
+\end{equation}
+\begin{equation}
+        \ln{\phi_i^{\text{Perm}}} =  \left [ \frac{\kappa^2}{8\pi N_A c \epsilon_r \sum_j x_j z_j^2}\sum_j \left (  \frac{\kappa x_j z_j^2}{1+\kappa \sigma_j} - \frac{ x_j z_j^2}{R_{B,j}} \right )  \right ] N \left  (  \frac{\partial \epsilon_r}{\partial N_i} \right )_{T, V, N_j}.
+        \label{Eq:PhiPerm}
+\end{equation} 
+
+Here, we need an expression for the variation of the dielectric constant with composition.
+
+\subsection{Relative Permitivitty}
+To determine the relative permittivity contribution to the compressibility factor (Eq. \ref{Eq:ZPerm}) and to the fugacity coefficient (Eq. \ref{Eq:PhiPerm}), one needs to evaluate the derivatives $\partial \epsilon_r / \partial V$ and $\partial \epsilon_r / \partial N_i$. We show how to obtain these derivatives from eCPA Eos and the relative permittivity primitive model from \citeauthor{Maribo2013a} \cite{Maribo2013}.  Assuming water as the only polar molecule in the mixture with a net dipole moment, we can define function $F\left (  \epsilon_r, \epsilon_\infty, N_i, V \right )$:
+\begin{equation}
+        F\left (  \epsilon_r, \epsilon_\infty, N_i, V \right ) = \frac{\left (2\epsilon_r + \epsilon_\infty \right ) \left ( \epsilon_r - \epsilon_\infty \right )}{\epsilon_r\left ( \epsilon_\infty + 2 \right )^2} - \frac{N_A}{9\epsilon_0k_BTv}x_wg_w\mu_{0w}^2 =0.
+        \label{Eqeps_simp}
+\end{equation} 
+
+The water Kirkwood g-factor and the probability of association between water and other molecules are given by \cite{Maribo2013}: 
+\begin{equation}
+        g_w = 1 + \frac{z_{ww}\mathcal{P}_{ww}\cos{\gamma_{ww}}}{\mathcal{P}_{w} \cos{\theta_{ww}+1}},
+        \label{Kirkwood_simp}
+\end{equation} 
+\begin{equation}
+        \mathcal{P}_{w} = \sum_j \mathcal{P}_{wj},
+        \label{Prob_association_total}
+\end{equation} 
+\begin{equation}
+        \mathcal{P}_{wj} = \eta_{A_w}c x_j\chi_{A_w} \chi_{B_j} \delta_{A_iB_j},
+        \label{P_wj}
+\end{equation} 
+where $\eta_{A_w}$ is the number of associating sites type A in water (2 for the 4C scheme).
+
+To obtain the derivatives $\partial \epsilon_r / \partial V$ and $\partial \epsilon_r / \partial N_i$, we differentiate the function $F$: 
+\begin{equation}
+        \mathrm{d} F = \left ( \frac{\partial F}{\partial \epsilon_r} \right )\mathrm{d}\epsilon_r + \left ( \frac{\partial F}{\partial \epsilon_\infty} \right )\mathrm{d}\epsilon_\infty + \left ( \frac{\partial F}{\partial V} \right )\mathrm{d}V + \sum_i\left ( \frac{\partial F}{\partial N_i} \right )\mathrm{d}N_i = 0.
+        \label{Ffunction}
+\end{equation} 
+
+To simplify the notation, we omit each term that is kept constant at each partial derivative. The dielectric constant derivatives can be expressed as:
+\begin{equation}
+        V\left ( \frac{\partial \epsilon_r}{\partial V} \right )_{T,Ni} = -\left ( \frac{\partial F}{\partial \epsilon_r} \right )^{-1}\left [  \left ( \frac{\partial F}{\partial \epsilon_\infty} \right )V\left ( \frac{\partial \epsilon_\infty}{\partial V} \right ) + V\left ( \frac{\partial F}{\partial V} \right ) \right ],
+        \label{Ffunction_V}
+\end{equation} 
+\begin{equation}
+        N\left ( \frac{\partial \varepsilon_r}{\partial N_i} \right )_{T, V, Nj} = -\left ( \frac{\partial F}{\partial \varepsilon_r} \right )^{-1}\left [  \left ( \frac{\partial F}{\partial \varepsilon_\infty} \right )N\left ( \frac{\partial \varepsilon_\infty}{\partial N_i} \right ) + N\left ( \frac{\partial F}{\partial N_i} \right ) \right ].
+        \label{Ffunction_N}
+\end{equation} 
+
+Each term of Eqs. \eqref{Ffunction_V} and \eqref{Ffunction_N} is given by the following expressions:
+\begin{equation}
+         \left ( \frac{\partial F}{\partial \epsilon_r} \right )=\frac{2\epsilon_r^2+\epsilon_\infty^2}{\epsilon_r^2\left ( \epsilon_\infty+2 \right )^2},
+        \label{dFder}
+\end{equation}
+\begin{equation}
+          \left ( \frac{\partial F}{\partial \epsilon_\infty} \right )=\frac{\epsilon_r\epsilon_\infty - 4 \epsilon_\infty -4\epsilon_r^2-2\epsilon_r}{\epsilon_r\left ( \epsilon_\infty+2 \right )^3},
+        \label{dFdeinf}
+\end{equation}
+\begin{equation}
+          V\left ( \frac{\partial \epsilon_\infty}{\partial V} \right )=- \frac{3M_{\epsilon_\infty}}{\left ( 1 - M_{\epsilon_\infty} \right )^2},
+        \label{deinfdV}
+\end{equation}
+\begin{equation}
+          N\left ( \frac{\partial \epsilon_\infty}{\partial N_i} \right )=\frac{N_A c \alpha_{0i}}{\epsilon_0 \left ( 1 - M_{\epsilon_\infty} \right )^2},
+        \label{deinfdNi}
+\end{equation}
+\begin{equation}
+           V\left ( \frac{\partial F}{\partial V} \right )= V \left ( \frac{\partial F}{\partial V} \right )_{g_w} + \left ( \frac{\partial F}{\partial g_w} \right ) V\left ( \frac{\partial g_w}{\partial V} \right ) = \frac{N_Ac x_w\mu_{0w}^2}{9\epsilon_0k_BT}\left [ g_w -  V \left ( \frac{\partial g_w}{\partial V} \right ) \right ],
+        \label{dFdV}
+\end{equation}
+\begin{equation}
+            N\left ( \frac{\partial F}{\partial N_i} \right )= N \left ( \frac{\partial F}{\partial N_i} \right )_{g_w} + \left ( \frac{\partial F}{\partial g_w} \right ) N\left ( \frac{\partial g_w}{\partial N_i} \right ) = -\frac{N_Ac x_w \mu_{0w}^2}{9\varepsilon_0k_BT}\left [ \frac{g_w \Gamma_{iw}}{x_w} +  N \left ( \frac{\partial g_w}{\partial N_i} \right ) \right ],
+        \label{dFdNi}
+\end{equation}
+where $\Gamma_{ij} = 1$ if $i = j$, and $\Gamma_{ij} = 0$ otherwise, and
+\begin{equation}
+        M_{\epsilon_\infty} = \frac{\epsilon_\infty-1}{\epsilon_\infty+2}.
+        \label{Eq:eps_infty}
+\end{equation} 
+
+Now we evaluate two special cases. In the first one, water is the only associating molecule and we can obtain an analytical expression for $\partial g_w / \partial V$ and $\partial g_w / \partial N_i$. In the second case, besides water self-association, we also have \ce{CO2}-\ce{H2O} cross-association, in such a way that numerical methods are used to obtain the derivatives of $\partial \chi_w / \partial V$ and $\partial \chi_w / \partial N_i$
+
+\subsubsection{Special Case I: Water as single associating molecule}
+Assuming that $\varphi = V$, $N$ or $N$ if $\Phi = V$, $N_w$ or $N_c$.
+\begin{equation}
+           \varphi \left ( \frac{\partial g_w}{\partial \Phi} \right ) = \left ( \frac{\partial g_w}{\partial \mathcal{P}_{ww}} \right ) \left ( \frac{\partial \mathcal{P}_{ww}}{\partial \chi_{w}} \right )\varphi\left ( \frac{\partial \chi_w}{\partial \Phi} \right ),
+        \label{dPhidgw}
+\end{equation}
+\begin{equation}
+        \mathcal{P}_{w} = \mathcal{P}_{ww} = 1 - \chi_w,
+        \label{P_w_onlywater}
+\end{equation} 
+\begin{equation}
+         \left ( \frac{\partial g_w}{\partial \mathcal{P}_{ww}} \right ) = \frac{g_w-1}{\mathcal{P}_{ww} \left ( \mathcal{P}_{ww} \cos{\theta_{ww}}  + 1 \right )},
+        \label{dgwdPw}
+\end{equation} 
+\begin{equation}
+         \left ( \frac{\partial \mathcal{P}_{ww}}{\partial \chi_{w}} \right ) = -1,
+        \label{dPwdchi}
+\end{equation} 
+\begin{equation}
+         V\left ( \frac{\partial \chi_w}{\partial V} \right ) = \frac{1}{4c x_w\delta}\left ( \frac{1+4c x_w\delta}{\sqrt{1+8c x_w\delta}} -1\right )\left ( 1 + \frac{\eta }{g_\eta}\frac{\mathrm{d} g_\eta}{\mathrm{d} \eta}  \right ),
+        \label{dchidV}
+\end{equation} 
+\begin{equation}
+         N\left ( \frac{\partial \chi_w}{\partial N_i} \right ) = \frac{1}{4c x_w\delta}\left ( 1-\frac{1+4c x_w\delta}{\sqrt{1+8c x_w\delta}}\right )\left ( \frac{\Gamma_{iw}}{x_w} + \frac{c b_i }{4 g_\eta}\frac{\mathrm{d} g_\eta}{\mathrm{d} \eta}  \right ).
+        \label{dchidNi}
+\end{equation} 
+
+
+
+\subsubsection{Special Case II: Water self-association + \ce{CO2} cross-association}
+
+\begin{equation}
+        \mathcal{P}_{w} =  \mathcal{P}_{ww} + \mathcal{P}_{wc},
+        \label{Prob_association_water}
+\end{equation} 
+\begin{equation}
+        \mathcal{P}_{ww} = 2c x_w\chi_{w}^2 \delta_w,
+        \label{P_ww}
+\end{equation} 
+\begin{equation}
+        \mathcal{P}_{wc} = 2c x_c\chi_{w}\chi_{c} S_{cw}\delta_w,
+        \label{P_wc}
+\end{equation} 
+\begin{equation}
+\begin{aligned}
+           \varphi \left ( \frac{\partial g_w}{\partial \Phi} \right ) & =  \left ( \frac{\partial g_w}{\partial \mathcal{P}_{ww}} \right ) \varphi\left ( \frac{\partial \mathcal{P}_{ww}}{\partial \Phi} \right ) + \left ( \frac{\partial g_w}{\partial \mathcal{P}_{w}} \right ) \varphi\left ( \frac{\partial \mathcal{P}_{w}}{\partial \Phi} \right ) \\
+           & = \frac{g_w-1 }{ \mathcal{P}_{ww} }  \varphi\left ( \frac{\partial \mathcal{P}_{ww}}{\partial \Phi} \right ) + \frac{\left (g_w-1 \right )\cos{\theta_{ww}}}{ \mathcal{P}_{w} \cos{\theta_{ww}}  + 1}  \left [  \varphi\left ( \frac{\partial \mathcal{P}_{ww}}{\partial \Phi} \right ) + \varphi\left ( \frac{\partial \mathcal{P}_{wc}}{\partial \Phi} \right ) \right ].
+        \label{dgwdPhi}
+\end{aligned}
+\end{equation}
+
+$\mathcal{P}_{ww} = f \left ( N_w, V, \delta_w, \chi_w\right )$, whereas $\mathcal{P}_{wc} = f \left ( N_c, V, \delta_w, \chi_w ,  \chi_c, \right )$. Their derivatives with respect of $V$ and $N_i$ are then given, respectively, by: 
+\begin{equation}
+        V \frac{\partial \mathcal{P}_{ww}}{\partial V} = \mathcal{P}_{ww} \left [ -1 + \frac{\delta_w \eta}{g_\eta} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta} + \frac{2}{\chi_w} V \left ( \frac{\partial \chi_w}{\partial V} \right )\right ],
+        \label{dPwwdV}
+\end{equation}
+\begin{equation}
+        V \frac{\partial \mathcal{P}_{wc}}{\partial V} = \mathcal{P}_{wc} \left [ -1 + \frac{\delta_w \eta}{g_\eta} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta} + \frac{1}{\chi_w} V \left( \frac{\partial \chi_w}{\partial N_i} \right ) + \frac{1}{\chi_c} V \left( \frac{\partial \chi_c}{\partial N_i} \right )\right ],
+        \label{dPwcdV}
+\end{equation}
+\begin{equation}
+        N \frac{\partial \mathcal{P}_{ww}}{\partial N_i} = \mathcal{P}_{ww} \left [ \frac{\Gamma_{iw}}{x_w} +  \frac{\delta_w \eta b_i}{g_\eta  b} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta} + \frac{2}{\chi_w} N \left( \frac{\partial \chi_w}{\partial N_i} \right )\right ],
+        \label{dPwwdNi}
+\end{equation}
+\begin{equation}
+        N \frac{\partial \mathcal{P}_{wc}}{\partial N_i} = \mathcal{P}_{wc} \left [\frac{\Gamma_{ic}}{x_c} + \frac{\delta_w \eta b_i}{g_\eta  b} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta} + \frac{1}{\chi_w} N \left( \frac{\partial \chi_w}{\partial N_i} \right ) +\frac{1}{\chi_c} N \left( \frac{\partial \chi_c}{\partial N_i} \right )\right ]
+        \label{dPwcdNi}.
+\end{equation}
+
+The derivatives of $\chi_i$ with respect to $V$ and $N_i$are obtained numerically. First, we define two functions $G$ and $H$:
+\begin{equation}
+    G \left(\chi_w, \chi_c, \delta_w, V, N_w \right ) = \chi_c -  \frac{V}{V+2N_w\chi_w S_{cw}\delta_w} =0,
+    \label{Gfunction}
+\end{equation}
+\begin{equation}
+    H \left(\chi_w,  \chi_c, \delta_w, V, N_w, N_c \right ) = \chi_w -  \frac{V}{V+2N_w\chi_w\delta_w+2N_c\chi_cS_{cw}\delta_w}=0,
+    \label{Hfunction}
+\end{equation}
+\begin{equation}
+        \mathrm{d} G = \left ( \frac{\partial G}{\partial \chi_w} \right )\mathrm{d}\chi_w +\left ( \frac{\partial G}{\partial \chi_c} \right )\mathrm{d}\chi_c + \left ( \frac{\partial G}{\partial \delta_w} \right )\mathrm{d}\delta_w + \left ( \frac{\partial G}{\partial V} \right )\mathrm{d}V + \left ( \frac{\partial G}{\partial N_w} \right )\mathrm{d}N_w = 0,
+        \label{Gfunction_derivative}
+\end{equation} 
+\begin{equation}
+        \mathrm{d} H = \left ( \frac{\partial H}{\partial \chi_w} \right )\mathrm{d}\chi_w + \left ( \frac{\partial H}{\partial \chi_c} \right )\mathrm{d}\chi_c + \left ( \frac{\partial H}{\partial \delta_w} \right )\mathrm{d}\delta_w + \left ( \frac{\partial H}{\partial V} \right )\mathrm{d}V + \left ( \frac{\partial H}{\partial N_w} \right )\mathrm{d}N_w  + \left ( \frac{\partial H}{\partial N_c} \right )\mathrm{d}N_c = 0,
+        \label{Hfunction_derivative}
+\end{equation} 
+\begin{equation}
+        \varphi \left ( \frac{\partial \chi_c}{\partial \Phi} \right ) = -\left ( \frac{\partial G}{\partial \chi_c} \right )^{-1}\left [  \left ( \frac{\partial G}{\partial \chi_w} \right )\varphi\left ( \frac{\partial \chi_w}{\partial \Phi} \right ) + \left ( \frac{\partial G}{\partial \delta_w} \right )\varphi\left ( \frac{\partial \delta_w}{\partial \Phi} \right ) + \varphi\left ( \frac{\partial G}{\partial \Phi} \right ) \right ],
+        \label{Gfunction_Phi}
+\end{equation} 
+\begin{equation}
+        \varphi \left ( \frac{\partial \chi_w}{\partial \Phi} \right ) = -\left ( \frac{\partial H}{\partial \chi_w} \right )^{-1}\left [  \left ( \frac{\partial H}{\partial \chi_c} \right )\varphi\left ( \frac{\partial \chi_c}{\partial \Phi} \right ) + \left ( \frac{\partial H}{\partial \delta_w} \right )\varphi\left ( \frac{\partial \delta_w}{\partial \Phi} \right ) + \varphi\left ( \frac{\partial H}{\partial \Phi} \right ) \right ].
+        \label{Hfunction_Phi}
+\end{equation} 
+
+We have three new unknowns: $\partial \chi_w / \partial V, \partial \chi_w / \partial N_w$, and  $\partial \chi_w / \partial N_c$ that can be solved numerically by coupling Eqs. \ref{Gfunction_Phi} and \ref{Hfunction_Phi}, knowing that
+$\partial \chi_c / \partial N_c = 0$. All the other derivatives are given next:
+\begin{equation}
+        \left ( \frac{\partial G}{\partial \chi_w} \right ) = 2 x_w c S_{cw} \delta_w \chi_w^2,
+        \label{dGdchiw}
+\end{equation} 
+\begin{equation}
+        \left ( \frac{\partial G}{\partial \chi_c} \right ) = 1,
+        \label{dGdchic}
+\end{equation} 
+\begin{equation}
+        \left ( \frac{\partial G}{\partial \delta_w} \right ) = -\chi_c^2 \left [  1 + 2x_w c S_{cw} \chi_w \left ( \delta_w - 1\right ) \right ],
+        \label{dGddelta}
+\end{equation} 
+\begin{equation}
+        \left ( \frac{\partial H}{\partial \chi_w} \right ) = 1 + 2 x_w c \delta_w \chi_w^2,
+        \label{dHdchiw}
+\end{equation} 
+\begin{equation}
+        \left ( \frac{\partial H}{\partial \chi_c} \right ) = 2 x_c c S_{cw} \delta_w \chi_c^2,
+        \label{dHdchic}
+\end{equation} 
+\begin{equation}
+        \left ( \frac{\partial H}{\partial \delta_w} \right ) = -\chi_w^2 \left [  1 + \left ( 2x_w c \chi_w + 2x_c c S_{cw} \chi_w \right ) \left ( \delta_w - 1\right ) \right ],
+        \label{dHddelta}
+\end{equation} 
+\begin{equation}
+        V\left ( \frac{\partial G}{\partial V} \right ) =-2 x_w c S_{cw} \delta_w \chi_w^3,
+        \label{VdGdV}
+\end{equation} 
+\begin{equation}
+        V\left ( \frac{\partial H}{\partial V} \right ) =-\chi_w^2 \left ( 2 x_w c \delta_w \chi_w +  2 x_c c S_{cw} \delta_w \chi_c \right ),
+        \label{VdHdV}
+\end{equation} 
+\begin{equation}
+        V\left ( \frac{\partial \delta_w}{\partial V} \right ) =-  \frac{\delta_w \eta}{g_\eta} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta},
+        \label{VddeltadV}
+\end{equation} 
+\begin{equation}
+        N\left ( \frac{\partial G}{\partial N_w} \right ) =2  c S_{cw} \delta_w \chi_w^3,
+        \label{NdGdNw}
+\end{equation} 
+\begin{equation}
+        N\left ( \frac{\partial H}{\partial N_w} \right ) =2  c \delta_w \chi_w^3,
+        \label{NdHdNw}
+\end{equation} 
+\begin{equation}
+        N\left ( \frac{\partial H}{\partial N_c} \right ) =2  c S_{cw} \delta_w \chi_w^2 \chi_c,
+        \label{NdHdNc}
+\end{equation} 
+\begin{equation}
+        N\left ( \frac{\partial \delta_w}{\partial N_i} \right ) = \frac{\delta_w \eta b_i}{g_\eta b} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta}.
+        \label{NddeltadNi}
+\end{equation} 
+
+

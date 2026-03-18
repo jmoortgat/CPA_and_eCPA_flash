@@ -1,0 +1,71 @@
+\documentclass[journal=ascecg,manuscript=article]{achemso}
+
+\usepackage[version=4]{mhchem} % Formula subscripts using \ce{}
+\usepackage{import}
+\usepackage{multirow}
+\usepackage{adjustbox}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{ulem}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{mathptmx}
+\usepackage{etoolbox}
+%\usepackage[version=4]{mhchem}
+\usepackage{float}
+\usepackage{tabularx}
+%%\listfiles
+\renewcommand*{\thepage}{S\arabic{page}}
+\renewcommand*{\thefigure}{S\arabic{figure}}
+\renewcommand*{\thetable}{S\arabic{table}}
+\renewcommand*{\theequation}{S\arabic{equation}}
+\renewcommand{\thesection}{S\arabic{section}}
+\newcommand*\mycommand[1]{\texttt{\emph{#1}}}
+
+
+\author{Felipe Mour\~ao Coelho}
+\affiliation{Universidade Estadual de Campinas (UNICAMP), Faculdade de Engenharia Qu\'imica, Campinas-SP, 13083-852, Brazil}
+
+\author{Lu\'is Fernando Mercier Franco}
+\affiliation{Universidade Estadual de Campinas (UNICAMP), Faculdade de Engenharia Qu\'imica, Campinas-SP, 13083-852, Brazil}
+ \email{lmfranco@unicamp.br}
+
+ \author{Abbas Firoozabadi}
+\affiliation{Rice University, Houston-TX, 77005, USA}
+\email{abbas.firoozabadi@rice.edu}
+
+
+\title[An \textsf{achemso} demo]
+  {SUPPORTING INFORMATION \\
+  \large{Phase Equilibria of \ce{CO2}-Water and \ce{CO2}-Brine at High Temperature: from Monte Carlo Simulations to Equation of State}}
+
+\newpage
+
+
+
+%\keywords{Dielectric Constant, Electrolytes, Molecular Dynamics, Capacitors, Relative Permitivitty}
+
+\begin{document}
+
+\vspace{6cm}
+\begin{center}
+\textbf{Number of Pages:} 31
+
+\textbf{Number of Figures:} 16
+
+\textbf{Number of Tables:} 3
+\end{center}
+
+\newpage
+
+
+\import{}{text.tex}
+
+\newpage
+
+\bibliography{REF}
+
+\end{document}

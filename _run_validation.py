@@ -11,6 +11,7 @@ if __name__ == '__main__':
     from ecpa.validate_nacl import (
         load_co2nacl_exp, run_validation, compute_metrics, print_metrics,
         plot_validation_T, plot_validation_parity, plot_error_heatmap,
+        plot_nacl_T_figures,
     )
 
     params = make_params()
@@ -44,7 +45,12 @@ if __name__ == '__main__':
     # Plots
     import os
     os.makedirs('figures', exist_ok=True)
+    os.makedirs('figures/co2nacl', exist_ok=True)
 
+    # Per-temperature figures (one file each, clean 2-panel layout)
+    plot_nacl_T_figures(results, fig_dir='figures/co2nacl', T_max=523.0)
+
+    # Overview / summary figures
     fig1 = plot_validation_T(results, save_path='figures/validation_T.png')
     plt.close(fig1)
     print("Saved figures/validation_T.png")

@@ -964,6 +964,8 @@ def flash_co2_h2o_tpz(
     T: float, P_bar: float, z_co2: float,
     kij12: float | None = None, swc: float | None = None,
     *,
+    vshift_co2: float = 0.0,
+    vshift_h2o: float = 0.0,
     tol: float = 1e-10,
     maxiter: int = 1000,
 ) -> dict:
@@ -974,6 +976,9 @@ def flash_co2_h2o_tpz(
         Default None → kij_ecpa(T) when PARAM_SET="eCPA", else 0.
     swc   : CO₂–H₂O cross-association strength (maps to S₁₄ in the eCPA notebook).
         Default None → s14_ecpa(T) when PARAM_SET="eCPA", else 0.
+    vshift_co2, vshift_h2o : Péneloux volume shifts [m³/mol] for CO₂ and H₂O.
+        Applied as Vm_corrected = Vm_EoS + Σ xᵢ·cᵢ; rho_mass updated in-place.
+        Default 0.0 (no shift).
     """
     if kij12 is None:
         kij12 = kij_ecpa(T) if PARAM_SET == "eCPA" else 0.0
@@ -992,6 +997,22 @@ def flash_co2_h2o_tpz(
     # in this regime: cross-association is negligible at the sign-change).
     if not result["tie"]["converged"] and 0 < abs(swc) < 0.005:
         result = flash_tpz_two_comp(T=T, P_bar=P_bar, z=z, swc=0.0, **kw)
+
+    # Apply Péneloux volume shift to rho_mass if requested.
+    # c [m³/mol] → L/mol (*1000); Vm in tie is implicitly L/mol (R_BAR_L units).
+    # rho_mass [g/L]: Vm_corr = M_mix/rho_old + Σ xᵢcᵢ; rho_new = M_mix/Vm_corr
+    if (vshift_co2 != 0.0 or vshift_h2o != 0.0) and result["tie"]["converged"]:
+        tie = result["tie"]
+        Mw_arr = comps["Mw"]                           # [M_CO2, M_H2O] g/mol
+        c = np.array([vshift_co2, vshift_h2o]) * 1000  # m³/mol → L/mol
+        for i, xi in enumerate([result.get("x", tie["x"]),
+                                 result.get("y", tie["y"])]):
+            rho_old = float(tie["rho_mass"][i])
+            if rho_old <= 0:
+                continue
+            M_mix = float(np.dot(Mw_arr, xi))
+            Vm_corr = M_mix / rho_old + float(np.dot(c, xi))
+            tie["rho_mass"][i] = M_mix / Vm_corr if Vm_corr > 0 else rho_old
 
     return result
 
