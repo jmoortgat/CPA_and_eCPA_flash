@@ -61,7 +61,10 @@ Sg3 = 3.187e-10       # m  (Debye–Hückel distance, Cl⁻)
 Rb2 = 1.665e-10       # m  (Born radius, Na⁺)
 Rb3 = 1.828e-10       # m  (Born radius, Cl⁻)
 
-Penelouxs = -53.5e-6  # m³/mol  (Péneloux volume shift)
+Penelouxs    = -53.5e-6   # m³/mol  (Péneloux volume shift — NaCl, Coelho 2025)
+Peneloux_H2O =  1.105e-7  # m³/mol  (Péneloux volume shift for H₂O; optimised to minimise
+                           #          aqueous-density AARE vs King 1992 / Nighswander 1989)
+Peneloux_CO2 =  0.0       # m³/mol  (Péneloux volume shift for CO₂; 0 = off)
 
 # Solvation energy parameters  [J/mol or K]
 Uref1s  = -223.5 * R  # J/mol

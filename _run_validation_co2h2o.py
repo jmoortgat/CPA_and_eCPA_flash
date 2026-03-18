@@ -14,7 +14,7 @@ if __name__ == '__main__':
     from ecpa.validate_co2h2o import (
         run_validation, run_smooth_curves,
         compute_metrics, plot_validation_T,
-        metrics_to_latex, print_perf_summary,
+        metrics_to_latex, perf_to_latex, print_perf_summary,
         MS_EVAL,
     )
 
@@ -87,6 +87,9 @@ if __name__ == '__main__':
     # ── LaTeX table ───────────────────────────────────────────────────────────
     tex_path = 'results/co2h2o_metrics.tex'
     metrics_to_latex(metrics, path=tex_path, ms=MS_EVAL)
+
+    # Performance table
+    perf_to_latex(smooth, path=tex_path, ms=MS_EVAL)
 
     # Try to compile to PDF
     try:

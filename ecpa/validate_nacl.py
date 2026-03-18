@@ -447,11 +447,11 @@ def compute_metrics(results_df: pd.DataFrame) -> dict:
 
     by_T = _groupby_metrics(ok, "T_K").sort_values("T_K").reset_index(drop=True)
 
-    ms_bins   = [0, 1, 2, 3.5]
-    ms_labels = ["0–1", "1–2", "2–3.5"]
+    ms_bins   = [0, 1, 2, 3.5, 5.0, 7.0]
+    ms_labels = ["0–1", "1–2", "2–3.5", "3.5–5", "5–7"]
     ok2 = ok.copy()
     ok2["ms_bin"] = pd.cut(ok2["ms"], bins=ms_bins, labels=ms_labels, right=False)
-    by_ms  = _groupby_metrics(ok2, "ms_bin").reset_index(drop=True)
+    by_ms  = _groupby_metrics(ok2.dropna(subset=["ms_bin"]), "ms_bin").reset_index(drop=True)
     by_qty = _groupby_metrics(ok, "qty").reset_index(drop=True)
 
     return {
@@ -634,47 +634,188 @@ def plot_validation_parity(results_df, save_path=None):
     return fig
 
 
+# ── Per-ms visual style (consistent across all T figures) ──────────────────────
+# Up to 10 distinct ms levels in data; styles assigned in sorted order globally.
+_MS_COLORS     = ['#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',
+                  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+_MS_MARKERS    = ['o', 's', '^', 'D', 'v', 'p', 'h', '*', 'X', 'P']
+_MS_LINESTYLES = ['-', '--', '-.', ':', '-', '--', '-.', ':', '-', '--']
+
+
+def _build_ms_styles(ms_vals_sorted):
+    """Return dict  ms_val → (color, marker, linestyle)  in sorted order."""
+    styles = {}
+    for i, ms_i in enumerate(ms_vals_sorted):
+        styles[ms_i] = (
+            _MS_COLORS[i % len(_MS_COLORS)],
+            _MS_MARKERS[i % len(_MS_MARKERS)],
+            _MS_LINESTYLES[i % len(_MS_LINESTYLES)],
+        )
+    return styles
+
+
+def plot_nacl_T_figures(results_df, fig_dir='figures/co2nacl',
+                        T_max=523.0, ms_max=7.0):
+    """
+    Generate one figure per temperature for the CO2-NaCl validation.
+
+    Each figure has up to two panels:
+      Left : CO₂ aqueous molality  mc [mol/kg H₂O] vs P  (log-log)
+      Right: CO₂ mole fraction in CO₂-rich phase  xc_C vs P  (log-linear, if data exist)
+
+    xc_W_SALTfree data are converted to mc via  mc = v / ((1-v) * Mw).
+    xc_W_SALTincl rows are excluded (conversion requires knowing x_NaCl).
+    NaCl molality encoded by color + marker + linestyle; two-column legend
+    shows experiment symbol and eCPA line side by side for each ms level.
+    """
+    import os
+    from pathlib import Path
+    from matplotlib.lines import Line2D
+
+    os.makedirs(fig_dir, exist_ok=True)
+
+    ok = results_df[
+        (results_df['status'] == 'ok') &
+        (results_df['T_K'] <= T_max) &
+        (results_df['ms'] <= ms_max)
+    ].copy()
+
+    # Convert xc_W_SALTfree → mc  (mc = v / ((1-v)*Mw))
+    mask_sf = ok['qty'] == 'xc_W_SALTfree'
+    for col in ('value_exp', 'value_pred'):
+        v = ok.loc[mask_sf, col].clip(upper=1 - 1e-9)
+        ok.loc[mask_sf, col] = v / ((1.0 - v) * Mw)
+    ok.loc[mask_sf, 'qty'] = 'mc'
+
+    # Drop xc_W_SALTincl — conversion to mc is ambiguous without x_NaCl
+    ok = ok[ok['qty'] != 'xc_W_SALTincl'].copy()
+
+    # Build global style map so same ms always gets same color/marker/linestyle
+    ms_styles = _build_ms_styles(sorted(ok['ms'].unique()))
+
+    T_vals = sorted(ok['T_K'].unique())
+    saved = []
+
+    for T in T_vals:
+        sub_T = ok[ok['T_K'] == T]
+        has_mc  = (sub_T['qty'] == 'mc').any()
+        has_xcc = (sub_T['qty'] == 'xc_C').any()
+        n_panels = int(has_mc) + int(has_xcc)
+        if n_panels == 0:
+            continue
+
+        fig, axes = plt.subplots(1, n_panels, figsize=(5.5 * n_panels, 4.5),
+                                 squeeze=False)
+        panel = 0
+        legend_ms_vals = []  # ms values present in this figure (for legend)
+
+        for qty, ylabel, yscale in [
+            ('mc',   r'$m_{\mathrm{CO_2}}$ [mol kg$^{-1}$]',               'log'),
+            ('xc_C', r'$y_{\mathrm{CO_2}}$ (CO$_2$-rich phase)',            'linear'),
+        ]:
+            if not (sub_T['qty'] == qty).any():
+                continue
+            ax = axes[0][panel]
+            sub_q = sub_T[sub_T['qty'] == qty].sort_values(['ms', 'P_bar'])
+
+            for ms_i in sorted(sub_q['ms'].unique()):
+                c, mk, ls = ms_styles[ms_i]
+                s = sub_q[sub_q['ms'] == ms_i]
+                ax.scatter(s['P_bar'], s['value_exp'], marker=mk,
+                           facecolors='none', edgecolors=c, s=40,
+                           linewidths=1.0, zorder=4)
+                ax.plot(s['P_bar'].values, s['value_pred'].values,
+                        ls, color=c, lw=1.5, zorder=3)
+                if ms_i not in legend_ms_vals:
+                    legend_ms_vals.append(ms_i)
+
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.set_xlabel('P [bar]', fontsize=12, fontweight='bold')
+            ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
+            ax.set_title(f'T = {int(T)} K', fontsize=12, fontweight='bold')
+            ax.tick_params(labelsize=10)
+            panel += 1
+
+        # Two-column legend: left col = experiment markers, right col = eCPA lines.
+        # matplotlib fills columns in column-major order, so we pass all exp
+        # handles first, then all mod handles.  Row i then shows (exp_i, mod_i).
+        exp_handles = []
+        mod_handles = []
+        for ms_i in sorted(legend_ms_vals):
+            c, mk, ls = ms_styles[ms_i]
+            exp_handles.append(
+                Line2D([0], [0], marker=mk, color=c, lw=0,
+                       mfc='none', mec=c, ms=6, label=f'ms = {ms_i:.2g}')
+            )
+            mod_handles.append(
+                Line2D([0], [0], color=c, lw=1.5, ls=ls, label='')
+            )
+        # column-major: [exp_0..exp_n, mod_0..mod_n] → row i = (exp_i | mod_i)
+        all_handles = exp_handles + mod_handles
+
+        # Legend inside the rightmost panel
+        leg = axes[0][-1].legend(
+            handles=all_handles,
+            ncol=2, fontsize=9,
+            loc='best',
+            framealpha=0.9,
+            handlelength=2.2,
+            title='Exp.   eCPA',
+            title_fontsize=9,
+        )
+
+        fig.tight_layout()
+        fpath = Path(fig_dir) / f'T{int(T)}K.png'
+        fig.savefig(fpath, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        saved.append(str(fpath))
+
+    print(f"Saved {len(saved)} per-T figures to {fig_dir}/")
+    return saved
+
+
 def plot_error_heatmap(results_df, save_path=None):
-    """AARE heatmap over (T, ms-bin) grid."""
+    """AARE heatmap over individual (T, ms) cells."""
     ok = results_df[results_df["status"] == "ok"].copy()
-    ms_bins   = [0, 1, 2, 3.5]
-    ms_labels = ["0–1", "1–2", "2–3.5"]
-    ok["ms_bin"] = pd.cut(ok["ms"], bins=ms_bins, labels=ms_labels, right=False)
 
+    # Use individual ms values (round to 2 dp to merge near-identical labels)
+    ok["ms_r"] = ok["ms"].round(2)
+    ms_vals = sorted(ok["ms_r"].unique())
     T_vals  = sorted(ok["T_K"].unique())
-    ms_labs = ms_labels
 
-    aare_grid = np.full((len(ms_labs), len(T_vals)), np.nan)
+    aare_grid = np.full((len(ms_vals), len(T_vals)), np.nan)
     n_grid    = np.zeros_like(aare_grid, dtype=int)
 
-    for i, ms_l in enumerate(ms_labs):
+    for i, ms_v in enumerate(ms_vals):
         for j, T in enumerate(T_vals):
-            sub = ok[(ok["ms_bin"] == ms_l) & (ok["T_K"] == T)]
+            sub = ok[(ok["ms_r"] == ms_v) & (ok["T_K"] == T)]
             if len(sub) > 0:
                 aare_grid[i, j] = sub["abs_rel_err"].mean() * 100
                 n_grid[i, j]    = len(sub)
 
-    fig, ax = plt.subplots(figsize=(max(6, len(T_vals) * 0.7), 3.5))
+    fig_w = max(8, len(T_vals) * 0.65)
+    fig_h = max(4, len(ms_vals) * 0.50)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     im = ax.imshow(aare_grid, aspect="auto", origin="lower",
                    cmap="RdYlGn_r",
                    norm=mcolors.TwoSlopeNorm(vcenter=5, vmin=0, vmax=30))
 
     ax.set_xticks(range(len(T_vals)))
-    ax.set_xticklabels([str(T) for T in T_vals], rotation=45, ha="right", fontsize=8)
-    ax.set_yticks(range(len(ms_labs)))
-    ax.set_yticklabels(ms_labs, fontsize=9)
-    ax.set_xlabel("T [K]", fontsize=10)
-    ax.set_ylabel("ms [mol/kg]", fontsize=10)
-    ax.set_title("AARE [%] by Temperature and Salinity", fontsize=11)
+    ax.set_xticklabels([str(int(T)) for T in T_vals], rotation=45, ha="right", fontsize=8)
+    ax.set_yticks(range(len(ms_vals)))
+    ax.set_yticklabels([f"{v:.2g}" for v in ms_vals], fontsize=8)
+    ax.set_xlabel("T [K]", fontsize=11, fontweight='bold')
+    ax.set_ylabel(r"$m_s$ [mol kg$^{-1}$]", fontsize=11, fontweight='bold')
 
-    # Annotate cells
-    for i in range(len(ms_labs)):
+    # Annotate non-empty cells with AARE and N
+    for i in range(len(ms_vals)):
         for j in range(len(T_vals)):
             if not np.isnan(aare_grid[i, j]):
-                txt = f"{aare_grid[i,j]:.1f}\n(N={n_grid[i,j]})"
+                txt = f"{aare_grid[i,j]:.1f}"
                 ax.text(j, i, txt, ha="center", va="center", fontsize=6.5)
 
-    fig.colorbar(im, ax=ax, label="AARE [%]")
+    fig.colorbar(im, ax=ax, label="AARE [%]", shrink=0.8)
     fig.tight_layout()
     _save(fig, save_path)
     return fig
