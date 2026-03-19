@@ -1,7 +1,6 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  19 MAR 2026 12:01
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  19 MAR 2026 17:34
 entering extended mode
  restricted \write18 enabled.
- file:line:error style messages enabled.
  %&-line parsing enabled.
 **main.tex
 (./main.tex
@@ -623,56 +622,56 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 101.
+(hyperref)                removing `math shift' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 101.
+(hyperref)                removing `subscript' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 101.
+(hyperref)                removing `math shift' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 101.
+(hyperref)                removing `math shift' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 101.
+(hyperref)                removing `subscript' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 101.
+(hyperref)                removing `math shift' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\<def>-command' on input line 101.
+(hyperref)                removing `\<def>-command' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\cnotenum' on input line 101.
+(hyperref)                removing `\cnotenum' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\<def>-command' on input line 101.
+(hyperref)                removing `\<def>-command' on input line 103.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\@corref' on input line 101.
+(hyperref)                removing `\@corref' on input line 103.
 
 [1
 
 
 {/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/loc
 al/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}]
-Overfull \hbox (5.41313pt too wide) in paragraph at lines 102--108
+Overfull \hbox (5.41313pt too wide) in paragraph at lines 104--110
 []\T1/cmr/m/n/12 The equi-lib-rium of CO$[]$ with brine is chal-leng-ing to mod
 el be-cause it spans a wide range of conditions---
  []
 
 
-Overfull \hbox (14.96698pt too wide) in paragraph at lines 102--108
+Overfull \hbox (14.96698pt too wide) in paragraph at lines 104--110
 \T1/cmr/m/n/12 hy-dro-static (1bar) to litho-static ($\OML/cmm/m/it/12 >$\T1/cm
 r/m/n/12 1000bar), and salin-i-ties from fresh wa-ter to near-saturation ($\OML
 /cmm/m/it/12 >$\T1/cmr/m/n/12 6molkg$[]$
@@ -693,493 +692,507 @@ r/m/n/12 1000bar), and salin-i-ties from fresh wa-ter to near-saturation ($\OML
 [7{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
 }]
 
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 527.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 527.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 527.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 527.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 527.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 527.
-
-
-
 [8]
-<../figures/co2h2o/T298K.png, id=347, 786.2976pt x 352.6776pt>
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 603.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 603.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 603.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 603.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 603.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 603.
+
+
+
+[9]
+<../figures/co2h2o/T298K.png, id=368, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T298K.png Graphic file (type png)
 <use ../figures/co2h2o/T298K.png>
-Package pdftex.def Info: ../figures/co2h2o/T298K.png  used on input line 634.
+Package pdftex.def Info: ../figures/co2h2o/T298K.png  used on input line 710.
 (pdftex.def)             Requested size: 248.6009pt x 111.503pt.
-<../figures/co2h2o/T323K.png, id=349, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T323K.png, id=370, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T323K.png Graphic file (type png)
 <use ../figures/co2h2o/T323K.png>
-Package pdftex.def Info: ../figures/co2h2o/T323K.png  used on input line 635.
+Package pdftex.def Info: ../figures/co2h2o/T323K.png  used on input line 711.
 (pdftex.def)             Requested size: 248.6009pt x 111.503pt.
-<../figures/co2h2o/T373K.png, id=350, 786.2976pt x 352.1958pt>
+<../figures/co2h2o/T373K.png, id=371, 786.2976pt x 352.1958pt>
 File: ../figures/co2h2o/T373K.png Graphic file (type png)
 <use ../figures/co2h2o/T373K.png>
-Package pdftex.def Info: ../figures/co2h2o/T373K.png  used on input line 636.
+Package pdftex.def Info: ../figures/co2h2o/T373K.png  used on input line 712.
 (pdftex.def)             Requested size: 248.6009pt x 111.3507pt.
-<../figures/co2h2o/T423K.png, id=351, 786.2976pt x 351.714pt>
+<../figures/co2h2o/T423K.png, id=372, 786.2976pt x 351.714pt>
 File: ../figures/co2h2o/T423K.png Graphic file (type png)
 <use ../figures/co2h2o/T423K.png>
-Package pdftex.def Info: ../figures/co2h2o/T423K.png  used on input line 637.
+Package pdftex.def Info: ../figures/co2h2o/T423K.png  used on input line 713.
 (pdftex.def)             Requested size: 248.6009pt x 111.19836pt.
-<../figures/co2h2o/T473K.png, id=352, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T473K.png, id=373, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T473K.png Graphic file (type png)
 <use ../figures/co2h2o/T473K.png>
-Package pdftex.def Info: ../figures/co2h2o/T473K.png  used on input line 638.
+Package pdftex.def Info: ../figures/co2h2o/T473K.png  used on input line 714.
 (pdftex.def)             Requested size: 248.6009pt x 111.503pt.
-<../figures/co2h2o/T523K.png, id=353, 786.2976pt x 351.2322pt>
+<../figures/co2h2o/T523K.png, id=374, 786.2976pt x 351.2322pt>
 File: ../figures/co2h2o/T523K.png Graphic file (type png)
 <use ../figures/co2h2o/T523K.png>
-Package pdftex.def Info: ../figures/co2h2o/T523K.png  used on input line 639.
+Package pdftex.def Info: ../figures/co2h2o/T523K.png  used on input line 715.
 (pdftex.def)             Requested size: 248.6009pt x 111.04604pt.
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<../figures/validation_parity.png, id=360, 804.1242pt x 352.1958pt>
+<../figures/validation_parity.png, id=381, 804.1242pt x 352.1958pt>
 File: ../figures/validation_parity.png Graphic file (type png)
 <use ../figures/validation_parity.png>
-Package pdftex.def Info: ../figures/validation_parity.png  used on input line 6
-53.
+Package pdftex.def Info: ../figures/validation_parity.png  used on input line 7
+29.
 (pdftex.def)             Requested size: 449.59946pt x 196.92198pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 660.
+(hyperref)                removing `math shift' on input line 736.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 660.
+(hyperref)                removing `subscript' on input line 736.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 660.
+(hyperref)                removing `math shift' on input line 736.
 
 
 
-[9]
+[10]
 
-[10 <../figures/co2h2o/T298K.png> <../figures/co2h2o/T323K.png> <../figures/co2
+[11 <../figures/co2h2o/T298K.png> <../figures/co2h2o/T323K.png> <../figures/co2
 h2o/T373K.png> <../figures/co2h2o/T423K.png> <../figures/co2h2o/T473K.png> <../
 figures/co2h2o/T523K.png>]
-<../figures/co2nacl/T298K.png, id=428, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T298K.png, id=450, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T298K.png Graphic file (type png)
 <use ../figures/co2nacl/T298K.png>
-Package pdftex.def Info: ../figures/co2nacl/T298K.png  used on input line 723.
+Package pdftex.def Info: ../figures/co2nacl/T298K.png  used on input line 799.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T313K.png, id=429, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T313K.png, id=451, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T313K.png Graphic file (type png)
 <use ../figures/co2nacl/T313K.png>
-Package pdftex.def Info: ../figures/co2nacl/T313K.png  used on input line 724.
+Package pdftex.def Info: ../figures/co2nacl/T313K.png  used on input line 800.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T353K.png, id=430, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T353K.png, id=452, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T353K.png Graphic file (type png)
 <use ../figures/co2nacl/T353K.png>
-Package pdftex.def Info: ../figures/co2nacl/T353K.png  used on input line 725.
+Package pdftex.def Info: ../figures/co2nacl/T353K.png  used on input line 801.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T393K.png, id=431, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T393K.png, id=453, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T393K.png Graphic file (type png)
 <use ../figures/co2nacl/T393K.png>
-Package pdftex.def Info: ../figures/co2nacl/T393K.png  used on input line 726.
+Package pdftex.def Info: ../figures/co2nacl/T393K.png  used on input line 802.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T453K.png, id=432, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T453K.png, id=454, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T453K.png Graphic file (type png)
 <use ../figures/co2nacl/T453K.png>
-Package pdftex.def Info: ../figures/co2nacl/T453K.png  used on input line 727.
+Package pdftex.def Info: ../figures/co2nacl/T453K.png  used on input line 803.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T523K.png, id=433, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T523K.png, id=455, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T523K.png Graphic file (type png)
 <use ../figures/co2nacl/T523K.png>
-Package pdftex.def Info: ../figures/co2nacl/T523K.png  used on input line 728.
+Package pdftex.def Info: ../figures/co2nacl/T523K.png  used on input line 804.
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<../figures/co2nacl/T323K.png, id=438, 785.8158pt x 317.0244pt>
+<../figures/co2nacl/T323K.png, id=460, 785.8158pt x 317.0244pt>
 File: ../figures/co2nacl/T323K.png Graphic file (type png)
 <use ../figures/co2nacl/T323K.png>
-Package pdftex.def Info: ../figures/co2nacl/T323K.png  used on input line 740.
+Package pdftex.def Info: ../figures/co2nacl/T323K.png  used on input line 816.
 (pdftex.def)             Requested size: 465.46692pt x 187.78288pt.
-<../figures/co2nacl/T373K.png, id=439, 785.8158pt x 317.0244pt>
+<../figures/co2nacl/T373K.png, id=461, 785.8158pt x 317.0244pt>
 File: ../figures/co2nacl/T373K.png Graphic file (type png)
 <use ../figures/co2nacl/T373K.png>
-Package pdftex.def Info: ../figures/co2nacl/T373K.png  used on input line 741.
+Package pdftex.def Info: ../figures/co2nacl/T373K.png  used on input line 817.
 (pdftex.def)             Requested size: 465.46692pt x 187.78288pt.
-<../figures/co2nacl/T423K.png, id=440, 785.8158pt x 317.0244pt>
+<../figures/co2nacl/T423K.png, id=462, 785.8158pt x 317.0244pt>
 File: ../figures/co2nacl/T423K.png Graphic file (type png)
 <use ../figures/co2nacl/T423K.png>
-Package pdftex.def Info: ../figures/co2nacl/T423K.png  used on input line 742.
+Package pdftex.def Info: ../figures/co2nacl/T423K.png  used on input line 818.
 (pdftex.def)             Requested size: 465.46692pt x 187.78288pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<../figures/validation_heatmap_extended.png, id=441, 890.8482pt x 498.663pt>
+<../figures/validation_heatmap_extended.png, id=463, 890.8482pt x 498.663pt>
 File: ../figures/validation_heatmap_extended.png Graphic file (type png)
 <use ../figures/validation_heatmap_extended.png>
 Package pdftex.def Info: ../figures/validation_heatmap_extended.png  used on in
-put line 753.
+put line 829.
 (pdftex.def)             Requested size: 449.59946pt x 251.66684pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 
 
-[11 <../figures/validation_parity.png>]
+[12 <../figures/validation_parity.png>]
 
-[12 <../figures/co2nacl/T298K.png> <../figures/co2nacl/T313K.png> <../figures/c
+[13 <../figures/co2nacl/T298K.png> <../figures/co2nacl/T313K.png> <../figures/c
 o2nacl/T353K.png> <../figures/co2nacl/T393K.png> <../figures/co2nacl/T453K.png>
  <../figures/co2nacl/T523K.png>]
 
-LaTeX Warning: Text page 13 contains only floats.
+LaTeX Warning: Text page 14 contains only floats.
 
 
 
-[13 <../figures/co2nacl/T323K.png> <../figures/co2nacl/T373K.png> <../figures/c
+[14 <../figures/co2nacl/T323K.png> <../figures/co2nacl/T373K.png> <../figures/c
 o2nacl/T423K.png>]
-<../figures/flash_vs_z.png, id=472, 713.064pt x 568.524pt>
+<../figures/flash_vs_z.png, id=492, 713.064pt x 568.524pt>
 File: ../figures/flash_vs_z.png Graphic file (type png)
 <use ../figures/flash_vs_z.png>
-Package pdftex.def Info: ../figures/flash_vs_z.png  used on input line 822.
+Package pdftex.def Info: ../figures/flash_vs_z.png  used on input line 898.
 (pdftex.def)             Requested size: 528.93675pt x 421.75084pt.
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<../figures/density/parity_ecpa.png, id=480, 387.849pt x 329.5512pt>
+<../figures/density/parity_ecpa.png, id=500, 387.849pt x 329.5512pt>
 File: ../figures/density/parity_ecpa.png Graphic file (type png)
 <use ../figures/density/parity_ecpa.png>
 Package pdftex.def Info: ../figures/density/parity_ecpa.png  used on input line
- 866.
+ 942.
 (pdftex.def)             Requested size: 290.91682pt x 247.18791pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 
 
-[14 <../figures/validation_heatmap_extended.png>]
+[15 <../figures/validation_heatmap_extended.png>]
 
-[15 <../figures/flash_vs_z.png>]
+[16 <../figures/flash_vs_z.png>]
 
-[16 <../figures/density/parity_ecpa.png>]
-<../figures/scan/ssi_iterations_heatmap.png, id=516, 950.1096pt x 303.0522pt>
+[17 <../figures/density/parity_ecpa.png>]
+<../figures/scan/ssi_iterations_heatmap.png, id=537, 950.1096pt x 303.0522pt>
 File: ../figures/scan/ssi_iterations_heatmap.png Graphic file (type png)
 <use ../figures/scan/ssi_iterations_heatmap.png>
 Package pdftex.def Info: ../figures/scan/ssi_iterations_heatmap.png  used on in
-put line 993.
+put line 1104.
 (pdftex.def)             Requested size: 528.93675pt x 168.71849pt.
-<../figures/scan/speedup_ratio_heatmap.png, id=517, 419.166pt x 295.3434pt>
+<../figures/scan/speedup_ratio_heatmap.png, id=538, 419.166pt x 295.3434pt>
 File: ../figures/scan/speedup_ratio_heatmap.png Graphic file (type png)
 <use ../figures/scan/speedup_ratio_heatmap.png>
 Package pdftex.def Info: ../figures/scan/speedup_ratio_heatmap.png  used on inp
-ut line 1008.
+ut line 1119.
 (pdftex.def)             Requested size: 253.88737pt x 178.88835pt.
-<../figures/scan/stability_best_trial.png, id=518, 497.6994pt x 281.853pt>
+<../figures/scan/stability_best_trial.png, id=539, 497.6994pt x 281.853pt>
 File: ../figures/scan/stability_best_trial.png Graphic file (type png)
 <use ../figures/scan/stability_best_trial.png>
 Package pdftex.def Info: ../figures/scan/stability_best_trial.png  used on inpu
-t line 1013.
+t line 1124.
 (pdftex.def)             Requested size: 253.88737pt x 143.78183pt.
 
 
-[17]
+[18]
 
-[18 <../figures/scan/ssi_iterations_heatmap.png>]
-<../figures/simulator/fig_simulator.png, id=549, 843.6318pt x 291.0072pt>
+[19 <../figures/scan/ssi_iterations_heatmap.png>]
+
+[20 <../figures/scan/speedup_ratio_heatmap.png> <../figures/scan/stability_best
+_trial.png>]
+<../figures/simulator/fig_simulator.png, id=580, 843.6318pt x 291.0072pt>
 File: ../figures/simulator/fig_simulator.png Graphic file (type png)
 <use ../figures/simulator/fig_simulator.png>
 Package pdftex.def Info: ../figures/simulator/fig_simulator.png  used on input 
-line 1129.
+line 1240.
 (pdftex.def)             Requested size: 528.93675pt x 182.45186pt.
 
 
-[19 <../figures/scan/speedup_ratio_heatmap.png> <../figures/scan/stability_best
-_trial.png>]
-<../figures/simulator/fig_compositions.png, id=562, 851.8224pt x 535.7616pt>
+[21 <../figures/simulator/fig_simulator.png>]
+<../figures/simulator/fig_compositions.png, id=590, 851.8224pt x 535.7616pt>
 File: ../figures/simulator/fig_compositions.png Graphic file (type png)
 <use ../figures/simulator/fig_compositions.png>
 Package pdftex.def Info: ../figures/simulator/fig_compositions.png  used on inp
-ut line 1170.
+ut line 1281.
 (pdftex.def)             Requested size: 528.93675pt x 332.67561pt.
-<../figures/simulator/fig_perf.png, id=564, 426.393pt x 324.7332pt>
+<../figures/simulator/fig_perf.png, id=592, 426.393pt x 324.7332pt>
 File: ../figures/simulator/fig_perf.png Graphic file (type png)
 <use ../figures/simulator/fig_perf.png>
 Package pdftex.def Info: ../figures/simulator/fig_perf.png  used on input line 
-1202.
+1313.
 (pdftex.def)             Requested size: 380.8351pt x 290.04724pt.
 
 
-[20 <../figures/simulator/fig_simulator.png>]
+[22 <../figures/simulator/fig_compositions.png>]
 
-[21 <../figures/simulator/fig_compositions.png>]
+[23 <../figures/simulator/fig_perf.png>]
 
-[22 <../figures/simulator/fig_perf.png>] (./main.bbl
+[24] (./main.bbl
 
-[23]
+[25]
 
-[24]
-
-[25])
-<../figures/co2h2o/T273K.png, id=667, 786.2976pt x 352.6776pt>
+[26])
+<../figures/co2h2o/T273K.png, id=685, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T273K.png Graphic file (type png)
 <use ../figures/co2h2o/T273K.png>
-Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1382.
+Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1496.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T278K.png, id=668, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T278K.png, id=686, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T278K.png Graphic file (type png)
 <use ../figures/co2h2o/T278K.png>
-Package pdftex.def Info: ../figures/co2h2o/T278K.png  used on input line 1383.
+Package pdftex.def Info: ../figures/co2h2o/T278K.png  used on input line 1497.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T283K.png, id=669, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T283K.png, id=687, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T283K.png Graphic file (type png)
 <use ../figures/co2h2o/T283K.png>
-Package pdftex.def Info: ../figures/co2h2o/T283K.png  used on input line 1384.
+Package pdftex.def Info: ../figures/co2h2o/T283K.png  used on input line 1498.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T288K.png, id=670, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T288K.png, id=688, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T288K.png Graphic file (type png)
 <use ../figures/co2h2o/T288K.png>
-Package pdftex.def Info: ../figures/co2h2o/T288K.png  used on input line 1385.
+Package pdftex.def Info: ../figures/co2h2o/T288K.png  used on input line 1499.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T293K.png, id=671, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T293K.png, id=689, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T293K.png Graphic file (type png)
 <use ../figures/co2h2o/T293K.png>
-Package pdftex.def Info: ../figures/co2h2o/T293K.png  used on input line 1386.
+Package pdftex.def Info: ../figures/co2h2o/T293K.png  used on input line 1500.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T304K.png, id=672, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T304K.png, id=690, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T304K.png Graphic file (type png)
 <use ../figures/co2h2o/T304K.png>
-Package pdftex.def Info: ../figures/co2h2o/T304K.png  used on input line 1387.
+Package pdftex.def Info: ../figures/co2h2o/T304K.png  used on input line 1501.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T308K.png, id=673, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T308K.png, id=691, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T308K.png Graphic file (type png)
 <use ../figures/co2h2o/T308K.png>
-Package pdftex.def Info: ../figures/co2h2o/T308K.png  used on input line 1388.
+Package pdftex.def Info: ../figures/co2h2o/T308K.png  used on input line 1502.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T313K.png, id=674, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T313K.png, id=692, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T313K.png Graphic file (type png)
 <use ../figures/co2h2o/T313K.png>
-Package pdftex.def Info: ../figures/co2h2o/T313K.png  used on input line 1389.
+Package pdftex.def Info: ../figures/co2h2o/T313K.png  used on input line 1503.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T318K.png, id=675, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T318K.png, id=693, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T318K.png Graphic file (type png)
 <use ../figures/co2h2o/T318K.png>
-Package pdftex.def Info: ../figures/co2h2o/T318K.png  used on input line 1390.
+Package pdftex.def Info: ../figures/co2h2o/T318K.png  used on input line 1504.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T333K.png, id=676, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T333K.png, id=694, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T333K.png Graphic file (type png)
 <use ../figures/co2h2o/T333K.png>
-Package pdftex.def Info: ../figures/co2h2o/T333K.png  used on input line 1391.
+Package pdftex.def Info: ../figures/co2h2o/T333K.png  used on input line 1505.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T348K.png, id=677, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T348K.png, id=695, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T348K.png Graphic file (type png)
 <use ../figures/co2h2o/T348K.png>
-Package pdftex.def Info: ../figures/co2h2o/T348K.png  used on input line 1392.
+Package pdftex.def Info: ../figures/co2h2o/T348K.png  used on input line 1506.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T353K.png, id=678, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T353K.png, id=696, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T353K.png Graphic file (type png)
 <use ../figures/co2h2o/T353K.png>
-Package pdftex.def Info: ../figures/co2h2o/T353K.png  used on input line 1393.
+Package pdftex.def Info: ../figures/co2h2o/T353K.png  used on input line 1507.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T383K.png, id=679, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T383K.png, id=697, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T383K.png Graphic file (type png)
 <use ../figures/co2h2o/T383K.png>
-Package pdftex.def Info: ../figures/co2h2o/T383K.png  used on input line 1394.
+Package pdftex.def Info: ../figures/co2h2o/T383K.png  used on input line 1508.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T393K.png, id=680, 786.2976pt x 351.2322pt>
+<../figures/co2h2o/T393K.png, id=698, 786.2976pt x 351.2322pt>
 File: ../figures/co2h2o/T393K.png Graphic file (type png)
 <use ../figures/co2h2o/T393K.png>
-Package pdftex.def Info: ../figures/co2h2o/T393K.png  used on input line 1395.
+Package pdftex.def Info: ../figures/co2h2o/T393K.png  used on input line 1509.
 (pdftex.def)             Requested size: 124.30045pt x 55.52301pt.
-<../figures/co2h2o/T413K.png, id=681, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T413K.png, id=699, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T413K.png Graphic file (type png)
 <use ../figures/co2h2o/T413K.png>
-Package pdftex.def Info: ../figures/co2h2o/T413K.png  used on input line 1396.
+Package pdftex.def Info: ../figures/co2h2o/T413K.png  used on input line 1510.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T433K.png, id=682, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T433K.png, id=700, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T433K.png Graphic file (type png)
 <use ../figures/co2h2o/T433K.png>
-Package pdftex.def Info: ../figures/co2h2o/T433K.png  used on input line 1397.
+Package pdftex.def Info: ../figures/co2h2o/T433K.png  used on input line 1511.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T448K.png, id=683, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T448K.png, id=701, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T448K.png Graphic file (type png)
 <use ../figures/co2h2o/T448K.png>
-Package pdftex.def Info: ../figures/co2h2o/T448K.png  used on input line 1398.
+Package pdftex.def Info: ../figures/co2h2o/T448K.png  used on input line 1512.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T453K.png, id=684, 786.2976pt x 352.1958pt>
+<../figures/co2h2o/T453K.png, id=702, 786.2976pt x 352.1958pt>
 File: ../figures/co2h2o/T453K.png Graphic file (type png)
 <use ../figures/co2h2o/T453K.png>
-Package pdftex.def Info: ../figures/co2h2o/T453K.png  used on input line 1399.
+Package pdftex.def Info: ../figures/co2h2o/T453K.png  used on input line 1513.
 (pdftex.def)             Requested size: 124.30045pt x 55.67534pt.
-<../figures/co2h2o/T493K.png, id=685, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T493K.png, id=703, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T493K.png Graphic file (type png)
 <use ../figures/co2h2o/T493K.png>
-Package pdftex.def Info: ../figures/co2h2o/T493K.png  used on input line 1400.
+Package pdftex.def Info: ../figures/co2h2o/T493K.png  used on input line 1514.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T513K.png, id=686, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T513K.png, id=704, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T513K.png Graphic file (type png)
 <use ../figures/co2h2o/T513K.png>
-Package pdftex.def Info: ../figures/co2h2o/T513K.png  used on input line 1401.
+Package pdftex.def Info: ../figures/co2h2o/T513K.png  used on input line 1515.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T533K.png, id=687, 786.2976pt x 351.2322pt>
+<../figures/co2h2o/T533K.png, id=705, 786.2976pt x 351.2322pt>
 File: ../figures/co2h2o/T533K.png Graphic file (type png)
 <use ../figures/co2h2o/T533K.png>
-Package pdftex.def Info: ../figures/co2h2o/T533K.png  used on input line 1402.
+Package pdftex.def Info: ../figures/co2h2o/T533K.png  used on input line 1516.
 (pdftex.def)             Requested size: 124.30045pt x 55.52301pt.
-<../figures/co2h2o/T538K.png, id=688, 786.2976pt x 351.2322pt>
+<../figures/co2h2o/T538K.png, id=706, 786.2976pt x 351.2322pt>
 File: ../figures/co2h2o/T538K.png Graphic file (type png)
 <use ../figures/co2h2o/T538K.png>
-Package pdftex.def Info: ../figures/co2h2o/T538K.png  used on input line 1403.
+Package pdftex.def Info: ../figures/co2h2o/T538K.png  used on input line 1517.
 (pdftex.def)             Requested size: 124.30045pt x 55.52301pt.
-<../figures/co2h2o/T541K.png, id=689, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T541K.png, id=707, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T541K.png Graphic file (type png)
 <use ../figures/co2h2o/T541K.png>
-Package pdftex.def Info: ../figures/co2h2o/T541K.png  used on input line 1404.
+Package pdftex.def Info: ../figures/co2h2o/T541K.png  used on input line 1518.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T543K.png, id=690, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T543K.png, id=708, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T543K.png Graphic file (type png)
 <use ../figures/co2h2o/T543K.png>
-Package pdftex.def Info: ../figures/co2h2o/T543K.png  used on input line 1405.
+Package pdftex.def Info: ../figures/co2h2o/T543K.png  used on input line 1519.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T548K.png, id=691, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T548K.png, id=709, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T548K.png Graphic file (type png)
 <use ../figures/co2h2o/T548K.png>
-Package pdftex.def Info: ../figures/co2h2o/T548K.png  used on input line 1406.
+Package pdftex.def Info: ../figures/co2h2o/T548K.png  used on input line 1520.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T553K.png, id=692, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T553K.png, id=710, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T553K.png Graphic file (type png)
 <use ../figures/co2h2o/T553K.png>
-Package pdftex.def Info: ../figures/co2h2o/T553K.png  used on input line 1407.
+Package pdftex.def Info: ../figures/co2h2o/T553K.png  used on input line 1521.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T573K.png, id=693, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T573K.png, id=711, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T573K.png Graphic file (type png)
 <use ../figures/co2h2o/T573K.png>
-Package pdftex.def Info: ../figures/co2h2o/T573K.png  used on input line 1408.
+Package pdftex.def Info: ../figures/co2h2o/T573K.png  used on input line 1522.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T598K.png, id=694, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T598K.png, id=712, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T598K.png Graphic file (type png)
 <use ../figures/co2h2o/T598K.png>
-Package pdftex.def Info: ../figures/co2h2o/T598K.png  used on input line 1409.
+Package pdftex.def Info: ../figures/co2h2o/T598K.png  used on input line 1523.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
-<../figures/co2h2o/T623K.png, id=695, 786.2976pt x 352.6776pt>
+<../figures/co2h2o/T623K.png, id=713, 786.2976pt x 352.6776pt>
 File: ../figures/co2h2o/T623K.png Graphic file (type png)
 <use ../figures/co2h2o/T623K.png>
-Package pdftex.def Info: ../figures/co2h2o/T623K.png  used on input line 1410.
+Package pdftex.def Info: ../figures/co2h2o/T623K.png  used on input line 1524.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
 File: ../figures/co2h2o/T273K.png Graphic file (type png)
 <use ../figures/co2h2o/T273K.png>
-Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1411.
+Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1525.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
 File: ../figures/co2h2o/T273K.png Graphic file (type png)
 <use ../figures/co2h2o/T273K.png>
-Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1412.
+Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1526.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
 File: ../figures/co2h2o/T273K.png Graphic file (type png)
 <use ../figures/co2h2o/T273K.png>
-Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1413.
+Package pdftex.def Info: ../figures/co2h2o/T273K.png  used on input line 1527.
 (pdftex.def)             Requested size: 124.30045pt x 55.7515pt.
 
 
-LaTeX Warning: Float too large for page by 10.30562pt on input line 1421.
+LaTeX Warning: Float too large for page by 10.30562pt on input line 1535.
 
-<../figures/co2nacl/T278K.png, id=702, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T278K.png, id=720, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T278K.png Graphic file (type png)
 <use ../figures/co2nacl/T278K.png>
-Package pdftex.def Info: ../figures/co2nacl/T278K.png  used on input line 1427.
+Package pdftex.def Info: ../figures/co2nacl/T278K.png  used on input line 1541.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T283K.png, id=703, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T283K.png, id=721, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T283K.png Graphic file (type png)
 <use ../figures/co2nacl/T283K.png>
-Package pdftex.def Info: ../figures/co2nacl/T283K.png  used on input line 1428.
+Package pdftex.def Info: ../figures/co2nacl/T283K.png  used on input line 1542.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T288K.png, id=704, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T288K.png, id=722, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T288K.png Graphic file (type png)
 <use ../figures/co2nacl/T288K.png>
-Package pdftex.def Info: ../figures/co2nacl/T288K.png  used on input line 1429.
+Package pdftex.def Info: ../figures/co2nacl/T288K.png  used on input line 1543.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T293K.png, id=705, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T293K.png, id=723, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T293K.png Graphic file (type png)
 <use ../figures/co2nacl/T293K.png>
-Package pdftex.def Info: ../figures/co2nacl/T293K.png  used on input line 1430.
+Package pdftex.def Info: ../figures/co2nacl/T293K.png  used on input line 1544.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T318K.png, id=706, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T318K.png, id=724, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T318K.png Graphic file (type png)
 <use ../figures/co2nacl/T318K.png>
-Package pdftex.def Info: ../figures/co2nacl/T318K.png  used on input line 1431.
+Package pdftex.def Info: ../figures/co2nacl/T318K.png  used on input line 1545.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T333K.png, id=707, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T333K.png, id=725, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T333K.png Graphic file (type png)
 <use ../figures/co2nacl/T333K.png>
-Package pdftex.def Info: ../figures/co2nacl/T333K.png  used on input line 1432.
+Package pdftex.def Info: ../figures/co2nacl/T333K.png  used on input line 1546.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T413K.png, id=708, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T413K.png, id=726, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T413K.png Graphic file (type png)
 <use ../figures/co2nacl/T413K.png>
-Package pdftex.def Info: ../figures/co2nacl/T413K.png  used on input line 1433.
+Package pdftex.def Info: ../figures/co2nacl/T413K.png  used on input line 1547.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T433K.png, id=709, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T433K.png, id=727, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T433K.png Graphic file (type png)
 <use ../figures/co2nacl/T433K.png>
-Package pdftex.def Info: ../figures/co2nacl/T433K.png  used on input line 1434.
+Package pdftex.def Info: ../figures/co2nacl/T433K.png  used on input line 1548.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T473K.png, id=710, 388.3308pt x 317.0244pt>
+<../figures/co2nacl/T473K.png, id=728, 388.3308pt x 317.0244pt>
 File: ../figures/co2nacl/T473K.png Graphic file (type png)
 <use ../figures/co2nacl/T473K.png>
-Package pdftex.def Info: ../figures/co2nacl/T473K.png  used on input line 1435.
+Package pdftex.def Info: ../figures/co2nacl/T473K.png  used on input line 1549.
 
 (pdftex.def)             Requested size: 158.68263pt x 129.54063pt.
-<../figures/co2nacl/T573K.png, id=713, 420.6114pt x 315.579pt>
+<../figures/co2nacl/T573K.png, id=731, 420.6114pt x 315.579pt>
 File: ../figures/co2nacl/T573K.png Graphic file (type png)
 <use ../figures/co2nacl/T573K.png>
-Package pdftex.def Info: ../figures/co2nacl/T573K.png  used on input line 1449.
+Package pdftex.def Info: ../figures/co2nacl/T573K.png  used on input line 1563.
 
 (pdftex.def)             Requested size: 243.31445pt x 182.5544pt.
-<../figures/co2nacl/T623K.png, id=714, 420.6114pt x 315.0972pt>
+<../figures/co2nacl/T623K.png, id=732, 420.6114pt x 315.0972pt>
 File: ../figures/co2nacl/T623K.png Graphic file (type png)
 <use ../figures/co2nacl/T623K.png>
-Package pdftex.def Info: ../figures/co2nacl/T623K.png  used on input line 1450.
+Package pdftex.def Info: ../figures/co2nacl/T623K.png  used on input line 1564.
 
 (pdftex.def)             Requested size: 243.31445pt x 182.2757pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<../figures/co2h2o/error_heatmap.png, id=719, 817.6146pt x 367.1316pt>
+<../figures/co2h2o/error_heatmap.png, id=737, 817.6146pt x 367.1316pt>
 File: ../figures/co2h2o/error_heatmap.png Graphic file (type png)
 <use ../figures/co2h2o/error_heatmap.png>
 Package pdftex.def Info: ../figures/co2h2o/error_heatmap.png  used on input lin
-e 1462.
+e 1576.
 (pdftex.def)             Requested size: 502.4883pt x 225.63612pt.
+<../figures/scan/newton_heatmap.png, id=738, 919.2744pt x 336.7782pt>
+File: ../figures/scan/newton_heatmap.png Graphic file (type png)
+<use ../figures/scan/newton_heatmap.png>
+Package pdftex.def Info: ../figures/scan/newton_heatmap.png  used on input line
+ 1591.
+(pdftex.def)             Requested size: 528.93675pt x 193.77957pt.
+<../figures/scan/strategy_comparison_bar.png, id=739, 931.3194pt x 335.3328pt>
+File: ../figures/scan/strategy_comparison_bar.png Graphic file (type png)
+<use ../figures/scan/strategy_comparison_bar.png>
+Package pdftex.def Info: ../figures/scan/strategy_comparison_bar.png  used on i
+nput line 1611.
+(pdftex.def)             Requested size: 528.93675pt x 190.45091pt.
 
 
-[26]
+[27]
 
-[27 <../figures/co2h2o/T273K.png> <../figures/co2h2o/T278K.png> <../figures/co2
+[28 <../figures/co2h2o/T273K.png> <../figures/co2h2o/T278K.png> <../figures/co2
 h2o/T283K.png> <../figures/co2h2o/T288K.png> <../figures/co2h2o/T293K.png> <../
 figures/co2h2o/T304K.png> <../figures/co2h2o/T308K.png> <../figures/co2h2o/T313
 K.png> <../figures/co2h2o/T318K.png> <../figures/co2h2o/T333K.png> <../figures/
@@ -1192,13 +1205,16 @@ o/T543K.png> <../figures/co2h2o/T548K.png> <../figures/co2h2o/T553K.png> <../fi
 gures/co2h2o/T573K.png> <../figures/co2h2o/T598K.png> <../figures/co2h2o/T623K.
 png>]
 
-[28 <../figures/co2nacl/T278K.png> <../figures/co2nacl/T283K.png> <../figures/c
+[29 <../figures/co2nacl/T278K.png> <../figures/co2nacl/T283K.png> <../figures/c
 o2nacl/T288K.png> <../figures/co2nacl/T293K.png> <../figures/co2nacl/T318K.png>
  <../figures/co2nacl/T333K.png> <../figures/co2nacl/T413K.png> <../figures/co2n
 acl/T433K.png> <../figures/co2nacl/T473K.png>]
 
-[29 <../figures/co2nacl/T573K.png> <../figures/co2nacl/T623K.png> <../figures/c
-o2h2o/error_heatmap.png>] (./main.aux)
+[30 <../figures/co2nacl/T573K.png> <../figures/co2nacl/T623K.png> <../figures/c
+o2h2o/error_heatmap.png>]
+
+[31 <../figures/scan/newton_heatmap.png> <../figures/scan/strategy_comparison_b
+ar.png>] (./main.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -1207,49 +1223,50 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 8B89672EE983B165DBCDAE0F64450E8C;6080.
  ) 
 Here is how much of TeX's memory you used:
- 18935 strings out of 473190
- 364204 string characters out of 5715801
- 737453 words of memory out of 5000000
- 41800 multiletter control sequences out of 15000+600000
+ 18967 strings out of 473190
+ 365094 string characters out of 5715801
+ 751629 words of memory out of 5000000
+ 41823 multiletter control sequences out of 15000+600000
  581084 words of font info for 96 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,13n,79p,1109b,1218s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
-></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><
-/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></
-usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></u
-sr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></us
-r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/
-local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/lo
-cal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/loca
-l/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/
-texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/te
-xlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texli
-ve/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/
-2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/202
-5/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2025/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-
-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-di
-st/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2025/texm
-f-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/local/texlive/2025/texmf-
-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2025/texmf-di
-st/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2025/texmf-dist
-/fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2025/texmf-dist/f
-onts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2025/texmf-dist/fon
-ts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2025/texmf-dist/fonts
-/type1/public/cm-super/sfrm1728.pfb></usr/local/texlive/2025/texmf-dist/fonts/t
-ype1/public/cm-super/sfss0800.pfb></usr/local/texlive/2025/texmf-dist/fonts/typ
-e1/public/cm-super/sfti0700.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1
-/public/cm-super/sfti1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/p
-ublic/cm-super/sfti1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/pub
-lic/cm-super/sftt1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/publi
-c/cm-super/sftt1200.pfb>
-Output written on main.pdf (29 pages, 5748141 bytes).
+ 75i,13n,79p,1109b,1206s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
+></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></u
+sr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></us
+r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr
+/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/l
+ocal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/loc
+al/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local
+/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/t
+exlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/tex
+live/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texliv
+e/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2
+025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2025
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2025/texm
+f-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2025/texmf-d
+ist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dis
+t/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2025/texmf
+-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/local/texlive/2025/texmf-d
+ist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2025/texmf-dis
+t/fonts/type1/public/cm-super/sfrm0700.pfb></usr/local/texlive/2025/texmf-dist/
+fonts/type1/public/cm-super/sfrm0800.pfb></usr/local/texlive/2025/texmf-dist/fo
+nts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2025/texmf-dist/font
+s/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/
+type1/public/cm-super/sfrm1728.pfb></usr/local/texlive/2025/texmf-dist/fonts/ty
+pe1/public/cm-super/sfss0800.pfb></usr/local/texlive/2025/texmf-dist/fonts/type
+1/public/cm-super/sfti0700.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/
+public/cm-super/sfti1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/pu
+blic/cm-super/sfti1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/publ
+ic/cm-super/sftt1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public
+/cm-super/sftt1200.pfb>
+Output written on main.pdf (31 pages, 5913778 bytes).
 PDF statistics:
- 957 PDF objects out of 1000 (max. 8388607)
- 702 compressed objects within 8 object streams
- 165 named destinations out of 1000 (max. 500000)
- 571 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 994 PDF objects out of 1000 (max. 8388607)
+ 731 compressed objects within 8 object streams
+ 174 named destinations out of 1000 (max. 500000)
+ 581 words of extra memory for PDF output out of 10000 (max. 10000000)
 
