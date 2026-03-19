@@ -204,6 +204,13 @@ def _dgdeta(eta: float) -> float:
     return (2.5 - eta) / (1.0 - eta) ** 4
 
 
+def _d2gdeta2(eta: float) -> float:
+    """Second derivative d²g/dη²."""
+    if G_ETA == "MOD":
+        return 2.0 * 1.9**2 / (1.0 - 1.9 * eta) ** 3
+    return 3.0 * (3.0 - eta) / (1.0 - eta) ** 5
+
+
 # =============================================================================
 # Wilson K initial guess
 # =============================================================================
@@ -560,13 +567,148 @@ def ExcessGibbs(A, B, Z, n, Chi, Chi1):
 # =============================================================================
 # ZChi — find Z and χ via coarse scan + Brent
 # =============================================================================
+def _chi1_from_Z_chi(Z, chi_w, B, nw, Kapa, Eps, swc):
+    """
+    Compute χ_CO₂ from known Z, χ_H₂O and EOS parameters.
+
+    Used to complete a (Z, χ_w) table warm-start into a full (Z, χ_w, χ_c)
+    triple before the first SSI ZChi call.
+    """
+    if abs(swc) < 1e-30:
+        return 1.0
+    eta    = B / (4.0 * float(Z))
+    delta1 = swc * _g(eta) * float(Kapa) * np.expm1(float(Eps))
+    D = float(Z) + 2.0 * float(nw) * float(chi_w) * delta1
+    if D <= 0.0:
+        return 1.0
+    _hi = 10.0 if delta1 < 0.0 else 1.0
+    return float(np.clip(float(Z) / D, 0.0, _hi))
+
+
 def _funz_combined(Z, A, B, n, Kapa, Eps, swc):
     Chi, Chi1 = ChiChi(Z, B, n, Kapa, Eps, swc)
     f = FunZ(Z, A, B, n, Chi, Chi1)
     return f, Chi, Chi1
 
 
-def ZChi(A, B, n, Kapa, Eps, swc):
+_ZCHI_NEWTON_TOL     = 1e-12
+_ZCHI_NEWTON_MAXITER = 20
+
+
+def _ZChi_newton(A, B, n, Kapa, Eps, swc, Z0, Chi0, Chi10):
+    """
+    Newton refinement of (Z, χ_H₂O, χ_CO₂) from a warm-start.
+
+    Solves the 3×3 system simultaneously:
+      F₁ = FunZ(Z, χ_w, χ_c)                              = 0
+      F₂ = c₃·χ_w³ + c₂·χ_w² + c₁·χ_w + c₀              = 0  (χ_H₂O cubic)
+      F₃ = χ_c·(Z + 2·n_w·χ_w·δ₁) − Z                    = 0  (χ_CO₂ closure)
+
+    When swc=0: χ_c=1 always; reduces to a 2×2 system (Z, χ_w).
+
+    The Jacobian is the same 3×3 implicit-function system used in
+    _dlnphi_dx_phase (validated in _debug_jacobian.py / _test_jacobian.py).
+
+    Raises RuntimeError on failure; caller should fall back to scan+Brent.
+    """
+    n  = np.asarray(n, dtype=float).reshape(2)
+    nc, nw = n[0], n[1]
+    Z    = float(Z0);   Chi  = float(Chi0);  Chi1 = float(Chi10)
+    _no_cross = abs(swc) < 1e-30
+    max_resid = np.inf
+
+    for _ in range(_ZCHI_NEWTON_MAXITER):
+        if Z <= B:
+            raise RuntimeError("Z ≤ B during Newton")
+
+        eta   = B / (4.0 * Z)
+        g     = _g(eta);  dg = _dgdeta(eta);  d2g = _d2gdeta2(eta)
+        delta  = g * Kapa * np.expm1(Eps)
+        delta1 = swc * delta
+        dgog      = dg / g
+        dlogd_dZ  = dgog * (-B / (4.0 * Z * Z))
+        ZmB = Z - B;  ZpB = Z + B
+        h_val = 1.0 + eta * dgog
+        dh    = dgog + eta * (d2g / g - dgog * dgog)
+        Sigma = nw * (Chi - 1.0) + nc * (Chi1 - 1.0)
+        F1    = Z - Z / ZmB + A / ZpB - 2.0 * h_val * Sigma
+
+        if _no_cross:
+            # 2×2: χ_c = 1 fixed, quadratic F₂ in χ_w
+            c2b = 2.0 * nw * Z * delta
+            F2  = c2b * Chi * Chi + Z * Z * Chi - Z * Z
+            max_resid = max(abs(F1), abs(F2))
+            if max_resid < _ZCHI_NEWTON_TOL:
+                break
+            dc2b_dZ = 2.0 * nw * delta * (1.0 + Z * dlogd_dZ)
+            J11 = 1.0 + B / ZmB**2 - A / ZpB**2 + dh * B / (2.0 * Z * Z) * Sigma
+            J12 = -2.0 * h_val * nw
+            J21 = dc2b_dZ * Chi * Chi + 2.0 * Z * Chi - 2.0 * Z
+            J22 = 2.0 * c2b * Chi + Z * Z
+            try:
+                dv = np.linalg.solve(
+                    np.array([[J11, J12], [J21, J22]]),
+                    -np.array([F1, F2]))
+            except np.linalg.LinAlgError:
+                raise RuntimeError("Singular 2×2 Jacobian")
+            Z    = max(Z + float(dv[0]), B + 1e-10)
+            Chi  = float(np.clip(Chi + float(dv[1]), 0.0, 1.0))
+            Chi1 = 1.0
+
+        else:
+            # 3×3 full system
+            c3 = 4.0 * nw * nw * delta * delta1
+            c2 = 2.0 * nw * Z * (delta + delta1)
+            c1 = 2.0 * delta1 * Z * (nc - nw) + Z * Z
+            c0 = -(Z * Z)
+            F2 = c3 * Chi**3 + c2 * Chi**2 + c1 * Chi + c0
+            D  = Z + 2.0 * nw * Chi * delta1
+            if D <= 0.0:
+                raise RuntimeError("D ≤ 0")
+            F3 = Chi1 * D - Z
+            max_resid = max(abs(F1), abs(F2), abs(F3))
+            if max_resid < _ZCHI_NEWTON_TOL:
+                break
+
+            # Row 1
+            J11 = 1.0 + B / ZmB**2 - A / ZpB**2 + dh * B / (2.0 * Z * Z) * Sigma
+            J12 = -2.0 * h_val * nw
+            J13 = -2.0 * h_val * nc
+            # Row 2
+            dc3_dZ = c3 * 2.0 * dlogd_dZ
+            dc2_dZ = 2.0 * nw * (delta + delta1) + c2 * dlogd_dZ
+            dc1_dZ = (2.0 * delta1 * (nc - nw)
+                      + 2.0 * delta1 * Z * (nc - nw) * dlogd_dZ + 2.0 * Z)
+            dc0_dZ = -2.0 * Z
+            J21 = dc3_dZ * Chi**3 + dc2_dZ * Chi**2 + dc1_dZ * Chi + dc0_dZ
+            J22 = 3.0 * c3 * Chi**2 + 2.0 * c2 * Chi + c1
+            # Row 3
+            dD_dZ = 1.0 + 2.0 * nw * Chi * delta1 * dlogd_dZ
+            J31   = Chi1 * dD_dZ - 1.0
+            J32   = Chi1 * 2.0 * nw * delta1
+            J33   = D
+            try:
+                dv = np.linalg.solve(
+                    np.array([[J11, J12, J13],
+                               [J21, J22, 0.0],
+                               [J31, J32, J33]]),
+                    -np.array([F1, F2, F3]))
+            except np.linalg.LinAlgError:
+                raise RuntimeError("Singular 3×3 Jacobian")
+            Z    = max(Z + float(dv[0]), B + 1e-10)
+            Chi  = float(np.clip(Chi + float(dv[1]), 0.0, 1.0))
+            _chi1_hi = 10.0 if delta1 < 0.0 else 1.0
+            Chi1 = float(np.clip(Chi1 + float(dv[2]), 0.0, _chi1_hi))
+
+    else:
+        raise RuntimeError(
+            f"ZChi Newton did not converge in {_ZCHI_NEWTON_MAXITER} iterations "
+            f"(max_resid={max_resid:.2e})")
+
+    return Z, Chi, Chi1
+
+
+def _ZChi_scan_brent(A, B, n, Kapa, Eps, swc):
     """Find Z and (χ_H₂O, χ_CO₂) by coarse log-spaced scan + Brent refinement."""
     N_SCAN = 12; Z_TOL = 1e-10
     n = np.asarray(n, dtype=float).reshape(2,)
@@ -654,6 +796,28 @@ def ZChi(A, B, n, Kapa, Eps, swc):
         idx = int(np.argsort(ge)[0])
         return float(Zi[idx]), float(Chii[idx]), float(Chi1i[idx])
     return float(Zi[0]), float(Chii[0]), float(Chi1i[0])
+
+
+def ZChi(A, B, n, Kapa, Eps, swc, Z0=None, Chi0=None, Chi10=None):
+    """
+    Find Z and (χ_H₂O, χ_CO₂).
+
+    When a warm-start (Z0, Chi0, Chi10) is provided, attempts 3×3 Newton
+    (_ZChi_newton) first — typically 2–4 iterations from a close starting
+    point, replacing the ~42 function evaluations of the coarse scan + Brent.
+    Falls back to _ZChi_scan_brent on Newton failure or when no warm start
+    is available (first SSI iteration).
+    """
+    if Z0 is not None and Chi0 is not None and Chi10 is not None:
+        try:
+            Z, Chi, Chi1 = _ZChi_newton(A, B, n, Kapa, Eps, swc, Z0, Chi0, Chi10)
+            if Z > B and np.isfinite(Z) and np.isfinite(Chi) and np.isfinite(Chi1):
+                f = FunZ(Z, A, B, n, Chi, Chi1)
+                if np.isfinite(f) and abs(f) < 1e-7:
+                    return Z, Chi, Chi1
+        except Exception:
+            pass
+    return _ZChi_scan_brent(A, B, n, Kapa, Eps, swc)
 
 
 # =============================================================================
@@ -767,6 +931,447 @@ def _lnphi_vap(ep: dict, Z: float, Chi: float, Chi1: float) -> np.ndarray:
 
 
 # =============================================================================
+# Analytical composition derivatives of lnφ  (for Newton flash)
+# =============================================================================
+def _dlnphi_dx_phase(ep, Z, Chi, Chi1, swc, is_aqueous):
+    r"""
+    Analytical d(lnφ_i)/d(x_CO₂) for i=CO₂,H₂O in one phase.
+
+    Accounts for all implicit dependencies: Z(x), χ(x), χ₁(x)
+    through the coupled EOS + association balance equations.
+    Uses implicit function theorem on the 3×3 system (F_Z, F_χ, G).
+
+    Parameters
+    ----------
+    ep : dict from _eos_aq or _eos_vap
+    Z, Chi, Chi1 : floats (converged values)
+    swc : float (cross-association S14)
+    is_aqueous : bool
+
+    Returns
+    -------
+    dlnphi : (2,) array  [dlnφ_CO₂/dx_CO₂ , dlnφ_H₂O/dx_CO₂]
+    """
+    A, B  = ep["A"], ep["B"]
+    A1, B1 = ep["A1"], ep["B1"]
+    A4, B4 = ep["A4"], ep["B4"]
+    x4, x1 = ep["x4"], ep["x1"]          # CO₂ , H₂O
+    nc, nw = x4, x1
+    Kapa, Eps = ep["Kapa"], ep["Eps"]
+    kij12 = ep["kij12"]
+    Z = float(Z); Chi = float(Chi); Chi1 = float(Chi1)
+    Bi = np.array([B4, B1])               # indexed [CO₂, H₂O]
+
+    # ── packing fraction & radial distribution function ──────────────
+    eta  = B / (4.0 * Z)
+    g    = _g(eta)
+    dg   = _dgdeta(eta)
+    d2g  = _d2gdeta2(eta)
+    dgog = dg / g                          # dg/g
+    h    = 1.0 + eta * dgog                # 1 + η·g'/g
+    dh   = dgog + eta * (d2g / g - dgog**2)  # dh/dη
+
+    # ── association strengths ────────────────────────────────────────
+    expm1_Eps = np.expm1(Eps)
+    delta  = g * Kapa * expm1_Eps
+    delta1 = swc * delta
+    Sigma  = nw * (Chi - 1.0) + nc * (Chi1 - 1.0)
+
+    # ── log-derivatives of δ w.r.t. Z and B ─────────────────────────
+    #  δ = g(η)·κ·(eᵉ−1),  η = B/(4Z)
+    dlogd_dZ = dgog * (-B / (4.0 * Z**2))   # d(ln δ)/dZ
+    dlogd_dB = dgog / (4.0 * Z)             # d(ln δ)/dB
+
+    # ── mixing-rule derivatives  dA/dx₀, dB/dx₀ ────────────────────
+    dB_dx = B4 - B1
+
+    if is_aqueous and MIXING == "HV":
+        hv   = ep["hv"]
+        U14, U41, gE = hv["U14"], hv["U41"], hv["gE"]
+        a1d, b1d = ep["a1"], ep["b1"]
+        a4d, b4d = ep["a4"], ep["b4"]
+        bd       = ep["b"]
+        RT       = ep["R"] * ep["T"]
+        cross_BU = b1d * U14 + b4d * U41         # dimensional
+
+        # dgE/dx₄:  gE = x₁ x₄ cross_BU / b
+        dgE_dx = cross_BU * ((1.0 - 2.0*x4)*bd
+                             - x1*x4*(b4d - b1d)) / bd**2
+        # da/dx₄:  a = b·S,  S = x₁a₁/b₁ + x₄a₄/b₄ − gE/ln2
+        S     = x1*a1d/b1d + x4*a4d/b4d - gE / _LN2
+        dS_dx = -a1d/b1d + a4d/b4d - dgE_dx / _LN2
+        db_dx = b4d - b1d
+        da_dx = db_dx * S + bd * dS_dx
+        dA_dx = da_dx * ep["P_bar"] / (RT)**2
+    else:
+        A14   = ep.get("A14", np.sqrt(A1 * A4) * (1.0 - kij12))
+        dA_dx = 2.0 * (nc * (A4 - A14) + nw * (A14 - A1))
+
+    # ── F_Z partials ────────────────────────────────────────────────
+    ZmB = Z - B;  ZpB = Z + B
+    if ZmB < 1e-30 or abs(ZpB) < 1e-30:
+        return np.zeros(2)
+
+    dFZ_dZ    = (1.0 + B / ZmB**2 - A / ZpB**2
+                 + dh * B / (2.0 * Z**2) * Sigma)
+    dFZ_dChi  = -2.0 * h * nw
+    dFZ_dChi1 = -2.0 * h * nc
+
+    # ∂F_Z/∂x₀  (at fixed Z, χ, χ₁; A, B, nw, nc, η all vary)
+    dFZ_dx = (dA_dx / ZpB
+              + dB_dx * (-Z / ZmB**2 - A / ZpB**2
+                         - dh / (2.0 * Z) * Sigma)
+              + 2.0 * h * ((Chi - 1.0) - (Chi1 - 1.0)))
+
+    # ── F_χ partials  (cubic association balance) ───────────────────
+    c3 = 4.0 * nw**2 * delta * delta1
+    c2 = 2.0 * nw * Z * (delta + delta1)
+    c1 = 2.0 * delta1 * Z * (nc - nw) + Z**2
+    # c0 = -Z**2  (not needed beyond building dF_chi)
+
+    dFchi_dChi = 3.0 * c3 * Chi**2 + 2.0 * c2 * Chi + c1
+
+    # dF_χ/dZ  (Z appears directly in c2, c1, c0 and through δ(η(Z)))
+    dc3_dZ = c3 * 2.0 * dlogd_dZ
+    dc2_dZ = (2.0 * nw * (delta + delta1)
+              + 2.0 * nw * Z * (delta + delta1) * dlogd_dZ)
+    dc1_dZ = (2.0 * delta1 * (nc - nw)
+              + 2.0 * delta1 * Z * (nc - nw) * dlogd_dZ
+              + 2.0 * Z)
+    dc0_dZ = -2.0 * Z
+    dFchi_dZ = (dc3_dZ * Chi**3 + dc2_dZ * Chi**2
+                + dc1_dZ * Chi + dc0_dZ)
+
+    # dF_χ/dx₀  (through nw, nc directly + δ(B(x₀)))
+    dc3_dB = c3 * 2.0 * dlogd_dB
+    dc2_dB = 2.0 * nw * Z * (delta + delta1) * dlogd_dB
+    dc1_dB = 2.0 * delta1 * Z * (nc - nw) * dlogd_dB
+
+    dc3_dn = -8.0 * nw * delta * delta1     # dc3/dx₀ (direct nw change)
+    dc2_dn = -2.0 * Z * (delta + delta1)    # dc2/dx₀ (direct nw change)
+    dc1_dn = 4.0 * delta1 * Z               # dc1/dx₀ (from d(nc−nw)/dx₀=2)
+
+    dFchi_dx = ((dc3_dn + dc3_dB * dB_dx) * Chi**3
+                + (dc2_dn + dc2_dB * dB_dx) * Chi**2
+                + (dc1_dn + dc1_dB * dB_dx) * Chi)
+
+    # ── G partials:  G = χ₁ − Z / (Z + 2 nw χ δ₁) ─────────────────
+    D = Z + 2.0 * nw * Chi * delta1
+
+    dD_dZ   = 1.0 + 2.0 * nw * Chi * delta1 * dlogd_dZ
+    dG_dZ   = -(D - Z * dD_dZ) / D**2
+
+    dD_dChi = 2.0 * nw * delta1
+    dG_dChi = Z * dD_dChi / D**2
+
+    dG_dChi1 = 1.0
+
+    # ∂G/∂x₀ (through nw and δ₁(B))
+    dD_dx = (-2.0 * Chi * delta1
+             + 2.0 * nw * Chi * delta1 * dlogd_dB * dB_dx)
+    dG_dx = Z * dD_dx / D**2
+
+    # ── solve 3×3 implicit system  J · d = −rhs ────────────────────
+    J_impl = np.array([
+        [dFZ_dZ,   dFZ_dChi,   dFZ_dChi1],
+        [dFchi_dZ, dFchi_dChi, 0.0       ],
+        [dG_dZ,    dG_dChi,    dG_dChi1  ],
+    ])
+    rhs = -np.array([dFZ_dx, dFchi_dx, dG_dx])
+
+    try:
+        d_impl = np.linalg.solve(J_impl, rhs)   # [dZ, dχ, dχ₁]/dx₀
+    except np.linalg.LinAlgError:
+        return np.zeros(2)
+
+    dZ_dx0, dChi_dx0, dChi1_dx0 = d_impl
+    deta_dx0 = -B / (4.0 * Z**2) * dZ_dx0 + dB_dx / (4.0 * Z)
+
+    # ── partial derivatives of lnφ ──────────────────────────────────
+    # Physical part
+    lnZpBZ = np.log(max(ZpB / max(Z, _LOG_GUARD), _LOG_GUARD))
+    phys_c = B / ZmB - A / ZpB
+    d_phys_c_dZ = -B / ZmB**2 + A / ZpB**2
+    d_lnZpBZ_dZ = -B / (Z * ZpB)
+    d_lnZpBZ_dB = 1.0 / ZpB
+
+    if is_aqueous and MIXING == "HV":
+        hv   = ep["hv"]
+        U14, U41, gE = hv["U14"], hv["U41"], hv["gE"]
+        bd   = ep["b"]
+        RT   = ep["R"] * ep["T"]
+        cross_BU = ep["B1"] * U14 + ep["B4"] * U41   # must match _lnphi_aq (dimensionless Bi)
+
+        bracket = np.array([
+            A4/B4 - 1.0/(B*_LN2)*(x1*cross_BU/RT - B4*gE/RT),   # CO₂
+            A1/B1 - 1.0/(B*_LN2)*(x4*cross_BU/RT - B1*gE/RT),   # H₂O
+        ])
+
+        # ∂lnφ_phys/∂Z  (bracket doesn't depend on Z)
+        dlnphi_phys_dZ = np.array([
+            -1.0/ZmB + B4/B*d_phys_c_dZ - d_lnZpBZ_dZ * bracket[0],
+            -1.0/ZmB + B1/B*d_phys_c_dZ - d_lnZpBZ_dZ * bracket[1],
+        ])
+
+        # ∂lnφ_phys/∂x₀  (at fixed Z, χ, χ₁):
+        #   d(-ln(Z-B))/dx₀ = dB_dx/(Z-B)
+        #   d(Bi/B·phys_c)/dx₀ = Bi/B·[dB_dx/(Z-B)² + dA_dx/(Z+B)²
+        #                                - dB_dx·A/(Z+B)² ... ]
+        #   Easier: compute numerically at this level?  No — let's do it term by term.
+        #
+        # term1 = -ln(Z-B)  →  d/dx₀ = dB_dx/(Z-B)
+        # term2 = Bi/B·phys_c = Bi/(Z-B) - Bi·A/(B·(Z+B))
+        #   d(Bi/(Z-B))/dx₀ = Bi·dB_dx/(Z-B)²
+        #   d(-Bi·A/(B·(Z+B)))/dx₀ = -Bi·[dA_dx/(B·ZpB)
+        #                              - A·(dB_dx·ZpB + B·dB_dx)/(B·ZpB)²]
+        #     = -Bi·[dA_dx/(B·ZpB) - A·dB_dx·(B+ZpB)/(B²·ZpB²)]
+        #     = -Bi·dA_dx/(B·ZpB) + Bi·A·dB_dx·(2*B+Z)/(B²·ZpB²)
+        #
+        # term3 = -lnZpBZ·bracket_i
+        #   d/dx₀ = -d_lnZpBZ_dB·dB_dx·bracket_i - lnZpBZ·d_bracket_dx_i
+
+        # d_bracket/dx₀
+        term_bkt0 = x1 * cross_BU / RT - B4 * gE / RT
+        term_bkt1 = x4 * cross_BU / RT - B1 * gE / RT
+
+        d_bracket_dx = np.array([
+            -1.0/(B*_LN2)*(-cross_BU/RT - B4*dgE_dx/RT)
+            + dB_dx/(B**2*_LN2) * term_bkt0,
+            -1.0/(B*_LN2)*(cross_BU/RT - B1*dgE_dx/RT)
+            + dB_dx/(B**2*_LN2) * term_bkt1,
+        ])
+
+        d_term1_dx = dB_dx / ZmB
+        d_term2_CO2_dx = (B4 * dB_dx / ZmB**2
+                          - B4 * dA_dx / (B * ZpB)
+                          + B4 * A * dB_dx * (2*B + Z) / (B**2 * ZpB**2))
+        d_term2_H2O_dx = (B1 * dB_dx / ZmB**2
+                          - B1 * dA_dx / (B * ZpB)
+                          + B1 * A * dB_dx * (2*B + Z) / (B**2 * ZpB**2))
+        d_term3_dx = np.array([
+            -d_lnZpBZ_dB * dB_dx * bracket[0] - lnZpBZ * d_bracket_dx[0],
+            -d_lnZpBZ_dB * dB_dx * bracket[1] - lnZpBZ * d_bracket_dx[1],
+        ])
+
+        dlnphi_phys_dx = np.array([
+            d_term1_dx + d_term2_CO2_dx + d_term3_dx[0],
+            d_term1_dx + d_term2_H2O_dx + d_term3_dx[1],
+        ])
+    else:
+        # vdW1f (vapor phase)
+        A14_v = ep.get("A14", np.sqrt(A1 * A4) * (1.0 - kij12))
+        dA_sum = np.array([x1*A14_v + x4*A4, x1*A1 + x4*A14_v])
+        coef_i = A / B * (Bi / B - 2.0 * dA_sum / A)  # A/B·(Bi/B − 2Σ/A)
+        ln1pBZ = lnZpBZ  # same quantity
+
+        dlnphi_phys_dZ = np.array([
+            -1.0/ZmB + B4/B*d_phys_c_dZ + coef_i[0]*(-B/(Z*ZpB)),
+            -1.0/ZmB + B1/B*d_phys_c_dZ + coef_i[1]*(-B/(Z*ZpB)),
+        ])
+
+        # ∂lnφ_phys/∂x₀ at fixed Z:
+        # d(-ln(Z-B))/dx₀ = dB_dx/(Z-B)
+        # d(Bi/B·phys_c)/dx₀ [same as HV term2 above]
+        # d(A/B·(Bi/B−2dA_sum_i/A)·ln1pBZ)/dx₀:
+        #   the multiplier and ln1pBZ both depend on x₀
+
+        d_term1_dx = dB_dx / ZmB
+        d_term2_CO2_dx = (B4 * dB_dx / ZmB**2
+                          - B4 * dA_dx / (B * ZpB)
+                          + B4 * A * dB_dx * (2*B+Z) / (B**2 * ZpB**2))
+        d_term2_H2O_dx = (B1 * dB_dx / ZmB**2
+                          - B1 * dA_dx / (B * ZpB)
+                          + B1 * A * dB_dx * (2*B+Z) / (B**2 * ZpB**2))
+
+        # dA_sum_i/dx₀:  dA_sum_CO2 = x1·A14+x4·A4 → d/dx₀ = -A14+A4
+        #                 dA_sum_H2O = x1·A1+x4·A14 → d/dx₀ = -A1+A14
+        d_dAsum_dx = np.array([A4 - A14_v, A14_v - A1])
+
+        # d[A/B·(Bi/B-2S/A)·ln]/dx₀:  product rule on (A/B)·coef_inner·ln
+        #   coef_inner_i = Bi/B - 2·dA_sum_i/A
+        coef_inner = Bi / B - 2.0 * dA_sum / A
+
+        # d(A/B)/dx₀ = (dA_dx·B - A·dB_dx)/B²
+        dAoB_dx = (dA_dx * B - A * dB_dx) / B**2
+        # d(coef_inner_i)/dx₀ = -Bi·dB_dx/B² - 2(d_dAsum·A-dA_sum·dA_dx)/A²
+        d_coef_inner_dx = (-Bi * dB_dx / B**2
+                           - 2.0 * (d_dAsum_dx * A
+                                    - dA_sum * dA_dx) / A**2)
+        # d(ln1pBZ)/dx₀ = d_lnZpBZ_dB · dB_dx
+        d_ln_dx = d_lnZpBZ_dB * dB_dx
+
+        d_term3_dx = (dAoB_dx * coef_inner * ln1pBZ
+                      + A / B * d_coef_inner_dx * ln1pBZ
+                      + A / B * coef_inner * d_ln_dx)
+
+        dlnphi_phys_dx = np.array([
+            d_term1_dx + d_term2_CO2_dx + d_term3_dx[0],
+            d_term1_dx + d_term2_H2O_dx + d_term3_dx[1],
+        ])
+
+    # ── Association part ────────────────────────────────────────────
+    # lnφ_ass_i = 4·ln(χ_self_i) + Bi·dg/(2gZ) · Σ
+    # (where 4·Σ/8 = Σ/2, factor comes from 4 sites, 8 in denominator)
+    ass_coef = dg / (2.0 * g * Z)          # = dg/(2gZ)
+
+    # ∂lnφ_ass_i/∂Z  (η varies with Z; χ, χ₁ fixed)
+    # d[Bi·dg/(2gZ)·Σ]/dZ = Bi·Σ · d[dg/(2gZ)]/dZ
+    # d[dg/(2gZ)]/dZ = [d²g/dη·dη/dZ·gZ - dg·(dg/dη·dη/dZ·Z+g)]/(gZ)²
+    #  = [(d2g·(-B/(4Z²))·gZ - dg·(dg·(-B/(4Z²))·Z + g)] / (gZ)²
+    # Simpler: dg/(2gZ) = dgog/(2Z)
+    # d[dgog/(2Z)]/dZ = [(d2g/g-dgog²)·(-B/(4Z²))]/(2Z) - dgog/(2Z²)
+    #                 = -[B·(d2g/g-dgog²)/(4Z²) + dgog]/(2Z)
+    # Actually just compute d(ass_coef)/dZ directly:
+    # ass_coef = dg/(2gZ),  let's diff:
+    d_asscoef_deta = (d2g * g - dg**2) / (2.0 * g**2 * Z)  # d[dg/(2gZ)]/dη · (1, not /dZ)
+    deta_dZ = -B / (4.0 * Z**2)
+    d_asscoef_dZ_from_eta = d_asscoef_deta * deta_dZ
+    d_asscoef_dZ_from_Z   = -dg / (2.0 * g * Z**2)
+    d_asscoef_dZ = d_asscoef_dZ_from_eta + d_asscoef_dZ_from_Z
+
+    dlnphi_ass_dZ = Bi * Sigma * d_asscoef_dZ
+
+    # ∂lnφ_ass_i/∂χ :  4/χ for H₂O (i=1) + Bi·ass_coef·nw
+    dlnphi_ass_dChi = np.array([
+        Bi[0] * ass_coef * nw,                      # CO₂
+        4.0 / max(Chi, _LOG_GUARD) + Bi[1] * ass_coef * nw,   # H₂O
+    ])
+
+    # ∂lnφ_ass_i/∂χ₁ : 4/χ₁ for CO₂ (i=0) + Bi·ass_coef·nc
+    dlnphi_ass_dChi1 = np.array([
+        4.0 / max(Chi1, _LOG_GUARD) + Bi[0] * ass_coef * nc,  # CO₂
+        Bi[1] * ass_coef * nc,                       # H₂O
+    ])
+
+    # ∂lnφ_ass_i/∂x₀  (at fixed Z, χ, χ₁):
+    #   through Σ: dΣ/dx₀ = -(χ-1)+(χ₁-1)
+    #   through ass_coef: depends on η → B → x₀
+    deta_dB = 1.0 / (4.0 * Z)
+    d_asscoef_deta_val = d_asscoef_deta  # already computed
+    d_asscoef_dx = d_asscoef_deta_val * deta_dB * dB_dx
+    dSigma_dx = -(Chi - 1.0) + (Chi1 - 1.0)
+
+    dlnphi_ass_dx = Bi * (d_asscoef_dx * Sigma + ass_coef * dSigma_dx)
+
+    # ── Chain rule: total dlnφ_i/dx₀ ───────────────────────────────
+    dlnphi_dZ   = dlnphi_phys_dZ   + dlnphi_ass_dZ
+    dlnphi_dChi = dlnphi_ass_dChi                    # phys doesn't depend on χ
+    dlnphi_dChi1= dlnphi_ass_dChi1                   # phys doesn't depend on χ₁
+    dlnphi_dx   = dlnphi_phys_dx   + dlnphi_ass_dx   # direct composition
+
+    return (dlnphi_dZ * dZ_dx0
+            + dlnphi_dChi * dChi_dx0
+            + dlnphi_dChi1 * dChi1_dx0
+            + dlnphi_dx)
+
+
+def _dlnphi_dx_numerical(T, P_bar, comp, kij12, swc, is_aqueous,
+                          h=1e-7):
+    """Numerical d(lnφ)/d(x_CO₂) via central differences (for verification)."""
+    x0 = float(comp[0])
+    results = []
+    for sign in (+1, -1):
+        xp = np.array([x0 + sign * h, 1.0 - (x0 + sign * h)])
+        xp = np.clip(xp, 1e-15, 1.0 - 1e-15)
+        if is_aqueous:
+            ep_p = _eos_aq(T, P_bar, xp, kij12)
+        else:
+            ep_p = _eos_vap(T, P_bar, xp, kij12)
+        Zp, Chip, Chi1p = ZChi(ep_p["A"], ep_p["B"], xp,
+                                ep_p["Kapa"], ep_p["Eps"], swc)
+        if Zp == 0.0:
+            return np.zeros(2)
+        if is_aqueous:
+            lnphi_p = _lnphi_aq(ep_p, Zp, Chip, Chi1p)
+        else:
+            lnphi_p = _lnphi_vap(ep_p, Zp, Chip, Chi1p)
+        results.append(lnphi_p)
+    return (results[0] - results[1]) / (2.0 * h)
+
+
+def newton_jacobian(lnK, T, P_bar, kij12, swc,
+                    ep_aq, ep_vap,
+                    Zx, Chix, Chi1x, Zy, Chiy, Chi1y,
+                    x, y):
+    """
+    Analytical 2×2 Jacobian  J[i,j] = d(lng_i)/d(lnK_j).
+
+    Uses analytical dlnφ/dx for each phase plus algebraic dx/dlnK, dy/dlnK.
+    """
+    K = np.exp(lnK)
+    denom = K[1] - K[0]
+    denom2 = denom**2
+
+    # dx₀/dlnK_j  (x₀ = x_CO₂)
+    dx0_dlnK = np.array([
+        K[0] * (K[1] - 1.0) / denom2,     # d/dlnK_CO₂
+        K[1] * (1.0 - K[0]) / denom2,      # d/dlnK_H₂O
+    ])
+
+    # dy_i/dlnK_j  (2×2 matrix, [component, lnK index])
+    dy_dlnK = np.array([
+        [K[0] * dx0_dlnK[0] + y[0],   K[0] * dx0_dlnK[1]       ],  # CO₂
+        [-K[1] * dx0_dlnK[0],          -K[1] * dx0_dlnK[1] + y[1]],  # H₂O
+    ])
+
+    # dx_i/dlnK_j  (2×2 matrix)
+    dx_dlnK = np.array([
+        [dx0_dlnK[0],   dx0_dlnK[1]  ],   # CO₂
+        [-dx0_dlnK[0], -dx0_dlnK[1]  ],   # H₂O
+    ])
+
+    # Analytical dlnφ/dx₀ for each phase  (2-element vectors)
+    dphi_x = _dlnphi_dx_phase(ep_aq,  Zx, Chix,  Chi1x,  swc, True)
+    dphi_y = _dlnphi_dx_phase(ep_vap, Zy, Chiy,  Chi1y,  swc, False)
+
+    # J[i,j] = dphi_y[i]·dy₀/dlnK_j + (1/y_i)·dy_i/dlnK_j
+    #         - dphi_x[i]·dx₀/dlnK_j - (1/x_i)·dx_i/dlnK_j
+    J = np.zeros((2, 2))
+    for i in range(2):
+        for j in range(2):
+            J[i, j] = (dphi_y[i] * dy_dlnK[0, j]       # dy₀/dlnK_j
+                        + (1.0 / max(y[i], _LOG_GUARD)) * dy_dlnK[i, j]
+                        - dphi_x[i] * dx_dlnK[0, j]     # dx₀/dlnK_j
+                        - (1.0 / max(x[i], _LOG_GUARD)) * dx_dlnK[i, j])
+    return J
+
+
+def newton_jacobian_numerical(lnK, T, P_bar, kij12, swc, kw_base,
+                              h=1e-7):
+    """Numerical 2×2 Jacobian of lng w.r.t. lnK (for verification)."""
+    def _eval_lng(lnK_):
+        K_ = np.exp(lnK_)
+        d_ = K_[1] - K_[0]
+        if abs(d_) < 1e-14:
+            return np.full(2, np.nan)
+        x_ = np.array([(K_[1]-1.0)/d_, (K_[0]-1.0)/(-d_)])  # CO₂, H₂O
+        x_ = np.clip(x_, 1e-15, 1.0-1e-15)
+        y_ = K_ * x_
+        y_ = np.clip(y_, 1e-15, 1.0-1e-15)
+
+        ep_a = _eos_aq(T, P_bar, x_, kij12)
+        ep_v = _eos_vap(T, P_bar, y_, kij12)
+        Zx_, Cx_, C1x_ = ZChi(ep_a["A"], ep_a["B"], x_,
+                               ep_a["Kapa"], ep_a["Eps"], swc)
+        Zy_, Cy_, C1y_ = ZChi(ep_v["A"], ep_v["B"], y_,
+                               ep_v["Kapa"], ep_v["Eps"], swc)
+        if Zx_ == 0.0 or Zy_ == 0.0:
+            return np.full(2, np.nan)
+        lnphi_x_ = _lnphi_aq(ep_a, Zx_, Cx_, C1x_)
+        lnphi_y_ = _lnphi_vap(ep_v, Zy_, Cy_, C1y_)
+        return (lnphi_y_ + np.log(np.maximum(y_, _LOG_GUARD))
+                - lnphi_x_ - np.log(np.maximum(x_, _LOG_GUARD)))
+
+    lng0 = _eval_lng(lnK)
+    J = np.zeros((2, 2))
+    for j in range(2):
+        lnK_p = lnK.copy(); lnK_p[j] += h
+        lnK_m = lnK.copy(); lnK_m[j] -= h
+        J[:, j] = (_eval_lng(lnK_p) - _eval_lng(lnK_m)) / (2.0 * h)
+    return J
+
+
+# =============================================================================
 # Tie-line solver
 # =============================================================================
 def tie_line_two_comp(
@@ -778,15 +1383,26 @@ def tie_line_two_comp(
     tol: float = 1e-10,
     maxiter: int = 1000,
     accelerated: bool = True,
+    accel_method: str = "jex",
+    diis_depth: int = 4,
+    use_newton: bool = True,
+    newton_tol: float = 1e-4,
+    max_newton: int = 5,
+    ZChi_aq_init: tuple | None = None,
+    ZChi_vap_init: tuple | None = None,
 ) -> dict:
     """
-    SSI tie-line solver: CO₂ (component 0) + H₂O (component 1).
+    SSI + Newton tie-line solver: CO₂ (component 0) + H₂O (component 1).
 
     Aqueous  phase: MIXING flag (HV or vdW1f) + G_ETA flag.
     CO₂-rich phase: always vdW1f + MOD g(η) (when G_ETA="MOD").
 
-    Returns dict: converged, iterations, K, x [aq], y [vap], and if converged:
-      Z[0,1], rho_mass[0,1] [kg/L], assoc_t[0,1], chi{liq,vap}.
+    SSI runs until ‖lng‖ < newton_tol (or tol if use_newton=False), then
+    Newton polish (analytical Jacobian, max_newton steps) brings it to tol.
+
+    Returns dict: converged, iterations, ssi_iterations, newton_iterations,
+      K, x [aq], y [vap], and if converged: Z[0,1], rho_mass[0,1] [kg/L],
+      assoc_t[0,1], chi{liq,vap}.
     """
     T = float(T); P_bar = float(P_bar); kij12 = float(kij12); swc = float(swc)
     Tc    = np.asarray(Tc,    dtype=float).reshape(2,)
@@ -825,10 +1441,36 @@ def tie_line_two_comp(
     converged = False; it = 0
     _resid_norm = np.nan   # final ||lng|| at convergence
 
-    # Accelerated SSI state (Jex et al. 2024, Eq. 12–13)
+    # Resolve acceleration method
+    _use_jex = False
+    _use_diis = False
+    if accelerated:
+        if accel_method == "diis":
+            _use_diis = True
+        elif accel_method == "jex":
+            _use_jex = True
+        # "none" or unrecognised → standard SSI
+
+    # Jex state (Jex et al. 2024, Eq. 12–13)
     _m = 1.0           # step-size factor; starts at 1 (conventional SS)
     _g_prev = None      # fugacity-ratio vector from previous iteration
     _M_CAP_HI = 10.0   # upper cap  (= 1/L with L = 0.1 for 2-phase)
+
+    # DIIS state (Pulay 1980)
+    _diis_lnK = []      # history of lnK iterates
+    _diis_resid = []    # history of residual vectors (-lng)
+
+    # ZChi warm-start state: (Z, Chi, Chi1) from previous SSI iteration.
+    # First iteration uses scan+Brent (no warm start); thereafter Newton.
+    _Zx_warm = _Chix_warm = _Chi1x_warm = None
+    _Zy_warm = _Chiy_warm = _Chi1y_warm = None
+
+    # Table-provided (Z, χ_w) for the first SSI iteration.  χ_c is computed
+    # on the fly after the first _eos_* call (needs Kapa, Eps, B).
+    _Zx_tbl   = float(ZChi_aq_init[0])  if ZChi_aq_init  is not None else None
+    _Chix_tbl = float(ZChi_aq_init[1])  if ZChi_aq_init  is not None else None
+    _Zy_tbl   = float(ZChi_vap_init[0]) if ZChi_vap_init is not None else None
+    _Chiy_tbl = float(ZChi_vap_init[1]) if ZChi_vap_init is not None else None
 
     for it in range(int(maxiter)):
         if np.linalg.norm(K - 1.0) < 1e-5:
@@ -850,13 +1492,29 @@ def tie_line_two_comp(
         ep_aq  = _eos_aq (T, P_bar, x, kij12)
         ep_vap = _eos_vap(T, P_bar, y, kij12)
 
+        # First iteration only: complete table warm start with χ_c
+        if _Zx_warm is None and _Zx_tbl is not None:
+            _Chi1x_tbl = _chi1_from_Z_chi(
+                _Zx_tbl, _Chix_tbl, ep_aq["B"], x[1],
+                ep_aq["Kapa"], ep_aq["Eps"], swc)
+            _Zx_warm = _Zx_tbl; _Chix_warm = _Chix_tbl; _Chi1x_warm = _Chi1x_tbl
+        if _Zy_warm is None and _Zy_tbl is not None:
+            _Chi1y_tbl = _chi1_from_Z_chi(
+                _Zy_tbl, _Chiy_tbl, ep_vap["B"], y[1],
+                ep_vap["Kapa"], ep_vap["Eps"], swc)
+            _Zy_warm = _Zy_tbl; _Chiy_warm = _Chiy_tbl; _Chi1y_warm = _Chi1y_tbl
+
         Zx, Chix, Chi1x = ZChi(ep_aq["A"],  ep_aq["B"],  x,
-                                ep_aq["Kapa"],  ep_aq["Eps"],  swc)
+                                ep_aq["Kapa"],  ep_aq["Eps"],  swc,
+                                Z0=_Zx_warm, Chi0=_Chix_warm, Chi10=_Chi1x_warm)
         Zy, Chiy, Chi1y = ZChi(ep_vap["A"], ep_vap["B"], y,
-                                ep_vap["Kapa"], ep_vap["Eps"], swc)
+                                ep_vap["Kapa"], ep_vap["Eps"], swc,
+                                Z0=_Zy_warm, Chi0=_Chiy_warm, Chi10=_Chi1y_warm)
 
         if Zx == 0.0 or Zy == 0.0:
             x[:] = 0; y[:] = 0; break
+        _Zx_warm = Zx;  _Chix_warm = Chix;  _Chi1x_warm = Chi1x
+        _Zy_warm = Zy;  _Chiy_warm = Chiy;  _Chi1y_warm = Chi1y
 
         lnphi_x = _lnphi_aq (ep_aq,  Zx, Chix,  Chi1x)
         lnphi_y = _lnphi_vap(ep_vap, Zy, Chiy,  Chi1y)
@@ -866,31 +1524,70 @@ def tie_line_two_comp(
         lng = lnphi_y + np.log(np.maximum(y, _LOG_GUARD)) \
             - lnphi_x - np.log(np.maximum(x, _LOG_GUARD))
 
-        # --- Accelerated step-size (Jex Eq. 12–13) ---
-        # Use lng (log fugacity ratio) directly as the g-vector for the
-        # dominant-eigenvalue acceleration (U = I simplification for 2 comp).
-        if accelerated and _g_prev is not None:
-            dg = _g_prev - lng  # g^{k-1} - g^{k}  (both in log space)
-            num_a   = np.dot(_g_prev, _g_prev)
-            denom_a = np.dot(_g_prev, dg)
-            if abs(denom_a) > 1e-30:
-                _m = abs(num_a / denom_a * _m)
-                _m = float(np.clip(_m, 1.0, _M_CAP_HI))
-            else:
-                _m = 1.0
+        lnK_old = np.log(np.maximum(K, _LOG_GUARD))
 
-        _g_prev = lng.copy()
+        # --- DIIS acceleration (Pulay 1980) ---
+        if _use_diis:
+            resid = -lng  # residual: zero at convergence
+            _diis_lnK.append(lnK_old.copy())
+            _diis_resid.append(resid.copy())
+            if len(_diis_lnK) > diis_depth:
+                _diis_lnK.pop(0)
+                _diis_resid.pop(0)
 
-        # SSI update: lnK^{k+1} = lnK^k - m · lng
-        lnK_old  = np.log(np.maximum(K, _LOG_GUARD))
-        lnK_step = -lng    # unscaled step
+            _did_diis = False
+            n_buf = len(_diis_resid)
+            if n_buf >= 2:
+                # Build DIIS error matrix B[i,j] = r_i · r_j
+                R = np.array(_diis_resid)         # (n_buf, 2)
+                B_core = R @ R.T                   # (n_buf, n_buf)
+                B = np.zeros((n_buf + 1, n_buf + 1))
+                B[:n_buf, :n_buf] = B_core
+                B[:n_buf, n_buf] = -1.0
+                B[n_buf, :n_buf] = -1.0
+                rhs = np.zeros(n_buf + 1)
+                rhs[n_buf] = -1.0
+                try:
+                    sol = np.linalg.solve(B, rhs)
+                    c = sol[:n_buf]
+                    if np.all(np.isfinite(c)) and np.max(np.abs(c)) < 10.0:
+                        X = np.array(_diis_lnK)   # (n_buf, 2)
+                        lnK_new = c @ (X + R)      # (2,)
+                        lnK_step_diis = np.clip(lnK_new - lnK_old, -5.0, 5.0)
+                        # Accept only if DIIS step doesn't blow up residual
+                        # (prospective check: estimate new residual direction)
+                        lnK_cand = lnK_old + lnK_step_diis
+                        step_norm = np.linalg.norm(lnK_step_diis)
+                        resid_norm_cur = np.linalg.norm(lng)
+                        if step_norm < 10.0 * max(resid_norm_cur, 0.1):
+                            lnK_step_acc = lnK_step_diis
+                            _did_diis = True
+                except np.linalg.LinAlgError:
+                    pass
 
-        # Apply accelerated step size, THEN clip
-        lnK_step_acc = np.clip(_m * lnK_step, -5.0, 5.0)
+            if not _did_diis:
+                # Fallback: standard SSI step
+                lnK_step_acc = np.clip(-lng, -5.0, 5.0)
 
-        # Near-trivial damping (only without acceleration to avoid conflicting)
-        if not accelerated and np.all(np.abs(lnK_old) < 0.05):
-            lnK_step_acc *= 0.5
+        # --- Jex acceleration (Jex et al. 2024, Eq. 12–13) ---
+        elif _use_jex:
+            if _g_prev is not None:
+                dg = _g_prev - lng
+                num_a   = np.dot(_g_prev, _g_prev)
+                denom_a = np.dot(_g_prev, dg)
+                if abs(denom_a) > 1e-30:
+                    _m = abs(num_a / denom_a * _m)
+                    _m = float(np.clip(_m, 1.0, _M_CAP_HI))
+                else:
+                    _m = 1.0
+            _g_prev = lng.copy()
+            lnK_step_acc = np.clip(_m * (-lng), -5.0, 5.0)
+
+        # --- Standard SSI (no acceleration) ---
+        else:
+            lnK_step_acc = np.clip(-lng, -5.0, 5.0)
+            if np.all(np.abs(lnK_old) < 0.05):
+                lnK_step_acc *= 0.5
 
         K = np.exp(lnK_old + lnK_step_acc)
 
@@ -898,10 +1595,181 @@ def tie_line_two_comp(
         _resid_norm = float(np.linalg.norm(lng))
         if _resid_norm < float(tol):
             converged = True; break
+        if use_newton and _resid_norm < float(newton_tol):
+            break  # close enough — hand off to Newton polish
+
+    _ssi_iters = int(it + 1)
+    _newton_iters = 0
+
+    # ── Newton polish ───────────────────────────────────────────────────────
+    # Switch from linear SSI to quadratically-convergent Newton once ‖lng‖
+    # drops below newton_tol (default 1e-4).  Uses the analytical 2×2 Jacobian
+    # d(lng)/d(lnK) from newton_jacobian().  If Newton diverges or fails, the
+    # solver reverts to the pre-Newton state and continues with SSI.
+    if use_newton and not converged and np.isfinite(_resid_norm) and _resid_norm < float(newton_tol):
+        # Save state so we can revert if Newton diverges
+        _K_pre      = K.copy()
+        _x_pre      = x.copy()
+        _y_pre      = y.copy()
+        _resid_pre  = _resid_norm
+        _ep_aq_pre  = ep_aq
+        _ep_vap_pre = ep_vap
+        _Zx_pre     = Zx;  _Chix_pre  = Chix;  _Chi1x_pre = Chi1x
+        _Zy_pre     = Zy;  _Chiy_pre  = Chiy;  _Chi1y_pre = Chi1y
+        _lng_pre    = lng.copy()
+
+        _newton_ok = False
+        lnK = np.log(np.maximum(K, _LOG_GUARD))
+        for _nit in range(int(max_newton)):
+            J = newton_jacobian(lnK, T, P_bar, kij12, swc,
+                                ep_aq, ep_vap, Zx, Chix, Chi1x, Zy, Chiy, Chi1y,
+                                x, y)
+            try:
+                dlnK = np.linalg.solve(J, -lng)
+            except np.linalg.LinAlgError:
+                break
+            dlnK = np.clip(dlnK, -5.0, 5.0)
+            lnK = lnK + dlnK
+            K = np.exp(lnK)
+
+            denom = K[1] - K[0]
+            if abs(denom) < 1e-14:
+                break
+            x[0] = (K[1] - 1.0) / denom
+            x[1] = 1.0 - x[0]
+            y[:] = K * x
+            if not (np.all(np.isfinite(x)) and np.all(np.isfinite(y))
+                    and np.all(x >= -1e-12) and np.all(y >= -1e-12)):
+                break
+            x = np.clip(x, 0, 1); y = np.clip(y, 0, 1)
+
+            ep_aq  = _eos_aq (T, P_bar, x, kij12)
+            ep_vap = _eos_vap(T, P_bar, y, kij12)
+            Zx, Chix, Chi1x = ZChi(ep_aq["A"],  ep_aq["B"],  x,
+                                    ep_aq["Kapa"],  ep_aq["Eps"],  swc,
+                                    Z0=_Zx_warm, Chi0=_Chix_warm, Chi10=_Chi1x_warm)
+            Zy, Chiy, Chi1y = ZChi(ep_vap["A"], ep_vap["B"], y,
+                                    ep_vap["Kapa"], ep_vap["Eps"], swc,
+                                    Z0=_Zy_warm, Chi0=_Chiy_warm, Chi10=_Chi1y_warm)
+            if Zx == 0.0 or Zy == 0.0:
+                break
+            _Zx_warm = Zx;  _Chix_warm = Chix;  _Chi1x_warm = Chi1x
+            _Zy_warm = Zy;  _Chiy_warm = Chiy;  _Chi1y_warm = Chi1y
+
+            lnphi_x = _lnphi_aq (ep_aq,  Zx, Chix,  Chi1x)
+            lnphi_y = _lnphi_vap(ep_vap, Zy, Chiy,  Chi1y)
+            lng = (lnphi_y + np.log(np.maximum(y, _LOG_GUARD))
+                   - lnphi_x - np.log(np.maximum(x, _LOG_GUARD)))
+
+            _newton_iters += 1
+            _resid_norm = float(np.linalg.norm(lng))
+            if _resid_norm < float(tol):
+                converged = True
+                _newton_ok = True
+                break
+
+        # If Newton failed or diverged, revert to pre-Newton state and
+        # continue with SSI until convergence (or maxiter).
+        if not converged:
+            if not _newton_ok or _resid_norm > _resid_pre:
+                # Revert
+                K = _K_pre; x = _x_pre; y = _y_pre
+                ep_aq = _ep_aq_pre; ep_vap = _ep_vap_pre
+                Zx = _Zx_pre; Chix = _Chix_pre; Chi1x = _Chi1x_pre
+                Zy = _Zy_pre; Chiy = _Chiy_pre; Chi1y = _Chi1y_pre
+                lng = _lng_pre; _resid_norm = _resid_pre
+                _newton_iters = 0
+            _Zx_warm = Zx;  _Chix_warm = Chix;  _Chi1x_warm = Chi1x
+            _Zy_warm = Zy;  _Chiy_warm = Chiy;  _Chi1y_warm = Chi1y
+
+            # Continue SSI from current state (re-use same acceleration)
+            lnK = np.log(np.maximum(K, _LOG_GUARD))
+            lnphi_x = _lnphi_aq (ep_aq,  Zx, Chix,  Chi1x)
+            lnphi_y = _lnphi_vap(ep_vap, Zy, Chiy,  Chi1y)
+            lng = (lnphi_y + np.log(np.maximum(y, _LOG_GUARD))
+                   - lnphi_x - np.log(np.maximum(x, _LOG_GUARD)))
+            _fb_m = 1.0; _fb_g_prev = None   # fresh Jex state for fallback
+            _fb_diis_lnK = []; _fb_diis_resid = []
+            for _sit in range(int(maxiter) - _ssi_iters):
+                if _use_jex:
+                    if _fb_g_prev is not None:
+                        dg = _fb_g_prev - lng
+                        num_a   = np.dot(_fb_g_prev, _fb_g_prev)
+                        denom_a = np.dot(_fb_g_prev, dg)
+                        if abs(denom_a) > 1e-30:
+                            _fb_m = abs(num_a / denom_a * _fb_m)
+                            _fb_m = float(np.clip(_fb_m, 1.0, _M_CAP_HI))
+                        else:
+                            _fb_m = 1.0
+                    _fb_g_prev = lng.copy()
+                    lnK_step = np.clip(_fb_m * (-lng), -5.0, 5.0)
+                elif _use_diis:
+                    resid = -lng
+                    _fb_diis_lnK.append(lnK.copy())
+                    _fb_diis_resid.append(resid.copy())
+                    if len(_fb_diis_lnK) > diis_depth:
+                        _fb_diis_lnK.pop(0); _fb_diis_resid.pop(0)
+                    lnK_step = np.clip(-lng, -5.0, 5.0)
+                    n_buf = len(_fb_diis_resid)
+                    if n_buf >= 2:
+                        R = np.array(_fb_diis_resid); X = np.array(_fb_diis_lnK)
+                        B_c = R @ R.T
+                        B = np.zeros((n_buf+1, n_buf+1))
+                        B[:n_buf,:n_buf] = B_c; B[:n_buf,n_buf] = -1; B[n_buf,:n_buf] = -1
+                        rhs2 = np.zeros(n_buf+1); rhs2[n_buf] = -1
+                        try:
+                            sol = np.linalg.solve(B, rhs2); c = sol[:n_buf]
+                            if np.all(np.isfinite(c)) and np.max(np.abs(c)) < 10.0:
+                                lnK_new = c @ (X + R)
+                                step_d = np.clip(lnK_new - lnK, -5.0, 5.0)
+                                if np.linalg.norm(step_d) < 10.0 * max(np.linalg.norm(lng), 0.1):
+                                    lnK_step = step_d
+                        except np.linalg.LinAlgError:
+                            pass
+                else:
+                    lnK_step = np.clip(-lng, -5.0, 5.0)
+                lnK = lnK + lnK_step
+                K = np.exp(lnK)
+
+                denom = K[1] - K[0]
+                if abs(denom) < 1e-14:
+                    break
+                x[0] = (K[1] - 1.0) / denom
+                x[1] = 1.0 - x[0]
+                y[:] = K * x
+                if not (np.all(np.isfinite(x)) and np.all(np.isfinite(y))
+                        and np.all(x >= -1e-12) and np.all(y >= -1e-12)):
+                    break
+                x = np.clip(x, 0, 1); y = np.clip(y, 0, 1)
+
+                ep_aq  = _eos_aq (T, P_bar, x, kij12)
+                ep_vap = _eos_vap(T, P_bar, y, kij12)
+                Zx, Chix, Chi1x = ZChi(ep_aq["A"],  ep_aq["B"],  x,
+                                        ep_aq["Kapa"],  ep_aq["Eps"],  swc,
+                                        Z0=_Zx_warm, Chi0=_Chix_warm, Chi10=_Chi1x_warm)
+                Zy, Chiy, Chi1y = ZChi(ep_vap["A"], ep_vap["B"], y,
+                                        ep_vap["Kapa"], ep_vap["Eps"], swc,
+                                        Z0=_Zy_warm, Chi0=_Chiy_warm, Chi10=_Chi1y_warm)
+                if Zx == 0.0 or Zy == 0.0:
+                    break
+                _Zx_warm = Zx;  _Chix_warm = Chix;  _Chi1x_warm = Chi1x
+                _Zy_warm = Zy;  _Chiy_warm = Chiy;  _Chi1y_warm = Chi1y
+
+                lnphi_x = _lnphi_aq (ep_aq,  Zx, Chix,  Chi1x)
+                lnphi_y = _lnphi_vap(ep_vap, Zy, Chiy,  Chi1y)
+                lng = (lnphi_y + np.log(np.maximum(y, _LOG_GUARD))
+                       - lnphi_x - np.log(np.maximum(x, _LOG_GUARD)))
+                _ssi_iters += 1
+                _resid_norm = float(np.linalg.norm(lng))
+                if _resid_norm < float(tol):
+                    converged = True
+                    break
 
     out = {
         "converged": bool(converged),
-        "iterations": int(it + 1),
+        "iterations": _ssi_iters + _newton_iters,
+        "ssi_iterations": _ssi_iters,
+        "newton_iterations": _newton_iters,
         "K": K.copy(), "x": x.copy(), "y": y.copy(),
         "residual_norm": _resid_norm,
         "final_m": float(_m),
@@ -916,9 +1784,11 @@ def tie_line_two_comp(
         ep_vap = _eos_vap(T, P_bar, y, kij12)
 
         Zx, Chix,  Chi1x  = ZChi(ep_aq["A"],  ep_aq["B"],  x,
-                                  ep_aq["Kapa"],  ep_aq["Eps"],  swc)
+                                  ep_aq["Kapa"],  ep_aq["Eps"],  swc,
+                                  Z0=_Zx_warm, Chi0=_Chix_warm, Chi10=_Chi1x_warm)
         Zy, Chiy,  Chi1y  = ZChi(ep_vap["A"], ep_vap["B"], y,
-                                  ep_vap["Kapa"], ep_vap["Eps"], swc)
+                                  ep_vap["Kapa"], ep_vap["Eps"], swc,
+                                  Z0=_Zy_warm, Chi0=_Chiy_warm, Chi10=_Chi1y_warm)
 
         rho_liq = float(np.dot(Mw, x) * P_bar / (Zx * R_BAR_L * T))
         rho_vap = float(np.dot(Mw, y) * P_bar / (Zy * R_BAR_L * T))
