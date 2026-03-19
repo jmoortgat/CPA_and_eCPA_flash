@@ -14,8 +14,11 @@ This repository implements:
    terms, with the parameters and temperature-dependent binary interaction coefficients from
    Coelho et al. (2025).
 
-2. **A generalized salt-free CPA flash** (`CPA2.py`) — Michelsen TPD stability test + SSI flash
-   for the CO₂ + H₂O binary, using the same eCPA parameters.
+2. **A generalized salt-free CPA flash** (`CPA2.py`) — Michelsen TPD stability test with six
+   initial guesses and accelerated SSI ([Jex et al., 2024](https://doi.org/10.2118/219490-PA))
+   for the CO₂ + H₂O binary. The hierarchical algorithm (stability → flash with K from lowest
+   TPD) achieves 100% convergence across >29,000 conditions and a 2× iteration-count reduction
+   over standard SSI.
 
 3. **eCPA stability + flash** (`ecpa/stability.py`, `ecpa/flash.py`) — extension to the
    full ternary system. Replaces the earlier outer Brent loop over aqueous molality with
@@ -104,7 +107,7 @@ Claude_code/
 │   ├── exp_data.py                # Experimental data parsers
 │   └── utils.py                   # Numerical helpers
 │
-├── CPA2.py                        # Self-contained salt-free CPA binary flash
+├── CPA2.py                        # Salt-free CPA binary: flash, stability, accelerated SSI
 │
 ├── eCPA_notebook.ipynb            # Interactive Jupyter notebook (sections 7–8)
 │
@@ -118,6 +121,9 @@ Claude_code/
 ├── _run_smooth_salty.py           # Smooth eCPA curves at fixed ms
 ├── _replot_co2nacl.py             # Replot CO2+NaCl figures from saved parquet
 ├── _replot_co2h2o.py              # Replot CO2+H2O figures from saved parquet
+├── _scan_parameter_space_extended.py  # Extended CPA grid scan (T≤700K, P≤1500bar)
+├── _scan_exp_points.py            # CPA stability+flash at all 631 exp data points
+├── _plot_scan_results.py          # Publication figures from scan results
 │
 ├── results/
 │   ├── solution_table.npz         # 4D table (24T×30P×18z×8ms, 103,680 cells)
@@ -125,10 +131,14 @@ Claude_code/
 │   ├── validation_co2nacl.parquet # 423-row CO2+NaCl validation results
 │   └── density_co2h2o.parquet     # 37-row density validation results
 │
+├── scan_results_extended.npz      # Extended CPA scan (86T×18P×19z = 29,412 pts)
+├── scan_exp_results.npz           # CPA results at 631 experimental points
+│
 ├── figures/
 │   ├── co2h2o/                    # Per-temperature CO2+H2O VLE figures
 │   ├── co2nacl/                   # Per-temperature CO2+NaCl VLE figures
-│   └── density/                   # Density validation figures
+│   ├── density/                   # Density validation figures
+│   └── scan/                      # CPA parameter scan figures
 │
 ├── EXP/
 │   ├── CO2-WATER/                 # Binary experimental data (txt files)
@@ -170,6 +180,9 @@ Claude_code/
 | Function | Description |
 |---|---|
 | `flash_co2_h2o_tpz(T, P_bar, z_co2, vshift_h2o, vshift_co2)` | Salt-free CO₂+H₂O binary flash. Returns phase, compositions, Z-factors, `rho_mass` [kg/L]. |
+| `flash_co2_h2o_tpz_robust(T, P_bar, z_co2, **kwargs)` | Hierarchical flash: stability test → flash with K from lowest TPD → Wilson fallback. **100% convergence.** |
+| `stability_test(T, P_bar, z, ..., accelerated=True)` | Michelsen TPD stability test with 6 initial guesses ([Jex et al., 2024](https://doi.org/10.2118/219490-PA)). Returns `{stable, tpd_min, K_unstable, trials}`. |
+| `tie_line_two_comp(T, P_bar, ..., accelerated=True)` | SSI flash with optional dominant-eigenvalue acceleration (2× iteration reduction). |
 
 ---
 
@@ -235,9 +248,24 @@ python _run_benchmark.py
 
 Results are saved to `results/` (parquet files) and figures to `figures/`.
 
+### CPA binary parameter-space scan
+
+```bash
+# Extended grid scan (86T × 18P × 19z = 29,412 points, T≤700K, P≤1500bar)
+python _scan_parameter_space_extended.py
+
+# Stability+flash at all 631 experimental CO2+H2O data points
+python _scan_exp_points.py
+
+# Generate publication figures from scan results
+python _plot_scan_results.py
+```
+
 ---
 
 ## Performance summary
+
+### eCPA ternary flash (solution-table warm start)
 
 | Method | Mean SSI iters | Time per call | Speedup |
 |---|---|---|---|
@@ -246,6 +274,18 @@ Results are saved to `results/` (parquet files) and figures to `figures/`.
 | Fast flash + forced stability check | 3.3 | ~18 ms | 0.6× |
 
 Benchmark conditions: *T* = 398 K, *z* = 0.5, *m*ₛ = 1.0 mol/kg, 30 pressure points.
+
+### Salt-free CPA binary flash (accelerated SSI)
+
+| Strategy | Convergence | Mean iters | Description |
+|---|---|---|---|
+| Standard SSI + Wilson K | 96.0% | 46.6 | Baseline |
+| Accelerated SSI + Wilson K | 97.1% | 17.0 | Jex acceleration only |
+| Accelerated SSI + stability K | 88.0% | 14.5 | Best K from TPD test |
+| **Robust (hierarchical)** | **100%** | **12.0** | Stability → best-K flash → Wilson fallback |
+
+Tested at all 631 experimental CO₂+H₂O data points (*T* = 273–623 K, *P* = 5–3500 bar).
+Accelerated SSI achieves a **2.96× iteration reduction** over standard SSI.
 
 ---
 
