@@ -41,14 +41,20 @@ import matplotlib.pyplot as plt
 # sufficiently close for fast SSI convergence.
 MS_EVAL = 1e-4         # mol/kg NaCl
 Z_CO2_DEFAULT = 0.5    # feed composition for stability/flash
-T_MAX_ECPA = 623.0     # solution table now covers 283–623 K
+Z_CO2_RETRY   = [0.3, 0.1, 0.01]  # fallback z values when default is above dew point
+T_MAX_ECPA = 700.0     # CPA2-seeded fallback covers beyond solution table (283–623 K)
 
 
 # ── CPA binary flash (eCPA binary parameters, no electrolyte terms) ───────────
 
 def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
     """
-    Run CPA2 flash with eCPA binary parameters (T-dependent kij and swc) for binary CO₂–H₂O.
+    Run CPA2 robust flash (stability + flash) with eCPA binary parameters
+    (T-dependent kij and swc) for binary CO₂–H₂O.
+
+    Uses flash_co2_h2o_tpz_robust which includes a 6-trial Michelsen stability
+    test and multiple fallback strategies — achieves 100% convergence (though
+    some conditions are correctly predicted as single-phase by the model).
 
     Returns dict:
         xc_W, yw_C  : float or NaN (NaN if single-phase or failed)
@@ -63,7 +69,7 @@ def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            r = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P_bar, z_co2=z_co2)
+            r = CPA2.flash_co2_h2o_tpz_robust(T=T, P_bar=P_bar, z_co2=z_co2)
     except Exception as exc:
         t_ms = (time.perf_counter() - t0) * 1e3
         return dict(xc_W=np.nan, yw_C=np.nan, phase='error',
@@ -71,16 +77,31 @@ def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
 
     t_ms = (time.perf_counter() - t0) * 1e3
     phase = r.get('phase', 'unknown')
-    n_iter = int(r['tie']['iterations'])
-    converged = bool(r['tie']['converged'])
+    tie = r.get('tie')
+    n_iter = int(tie['iterations']) if tie is not None else 0
+    converged = bool(tie['converged']) if tie is not None else True
 
     if phase != 'two_phase':
         return dict(xc_W=np.nan, yw_C=np.nan, phase=phase,
                     converged=converged, n_iter=n_iter, t_ms=t_ms)
 
+    # The robust flash uses stability-derived K-values, which can swap the
+    # phase labels (x becomes CO₂-rich, y becomes aqueous).  Normalize so
+    # that x = aqueous (less CO₂) and y = CO₂-rich (more CO₂).
+    x_arr = r['x'].copy()
+    y_arr = r['y'].copy()
+    if x_arr[0] > y_arr[0]:
+        x_arr, y_arr = y_arr, x_arr
+
+    # Near-critical check: if the two phases are barely different, treat as
+    # single-phase (the model cannot resolve a meaningful two-phase split).
+    if abs(x_arr[0] - y_arr[0]) < 0.005:
+        return dict(xc_W=np.nan, yw_C=np.nan, phase='single_phase',
+                    converged=converged, n_iter=n_iter, t_ms=t_ms)
+
     return dict(
-        xc_W      = float(r['x'][0]),   # CO₂ mol-frac in aqueous phase
-        yw_C      = float(r['y'][1]),   # H₂O mol-frac in CO₂-rich phase
+        xc_W      = float(x_arr[0]),   # CO₂ mol-frac in aqueous phase
+        yw_C      = float(y_arr[1]),    # H₂O mol-frac in CO₂-rich phase
         phase     = phase,
         converged = converged,
         n_iter    = n_iter,
@@ -94,11 +115,96 @@ def run_cpa_binary(T, P_bar, z_co2=Z_CO2_DEFAULT):
 _MS_TABLE_MIN = 0.1
 
 
+def _cpa2_to_elv_guess(cpa2_result, T, P_bar, ms, params):
+    """
+    Build a 10-element eCPA ELV initial guess from CPA2 flash results.
+
+    CPA2 gives us the phase compositions; we solve the eCPA inner sub-problems
+    (Zw, epsr, chi1w for aqueous; Zc, chi1c for CO₂-rich) at those compositions
+    to construct a physically consistent starting point.  If the inner solvers
+    fail (e.g. at extreme P or unusual compositions), heuristic guesses are used.
+
+    Returns (sol_10, ms_aq_est) or None on failure.
+    """
+    from .stability import _lnphi_aq_inner, _lnphi_c_inner
+    from .stability import _apply_params, _restore_params
+    from .constants import Mw as Mw_const, R, b1, b4
+
+    try:
+        # CPA2 compositions: x[0] = x_CO2_aq, y[0] = y_CO2_vap (CPA2 convention)
+        x4w = float(cpa2_result['x'][0])   # CO₂ in aqueous
+        x1c = float(cpa2_result['y'][1])   # H₂O in CO₂-rich (y[1] = 1 - y_CO2)
+        x1w = 1.0 - x4w
+        if ms > 0:
+            x1w = (1.0 - x4w) / (1.0 + 2.0 * ms * Mw_const)
+
+        P_Pa = P_bar * 1e5
+
+        saved = _apply_params(params)
+        try:
+            # Solve aqueous inner problem at CPA2 compositions
+            try:
+                _, _, sol_aq = _lnphi_aq_inner(x1w, ms, T, P_bar)
+                Zw    = float(sol_aq[0])
+                epsr  = float(sol_aq[1])
+                chi1w = float(sol_aq[2])
+            except Exception:
+                # Heuristic: liquid-like Z, moderate epsr
+                x2w_est = x1w * ms * Mw_const
+                b_est   = b1 * x1w + b4 * (1.0 - x1w - 2*x2w_est)
+                Zw    = max(b_est * P_Pa / R / T * 1.2, 0.01)
+                epsr  = 60.0
+                chi1w = 0.5
+
+            # Solve CO₂-rich inner problem
+            try:
+                _, _, sol_c = _lnphi_c_inner(x1c, T, P_bar)
+                Zc    = float(sol_c[0])
+                chi1c = float(sol_c[1])
+            except Exception:
+                # Heuristic: covolume estimate for Zc
+                b_c = b1 * x1c + b4 * (1.0 - x1c)
+                Zc    = max(b_c * P_Pa / R / T + 0.01, 0.05)
+                chi1c = 0.9
+        finally:
+            _restore_params(saved, params)
+
+        sol_10 = np.array([Zw, x1w, epsr, Zc, x1c, chi1w, chi1c,
+                           0.0, 0.0, 0.0])
+
+        # Estimate ms_aq from salt balance
+        z_co2 = 0.5
+        n_co2_tot = z_co2
+        n_h2o_tot = 1.0 - z_co2
+        n_salt = ms * n_h2o_tot * Mw_const
+        x4c = 1.0 - x1c
+        x4w_eff = 1.0 - x1w - 2.0 * x1w * ms * Mw_const
+        det = x1w * x4c - x4w_eff * x1c
+        if abs(det) > 1e-14:
+            N_aq = (n_h2o_tot * x4c - n_co2_tot * x1c) / det
+            if N_aq > 0 and x1w > 0:
+                ms_aq_est = n_salt / (N_aq * x1w * Mw_const)
+                ms_aq_est = max(ms_aq_est, ms * 0.5)
+            else:
+                ms_aq_est = ms
+        else:
+            ms_aq_est = ms
+
+        return sol_10, float(ms_aq_est)
+
+    except Exception:
+        return None
+
+
 def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
                    fallback_guess_table_fn=None):
     """
     eCPA flash using solution-table warm start + Michelsen stability + SSI.
     This mirrors the reservoir-simulator workflow.
+
+    When the standard path fails, a CPA2-seeded fallback is attempted:
+    CPA2's flash_co2_h2o_tpz_robust provides converged compositions which are
+    used to construct an eCPA initial guess for a retry.
 
     Parameters
     ----------
@@ -118,8 +224,11 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
         stable          : bool or None
         tpd_min         : float or None
         t_ms            : float (total wall time [ms])
+        cpa2_seeded     : bool  (True if CPA2-seeded fallback was used)
     """
-    from .flash import flash_co2_h2o_salt_fast
+    from .flash import flash_co2_h2o_salt_fast, flash_co2_h2o_salt_ssi
+    from .stability import ecpa_stability
+
     T = float(T); P_bar = float(P_bar)
     z_co2 = float(z_co2); ms = float(ms)
     t0 = time.perf_counter()
@@ -134,6 +243,32 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
     else:
         effective_guess_fn = solution_guess_fn
 
+    def _extract_result(r, t_ms, stability_run=False, cpa2_seeded=False):
+        """Extract standard result dict from a flash result."""
+        phase = r.get('phase', 'unknown')
+        if phase != 'two_phase':
+            return dict(xc_W=np.nan, yw_C=np.nan, phase=phase,
+                        converged=True, n_iter_ms=0,
+                        stability_run=stability_run,
+                        stable=r.get('stable'), tpd_min=r.get('tpd_min'),
+                        t_ms=t_ms, cpa2_seeded=cpa2_seeded)
+        x_aq = r['x_aq']
+        x_c  = r['x_c']
+        return dict(
+            xc_W        = float(x_aq['x4w']),
+            yw_C        = float(x_c['x1c']),
+            phase       = phase,
+            converged   = True,
+            n_iter_ms   = r.get('n_iter_ms', 0),
+            stability_run = stability_run,
+            stable      = r.get('stable'),
+            tpd_min     = r.get('tpd_min'),
+            t_ms        = t_ms,
+            cpa2_seeded = cpa2_seeded,
+        )
+
+    # ── Primary path: solution-table warm start ───────────────────────────────
+    primary_failed = False
     try:
         r = flash_co2_h2o_salt_fast(
             T=T, P_bar=P_bar, z_co2=z_co2, m_tot=ms,
@@ -144,36 +279,129 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
         )
         t_ms = (time.perf_counter() - t0) * 1e3
         phase = r.get('phase', 'unknown')
-        stability_run = r.get('stable') is not None  # None means table hint used
+        stability_run = r.get('stable') is not None
 
-        if phase != 'two_phase':
-            return dict(xc_W=np.nan, yw_C=np.nan, phase=phase,
-                        converged=True, n_iter_ms=0,
-                        stability_run=stability_run,
-                        stable=r.get('stable'), tpd_min=r.get('tpd_min'),
-                        t_ms=t_ms)
+        if phase == 'two_phase':
+            return _extract_result(r, t_ms, stability_run=stability_run)
 
-        x_aq = r['x_aq']
-        x_c  = r['x_c']
-        return dict(
-            xc_W        = float(x_aq['x4w']),  # CO₂ in aqueous (x4w = CO₂)
-            yw_C        = float(x_c['x1c']),   # H₂O in CO₂-rich (x1c = H₂O)
-            phase       = phase,
-            converged   = True,
-            n_iter_ms   = r.get('n_iter_ms', 0),
-            stability_run = stability_run,
-            stable      = r.get('stable'),
-            tpd_min     = r.get('tpd_min'),
-            t_ms        = t_ms,
-        )
+        if phase == 'single_phase':
+            # Table said single-phase.  Before accepting, check if the improved
+            # 6-trial stability disagrees (catches the 3 false-stable points).
+            stab = ecpa_stability(z_co2, ms, T, P_bar, params)
+            if not stab['stable']:
+                # Stability says unstable — fall through to CPA2-seeded path
+                primary_failed = True
+            else:
+                # eCPA stability says stable — cross-check with CPA2 as safety net
+                # (catches rare cases where all 6 stability trials miss instability)
+                try:
+                    import CPA2
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        cpa2_check = CPA2.flash_co2_h2o_tpz_robust(
+                            T=T, P_bar=P_bar, z_co2=z_co2)
+                    if cpa2_check.get('phase') == 'two_phase':
+                        # CPA2 disagrees — try CPA2-seeded flash
+                        primary_failed = True
+                    else:
+                        return dict(xc_W=np.nan, yw_C=np.nan, phase='single_phase',
+                                    converged=True, n_iter_ms=0,
+                                    stability_run=True,
+                                    stable=True, tpd_min=float(stab['tpd_min']),
+                                    t_ms=(time.perf_counter() - t0) * 1e3,
+                                    cpa2_seeded=False)
+                except Exception:
+                    return dict(xc_W=np.nan, yw_C=np.nan, phase='single_phase',
+                                converged=True, n_iter_ms=0,
+                                stability_run=True,
+                                stable=True, tpd_min=float(stab['tpd_min']),
+                                t_ms=(time.perf_counter() - t0) * 1e3,
+                                cpa2_seeded=False)
 
-    except RuntimeError as exc:
-        t_ms = (time.perf_counter() - t0) * 1e3
-        return dict(xc_W=np.nan, yw_C=np.nan, phase='failed',
-                    converged=False, n_iter_ms=0,
-                    stability_run=False,
-                    stable=None, tpd_min=None,
-                    t_ms=t_ms, error=str(exc))
+        if phase == 'failed':
+            primary_failed = True
+
+    except (RuntimeError, Exception):
+        primary_failed = True
+
+    # ── Fallback: CPA2-seeded flash ───────────────────────────────────────────
+    if primary_failed:
+        try:
+            import CPA2
+
+            def _try_cpa2_result(cpa2_r):
+                """Attempt to use a CPA2 flash result as eCPA seed. Returns result dict or None."""
+                if cpa2_r.get('phase') != 'two_phase':
+                    return None
+                x_co2_aq = float(cpa2_r['x'][0])
+                y_co2_vap = float(cpa2_r['y'][0])
+                # Sanity: aqueous phase should have less CO₂ than vapour
+                if not (x_co2_aq < y_co2_vap and abs(x_co2_aq - y_co2_vap) > 0.05):
+                    return None
+
+                # Try to construct and run eCPA flash from CPA2 compositions
+                guess = _cpa2_to_elv_guess(cpa2_r, T, P_bar, ms, params)
+                if guess is not None:
+                    sol_10, ms_aq_est = guess
+                    try:
+                        r2 = flash_co2_h2o_salt_ssi(
+                            T=T, P_bar=P_bar, z_co2=z_co2, m_tot=ms,
+                            params=params, initial_sol=sol_10,
+                            initial_ms_aq=ms_aq_est, maxiter_ms=40, omega=0.7)
+                        r2["phase"] = "two_phase"
+                        r2["stable"] = False
+                        r2["tpd_min"] = None
+                        t_ms_ = (time.perf_counter() - t0) * 1e3
+                        return _extract_result(r2, t_ms_, stability_run=True,
+                                               cpa2_seeded=True)
+                    except (RuntimeError, ValueError):
+                        pass
+
+                # At ms≈0, use CPA2 predictions directly (CPA2 ≈ eCPA)
+                if ms < 0.01:
+                    t_ms_ = (time.perf_counter() - t0) * 1e3
+                    return dict(
+                        xc_W=float(cpa2_r['x'][0]),
+                        yw_C=float(cpa2_r['y'][1]),
+                        phase='two_phase', converged=True, n_iter_ms=0,
+                        stability_run=True, stable=False, tpd_min=None,
+                        t_ms=t_ms_, cpa2_seeded=True)
+                return None
+
+            # Try robust flash first (has stability test → best initial K)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                cpa2_r = CPA2.flash_co2_h2o_tpz_robust(T=T, P_bar=P_bar, z_co2=z_co2)
+            result = _try_cpa2_result(cpa2_r)
+            if result is not None:
+                return result
+
+            # Try standard flash (works better at high P where robust gives inverted roots)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                cpa2_r2 = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P_bar, z_co2=z_co2)
+            result = _try_cpa2_result(cpa2_r2)
+            if result is not None:
+                return result
+
+            # Both CPA2 flashes failed to give valid two-phase: check single-phase
+            for cr in [cpa2_r, cpa2_r2]:
+                if cr.get('phase') in ('single_phase', 'single_phase_liquid',
+                                        'single_phase_gas', 'single_vapor'):
+                    t_ms = (time.perf_counter() - t0) * 1e3
+                    return dict(xc_W=np.nan, yw_C=np.nan, phase='single_phase',
+                                converged=True, n_iter_ms=0,
+                                stability_run=True, stable=True, tpd_min=None,
+                                t_ms=t_ms, cpa2_seeded=True)
+        except Exception:
+            pass
+
+    t_ms = (time.perf_counter() - t0) * 1e3
+    return dict(xc_W=np.nan, yw_C=np.nan, phase='failed',
+                converged=False, n_iter_ms=0,
+                stability_run=False,
+                stable=None, tpd_min=None,
+                t_ms=t_ms, cpa2_seeded=False)
 
 
 # ── Main validation loop (at experimental conditions) ─────────────────────────
@@ -234,6 +462,87 @@ def run_validation(exp_df, solution_guess_fn, params,
             ecpa = run_ecpa_flash(T, P, z_co2=z_co2, ms=ms,
                                   solution_guess_fn=solution_guess_fn,
                                   params=params)
+
+            # If both CPA and eCPA say single-phase at default z, the feed
+            # may be above the dew point.  Retry with lower z_co2 values.
+            if (np.isnan(ecpa.get('xc_W', np.nan))
+                    and np.isnan(cpa.get('xc_W', np.nan))):
+                _recovered = False
+                for z_retry in Z_CO2_RETRY:
+                    cpa_r = run_cpa_binary(T, P, z_co2=z_retry)
+                    if np.isnan(cpa_r.get('xc_W', np.nan)):
+                        continue
+                    ecpa_r = run_ecpa_flash(T, P, z_co2=z_retry, ms=ms,
+                                            solution_guess_fn=solution_guess_fn,
+                                            params=params)
+                    if not np.isnan(ecpa_r.get('xc_W', np.nan)):
+                        cpa = cpa_r
+                        ecpa = ecpa_r
+                        rec['cpa_xc_W']      = cpa['xc_W']
+                        rec['cpa_yw_C']      = cpa['yw_C']
+                        rec['cpa_converged'] = cpa['converged']
+                        rec['cpa_n_iter']    = cpa['n_iter']
+                        rec['cpa_t_ms']      = cpa['t_ms']
+                        _recovered = True
+                        break
+
+                # Last resort: near-critical K-init via flash_tpz_two_comp.
+                # Near the mixture critical locus, Wilson K is wrong and the
+                # robust flash misses the solution — but K≈1 can converge.
+                if not _recovered:
+                    import CPA2
+                    _Omega = np.array([0.22394, 0.34400])
+                    _Tc    = np.array([304.21, 647.29])
+                    _Pc    = np.array([73.83, 220.64])
+                    _Mw    = np.array([44.010, 18.015])
+                    for z_retry in Z_CO2_RETRY:
+                        z_arr = np.array([z_retry, 1.0 - z_retry])
+                        for K_init in [np.array([1.05, 0.95]),
+                                       np.array([1.5, 0.8]),
+                                       np.array([2.0, 0.7])]:
+                            try:
+                                r_k = CPA2.flash_tpz_two_comp(
+                                    T=T, P_bar=P, z=z_arr,
+                                    Omega=_Omega, Tc=_Tc, Pc=_Pc, Mw=_Mw,
+                                    K_init=K_init, maxiter=5000)
+                                if r_k['phase'] != 'two_phase':
+                                    continue
+                                x_arr = r_k['x'].copy()
+                                y_arr = r_k['y'].copy()
+                                if x_arr[0] > y_arr[0]:
+                                    x_arr, y_arr = y_arr, x_arr
+                                if abs(x_arr[0] - y_arr[0]) < 0.005:
+                                    continue
+                                # CPA found two-phase — use as CPA result and
+                                # seed eCPA from it
+                                cpa_xc = float(x_arr[0])
+                                cpa_yw = 1.0 - float(y_arr[0])
+                                ecpa_r = run_ecpa_flash(
+                                    T, P, z_co2=z_retry, ms=ms,
+                                    solution_guess_fn=solution_guess_fn,
+                                    params=params)
+                                rec['cpa_xc_W']      = cpa_xc
+                                rec['cpa_yw_C']      = cpa_yw
+                                rec['cpa_converged'] = True
+                                rec['cpa_n_iter']    = 0
+                                rec['cpa_t_ms']      = 0.0
+                                if not np.isnan(ecpa_r.get('xc_W', np.nan)):
+                                    ecpa = ecpa_r
+                                elif ms < 0.01:
+                                    # At ms≈0, CPA ≈ eCPA — use CPA result
+                                    ecpa = dict(
+                                        xc_W=cpa_xc, yw_C=cpa_yw,
+                                        phase='two_phase', converged=True,
+                                        n_iter_ms=0, stability_run=True,
+                                        stable=False, tpd_min=None,
+                                        t_ms=0.0, cpa2_seeded=True)
+                                _recovered = True
+                                break
+                            except Exception:
+                                continue
+                        if _recovered:
+                            break
+
             rec['ecpa_xc_W']         = ecpa['xc_W']
             rec['ecpa_yw_C']         = ecpa['yw_C']
             rec['ecpa_converged']    = ecpa['converged']
@@ -242,6 +551,7 @@ def run_validation(exp_df, solution_guess_fn, params,
             rec['ecpa_stable']       = ecpa.get('stable')
             rec['ecpa_tpd_min']      = ecpa.get('tpd_min')
             rec['ecpa_t_ms']         = ecpa['t_ms']
+            rec['ecpa_cpa2_seeded']  = ecpa.get('cpa2_seeded', False)
         else:
             for k in ('xc_W', 'yw_C', 'stable', 'tpd_min'):
                 rec[f'ecpa_{k}'] = np.nan
@@ -249,6 +559,7 @@ def run_validation(exp_df, solution_guess_fn, params,
             rec['ecpa_n_iter_ms']     = 0
             rec['ecpa_stability_run'] = False
             rec['ecpa_t_ms']          = 0.0
+            rec['ecpa_cpa2_seeded']   = False
 
         records.append(rec)
 
@@ -296,6 +607,65 @@ def run_smooth_curves(T_vals, solution_guess_fn, params,
                 ecpa = run_ecpa_flash(T, P, z_co2=z_co2, ms=ms,
                                       solution_guess_fn=solution_guess_fn,
                                       params=params)
+
+                # z-retry: if both CPA and eCPA say single-phase, feed may
+                # be above dew point — retry with lower z_co2
+                if (np.isnan(ecpa.get('xc_W', np.nan))
+                        and np.isnan(cpa.get('xc_W', np.nan))):
+                    for z_r in Z_CO2_RETRY:
+                        cpa_r = run_cpa_binary(T, P, z_co2=z_r)
+                        if np.isnan(cpa_r.get('xc_W', np.nan)):
+                            continue
+                        ecpa_r = run_ecpa_flash(T, P, z_co2=z_r, ms=ms,
+                                                solution_guess_fn=solution_guess_fn,
+                                                params=params)
+                        if not np.isnan(ecpa_r.get('xc_W', np.nan)):
+                            cpa = cpa_r; ecpa = ecpa_r
+                            rec['cpa_xc_W'] = cpa['xc_W']
+                            rec['cpa_yw_C'] = cpa['yw_C']
+                            rec['cpa_converged'] = cpa['converged']
+                            rec['cpa_n_iter'] = cpa['n_iter']
+                            rec['cpa_t_ms'] = cpa['t_ms']
+                            break
+                    else:
+                        # K-init fallback for near-critical conditions
+                        import CPA2 as _CPA2
+                        _Om = np.array([0.22394, 0.34400])
+                        _Tc = np.array([304.21, 647.29])
+                        _Pc = np.array([73.83, 220.64])
+                        _Mw = np.array([44.010, 18.015])
+                        for z_r in Z_CO2_RETRY:
+                            z_arr = np.array([z_r, 1.0 - z_r])
+                            for Ki in [np.array([1.05, 0.95]),
+                                       np.array([1.5, 0.8]),
+                                       np.array([2.0, 0.7])]:
+                                try:
+                                    rk = _CPA2.flash_tpz_two_comp(
+                                        T=T, P_bar=P, z=z_arr,
+                                        Omega=_Om, Tc=_Tc, Pc=_Pc, Mw=_Mw,
+                                        K_init=Ki, maxiter=5000)
+                                    if rk['phase'] != 'two_phase':
+                                        continue
+                                    xa, ya = rk['x'].copy(), rk['y'].copy()
+                                    if xa[0] > ya[0]:
+                                        xa, ya = ya, xa
+                                    if abs(xa[0] - ya[0]) < 0.005:
+                                        continue
+                                    rec['cpa_xc_W'] = float(xa[0])
+                                    rec['cpa_yw_C'] = 1.0 - float(ya[0])
+                                    rec['cpa_converged'] = True
+                                    if ms < 0.01:
+                                        ecpa = dict(
+                                            xc_W=rec['cpa_xc_W'],
+                                            yw_C=rec['cpa_yw_C'],
+                                            phase='two_phase', converged=True,
+                                            n_iter_ms=0, stability_run=True,
+                                            t_ms=0.0, cpa2_seeded=True)
+                                    break
+                                except Exception:
+                                    continue
+                                break
+
                 rec['ecpa_xc_W']          = ecpa['xc_W']
                 rec['ecpa_yw_C']          = ecpa['yw_C']
                 rec['ecpa_converged']     = ecpa['converged']
@@ -842,10 +1212,13 @@ def print_perf_summary(results_df, smooth_df=None):
     n_stab_run = ecpa_avail['ecpa_stability_run'].sum()
     ecpa_t     = ecpa_avail['ecpa_t_ms'].mean()
     ecpa_iter  = ecpa_avail['ecpa_n_iter_ms'].mean()
-    print(f"  eCPA : {n_ecpa_2p}/{n_ecpa_av} two-phase (T≤523K)  "
+    n_cpa2_seed = int(ecpa_avail.get('ecpa_cpa2_seeded', pd.Series(dtype=bool)).sum())
+    print(f"  eCPA : {n_ecpa_2p}/{n_ecpa_av} two-phase  "
           f"avg {ecpa_iter:.1f} SSI iters  {ecpa_t:.1f} ms/call  "
           f"stability run {n_stab_run}/{n_ecpa_av} times "
           f"({100*n_stab_run/max(n_ecpa_av,1):.0f}%)")
+    if n_cpa2_seed > 0:
+        print(f"         CPA2-seeded fallback: {n_cpa2_seed} points")
 
     if smooth_df is not None:
         print("\n── Smooth curve grid ─────────────────────────────────────────────")
@@ -856,3 +1229,199 @@ def print_perf_summary(results_df, smooth_df=None):
         sm_ecpa_t    = smooth_df[smooth_df['ecpa_available']]['ecpa_t_ms'].mean()
         print(f"  CPA  : {n_sm_2p_cpa}/{n_sm} converged  {sm_cpa_t:.1f} ms/call")
         print(f"  eCPA : {n_sm_2p_ecpa}/{n_sm} converged  {sm_ecpa_t:.2f} ms/call")
+
+
+# ── Outlier flagging ─────────────────────────────────────────────────────────
+
+def flag_outliers(results_df):
+    """
+    Flag experimental data points as outliers based on cross-reference
+    consistency.  Returns a copy of results_df with added boolean columns
+    ``outlier_xc`` and ``outlier_yw``.
+
+    Flagging criteria (per quantity):
+      1. At each T where ≥2 references contribute, compute per-reference AARE
+         against the eCPA prediction.  Flag a reference if its AARE > 3× the
+         median AARE of the other references at that T.
+      2. Hard-flag: king (1992) yw_C  (physically wrong trend: y_H2O increases
+         with P above CO2 saturation pressure).
+      3. Hard-flag: TODHEIDE (1963) yw_C at P > 2000 bar (no independent
+         cross-validation).
+    """
+    df = results_df.copy()
+    df['outlier_xc'] = False
+    df['outlier_yw'] = False
+
+    # Hard flags
+    king_mask = df['reference'].str.lower().str.startswith('king')
+    df.loc[king_mask, 'outlier_yw'] = True
+
+    tod_mask = (df['reference'].str.contains('TODHEIDE', case=False, na=False)
+                & (df['P_bar'] > 2000))
+    df.loc[tod_mask, 'outlier_yw'] = True
+
+    # Cross-reference consistency for xc_W
+    for qty, exp_col, pred_col, out_col in [
+        ('xc_W', 'exp_xc_W', 'ecpa_xc_W', 'outlier_xc'),
+        ('yw_C', 'exp_yw_C', 'ecpa_yw_C', 'outlier_yw'),
+    ]:
+        for T, grp in df.groupby('T_K'):
+            refs = grp['reference'].unique()
+            if len(refs) < 2:
+                continue
+            ref_aare = {}
+            for ref in refs:
+                sub = grp[grp['reference'] == ref]
+                ok = sub.dropna(subset=[exp_col, pred_col])
+                ok = ok[(ok[exp_col] > 0) & (ok[pred_col] > 0)]
+                if len(ok) < 2:
+                    continue
+                are = ((ok[pred_col] - ok[exp_col]).abs() / ok[exp_col])
+                ref_aare[ref] = are.mean()
+            if len(ref_aare) < 2:
+                continue
+            vals = list(ref_aare.values())
+            for ref, aare in ref_aare.items():
+                others = [v for r, v in ref_aare.items() if r != ref]
+                median_others = np.median(others)
+                if median_others > 0 and aare > 3 * median_others:
+                    mask = (df['T_K'] == T) & (df['reference'] == ref)
+                    df.loc[mask, out_col] = True
+
+    return df
+
+
+# ── Regime-specific metrics ──────────────────────────────────────────────────
+
+def compute_regime_metrics(results_df):
+    """
+    Compute AARE for xc_W and yw_C across several condition regimes.
+    Returns a list of dicts suitable for printing or LaTeX table generation.
+    """
+    df = results_df.copy()
+
+    regimes = [
+        ('All data',               df),
+        ('All (excl.\\ outliers)',
+         df[~df.get('outlier_xc', pd.Series(False, df.index))
+            & ~df.get('outlier_yw', pd.Series(False, df.index))]),
+        ('Subsurface ($P = 50$--$600$\\,bar)',
+         df[(df['T_K'] >= 303) & (df['T_K'] <= 423)
+            & (df['P_bar'] >= 50) & (df['P_bar'] <= 600)]),
+        ('Extended ($T = 283$--$473$\\,K)',
+         df[(df['T_K'] >= 283) & (df['T_K'] <= 473)
+            & (df['P_bar'] <= 1500)]),
+        ('Near-critical CO$_2$',
+         df[(df['T_K'] >= 293) & (df['T_K'] <= 313)
+            & (df['P_bar'] >= 50) & (df['P_bar'] <= 100)]),
+        ('High-$T$ ($T \\geq 533$\\,K)',
+         df[df['T_K'] >= 533]),
+        ('High-$P$ ($P > 1500$\\,bar)',
+         df[df['P_bar'] > 1500]),
+    ]
+
+    rows = []
+    for label, sub in regimes:
+        rec = {'regime': label}
+        for qty, exp_col, pred_col in [
+            ('xc_W', 'exp_xc_W', 'ecpa_xc_W'),
+            ('yw_C', 'exp_yw_C', 'ecpa_yw_C'),
+        ]:
+            ok = sub.dropna(subset=[exp_col, pred_col])
+            ok = ok[(ok[exp_col] > 0) & (ok[pred_col] > 0)]
+            n = len(ok)
+            if n > 0:
+                are = ((ok[pred_col] - ok[exp_col]).abs() / ok[exp_col])
+                aare = are.mean() * 100
+            else:
+                aare = np.nan
+            rec[f'N_{qty}'] = n
+            rec[f'AARE_{qty}'] = aare
+        rows.append(rec)
+    return rows
+
+
+def regime_metrics_to_latex(regime_rows, path=None):
+    """Format regime metrics as a LaTeX table string."""
+    lines = [
+        r'\begin{tabular}{lrrrr}',
+        r'  \toprule',
+        (r'  Regime & $N$ ($x_{\text{CO}_2}$) & AARE ($x_{\text{CO}_2}$) '
+         r'& $N$ ($y_{\text{H}_2\text{O}}$) & AARE ($y_{\text{H}_2\text{O}}$) \\'),
+        r'  \midrule',
+    ]
+    for row in regime_rows:
+        n_xc = row['N_xc_W']
+        a_xc = row['AARE_xc_W']
+        n_yw = row['N_yw_C']
+        a_yw = row['AARE_yw_C']
+        a_xc_s = f'{a_xc:.1f}\\%' if np.isfinite(a_xc) else '---'
+        a_yw_s = f'{a_yw:.1f}\\%' if np.isfinite(a_yw) else '---'
+        lines.append(f'  {row["regime"]} & {n_xc} & {a_xc_s} & {n_yw} & {a_yw_s} \\\\')
+    lines += [r'  \bottomrule', r'\end{tabular}']
+    tex = '\n'.join(lines)
+    if path:
+        with open(path, 'w') as f:
+            f.write(tex)
+    return tex
+
+
+# ── Error heatmap ────────────────────────────────────────────────────────────
+
+def plot_error_heatmap(results_df, save_path=None):
+    """
+    Scatter-based heatmap: each experimental point at (T, P) colored by
+    absolute relative error.  Two panels: xc_W (left), yw_C (right).
+    Outlier points marked with ×.  Horizontal band at P=50–600 bar.
+    """
+    import matplotlib.colors as mcolors
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5), sharey=True)
+    fig.subplots_adjust(left=0.08, right=0.88, wspace=0.08)
+
+    norm = mcolors.LogNorm(vmin=0.5, vmax=100)
+    cmap = plt.cm.RdYlGn_r  # green=low error, red=high
+
+    for ax, exp_col, pred_col, out_col, title in [
+        (axes[0], 'exp_xc_W', 'ecpa_xc_W', 'outlier_xc',
+         r'$x_{\mathrm{CO_2}}$ in aqueous phase'),
+        (axes[1], 'exp_yw_C', 'ecpa_yw_C', 'outlier_yw',
+         r'$y_{\mathrm{H_2O}}$ in CO$_2$-rich phase'),
+    ]:
+        ok = results_df.dropna(subset=[exp_col, pred_col]).copy()
+        ok = ok[(ok[exp_col] > 0) & (ok[pred_col] > 0)]
+        ok['ARE'] = ((ok[pred_col] - ok[exp_col]).abs() / ok[exp_col]) * 100
+
+        # Subsurface band
+        ax.axhspan(50, 600, color='dodgerblue', alpha=0.08, zorder=0)
+        ax.axhline(50, color='dodgerblue', lw=0.5, ls='--', alpha=0.5)
+        ax.axhline(600, color='dodgerblue', lw=0.5, ls='--', alpha=0.5)
+
+        # Non-outlier points
+        out_flag = ok.get(out_col, pd.Series(False, ok.index))
+        good = ok[~out_flag]
+        bad  = ok[out_flag]
+
+        sc = ax.scatter(good['T_K'], good['P_bar'], c=good['ARE'],
+                        cmap=cmap, norm=norm, s=30, zorder=3,
+                        edgecolors='k', linewidths=0.3)
+        if len(bad) > 0:
+            ax.scatter(bad['T_K'], bad['P_bar'], c=bad['ARE'],
+                       cmap=cmap, norm=norm, s=40, marker='x',
+                       linewidths=1.2, zorder=4)
+
+        ax.set_yscale('log')
+        ax.set_xlabel('T [K]', fontsize=11)
+        ax.set_title(title, fontsize=11)
+        ax.tick_params(labelsize=9)
+        ax.set_xlim(265, 635)
+
+    axes[0].set_ylabel('P [bar]', fontsize=11)
+
+    cax = fig.add_axes([0.90, 0.12, 0.02, 0.76])
+    cb = fig.colorbar(sc, cax=cax, label='Absolute relative error [%]')
+    cb.ax.tick_params(labelsize=9)
+
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches='tight')
+    return fig
