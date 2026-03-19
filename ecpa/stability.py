@@ -382,6 +382,61 @@ def _eval_aq_all(Zw: float, epsr: float, chi1w: float,
     return Zw_new, T1, T2, chi1w_new, lnphi1w, lnphi4w
 
 
+def _newton_aq(v0, x1w, ms, T, P, tol=1e-10, maxiter=20):
+    """Newton iteration for the aqueous inner solve.
+
+    Solves F(Zw, epsr, chi1w) = 0 where
+        F = [Zw - Zw_new(Zw, epsr, chi1w),
+             T1(epsr)  - T2(Zw, chi1w),
+             chi1w     - chi1w_new(Zw, chi1w)].
+
+    Uses a forward finite-difference Jacobian (3 extra residual evaluations
+    per step) with variable-relative step sizes.
+    Returns np.array([Zw, epsr, chi1w]) on convergence, None otherwise.
+    """
+    v = np.array(v0, dtype=float)
+
+    def _res(v):
+        Zw, epsr, chi1w = v[0], v[1], v[2]
+        if Zw <= 0 or epsr <= 1 or chi1w <= 0 or chi1w >= 2.0:
+            return None
+        chi1w_eval = min(chi1w, 1.0 - 1e-12)
+        Zw_new, T1, T2, chi1w_new, _, _ = _eval_aq_all(
+            Zw, epsr, chi1w_eval, x1w, ms, T, P)
+        return np.array([Zw - Zw_new, T1 - T2, chi1w - chi1w_new])
+
+    for _iter in range(maxiter):
+        F = _res(v)
+        if F is None:
+            return None
+        if np.max(np.abs(F)) < tol:
+            return v
+        # Forward FD Jacobian (variable-relative step; 3 extra evaluations)
+        J = np.empty((3, 3))
+        for j in range(3):
+            hj = max(abs(v[j]) * 1e-6, 1e-8)
+            vp = v.copy(); vp[j] += hj
+            Fp = _res(vp)
+            if Fp is None:
+                return None
+            J[:, j] = (Fp - F) / hj
+        try:
+            dv = np.linalg.solve(J, -F)
+        except np.linalg.LinAlgError:
+            return None
+        # Backtracking line search to stay in physical domain
+        alpha = 1.0
+        for _ls in range(6):
+            vt = v + alpha * dv
+            if vt[0] > 0 and vt[1] > 1 and 0 < vt[2] < 2.0:
+                break
+            alpha *= 0.5
+        else:
+            return None
+        v = vt
+    return None  # maxiter reached without convergence
+
+
 def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
                     x0=None) -> tuple[float, float, np.ndarray]:
     """
@@ -407,6 +462,15 @@ def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
             [Zw0,       60.0, 0.99],  # near-unity chi1w (low-P limit)
         ]
     else:
+        # Warm start: try Newton first (fast when close to solution).
+        v_newton = _newton_aq(x0, x1w, ms, T, P)
+        if v_newton is not None:
+            Zw, epsr, chi1w = v_newton
+            chi1w_eval = min(chi1w, 1.0 - 1e-12)
+            _, _, _, _, lnphi1w, lnphi4w = _eval_aq_all(
+                Zw, epsr, chi1w_eval, x1w, ms, T, P)
+            return lnphi1w, lnphi4w, np.array([Zw, epsr, chi1w])
+        # Newton failed — fall back to fsolve warm-started at x0
         starts = [list(x0)]
 
     def residual(v):
