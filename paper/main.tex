@@ -62,8 +62,10 @@ to the full ternary system including NaCl; and (iii) a precomputed four-dimensio
 spanning $T = 283$--$728$\,K, $P = 1$--$1500$\,bar, CO$_2$ overall mole fraction $z = 0.05$--$0.90$,
 and NaCl molality $m_s = 0$--$6$\,mol\,kg$^{-1}$, enabling warm-started flash calculations that
 are 3.2$\times$ faster than cold-start SSI.
-The accelerated SSI reduces flash iterations by 46\% (mean 25.4 to 13.7) compared to standard SSI,
-and the six-guess stability test detects all two-phase conditions without false negatives.
+The accelerated SSI reduces flash iterations by 46\% (mean 25.4 to 13.7) compared to standard SSI;
+adding analytical Newton polish after a warm-started SSI phase further reduces the mean to 6.9
+iterations with $\sim$20\% wall-time savings.
+The six-guess stability test detects all two-phase conditions without false negatives.
 Validation against $>$~1100 experimental data points achieves 100\% flash convergence
 and shows average absolute relative errors (AARE)
 of 9.6\% for CO$_2$ solubility in water (6.5\% under subsurface storage conditions),
@@ -401,6 +403,30 @@ to prevent overshooting.
 
 Convergence is declared when $\|\mathbf{g}^{(k)}\| < \tau$ with tolerance $\tau = 10^{-10}$.
 
+\paragraph{Newton polish.}
+Once the SSI residual falls below a switchover threshold $\tau_\text{switch}$ (default $10^{-4}$),
+the solver switches to a Newton--Raphson step for quadratic convergence.
+At each Newton step, we solve the $2\times 2$ linear system
+\begin{equation}
+  \mathbf{J}^{(k)}\,\Delta\ln\mathbf{K}^{(k)} = -\mathbf{g}^{(k)},
+  \label{eq:newton}
+\end{equation}
+where the Jacobian $\mathbf{J} = \partial\mathbf{g}/\partial\ln\mathbf{K}$ is computed
+analytically.
+Each column of $\mathbf{J}$ requires the composition derivative $\partial\ln\hat{\phi}_i/\partial x_j$,
+which is obtained via the implicit function theorem applied to the three coupled inner equations
+for $(Z, \chi_{1w}, \chi_{1c})$: a $3\times 3$ linear system is solved analytically at the
+converged SSI state, yielding $\mathrm{d}Z/\mathrm{d}x$, $\mathrm{d}\chi_{1w}/\mathrm{d}x$,
+and $\mathrm{d}\chi_{1c}/\mathrm{d}x$, from which $\partial\ln\hat{\phi}_i/\partial x_j$
+follows by the chain rule.
+The Newton step is clipped to $[-5, +5]$ in $\ln K$ space.
+If Newton fails to reduce $\|\mathbf{g}\|$ or if the Jacobian is singular,
+the solver reverts to the pre-Newton state and continues with accelerated SSI,
+ensuring robustness.
+Across 9{,}825 two-phase conditions, Newton polish is triggered at 85.6\% of points and
+reduces the mean iteration count from 9.8 (SSI only) to 6.9 (4.8 SSI + 2.1 Newton);
+see Table~\ref{tab:accel_comparison} and Fig.~\ref{fig:newton_heatmap_SI}.
+
 The CO$_2$-rich phase mole fraction $\beta$ (the fraction of total moles in the CO$_2$-rich
 phase) is obtained at each step by solving the Rachford--Rice equation:
 \begin{equation}
@@ -418,9 +444,10 @@ The stability test and flash are combined in a hierarchical algorithm
 if stable, return single-phase; (2)~use K-values from the most negative TPD
 trial as the initial guess for the accelerated SSI flash; (3)~if the flash
 fails, fall back to Wilson K initialization.
-This strategy provides both robustness (100\% convergence across 18{,}544 conditions,
-Section~\ref{sec:convergence}) and efficiency (stability-informed K-values reduce
-flash iterations by an additional 10\% compared to Wilson initialization).
+This strategy provides both robustness (100\% convergence across all 9{,}825 two-phase
+conditions in the parameter-space scan, Section~\ref{sec:convergence}) and efficiency
+(stability-informed K-values reduce flash iterations by an additional 8\% compared to
+Wilson initialization).
 
 For cold-start SSI (without a table guess), a damping factor $\omega = 0.7$ is used
 in the standard (non-accelerated) variant to avoid divergence; warm-started SSI
@@ -461,7 +488,7 @@ boundary point is executed in parallel across all available CPU cores.
 
 We precompute flash solutions on a four-dimensional grid $(T, P, z_{\text{CO}_2}, m_s)$ with:
 \begin{itemize}
-  \item $T$: 31 points from 283 to 728\,K (approximately uniform 15-K spacing),
+  \item $T$: 31 points from 273 to 728\,K (approximately uniform 15-K spacing),
         covering conditions from cold-basin CO$_2$ storage to hydrothermal and
         geothermal applications.
   \item $\log_{10}P$: 30 points from $\log_{10}(1)$ to $\log_{10}(1500)$ (log-uniform).
@@ -952,7 +979,7 @@ and the full hierarchical robust algorithm (``Robust'').
 
 Of the 29{,}412 conditions, 19{,}586 (66.6\%) are classified as single-phase by the
 stability test and 9{,}825 (33.4\%) as two-phase.
-Table~\ref{tab:accel_comparison} compares the four flash strategies on the
+Table~\ref{tab:accel_comparison} compares five flash strategies on the
 two-phase subset.
 The hierarchical robust algorithm achieves 100\% convergence by combining the
 stability-informed K-value initialization with Wilson-K fallback for the
@@ -963,30 +990,65 @@ all neighbors are correctly identified as single-phase.
 
 \begin{table}[htb]
   \centering
-  \caption{Comparison of four cold-start flash strategies across 9{,}825 two-phase conditions
+  \caption{Comparison of six flash strategies across 9{,}825 two-phase conditions
            from the parameter-space scan ($T = 273$--$698$\,K, $P = 1$--$1500$\,bar,
-           $z_{\text{CO}_2} = 0.001$--$0.999$).}
+           $z_{\text{CO}_2} = 0.001$--$0.999$).
+           The first four rows use cold-start initialization;
+           the fifth and sixth use K-values interpolated from a pre-computed solution table
+           extended to $T = 273$--$673$\,K (99.9\% of two-phase points).
+           The sixth row additionally applies Newton polish once $\|\mathbf{g}\| < 10^{-4}$,
+           with mean 4.8 SSI and 2.1 Newton iterations per converged call.}
   \label{tab:accel_comparison}
   \begin{tabular}{lrrrr}
     \toprule
     Strategy & Converged & Conv.\ rate & Mean iters & Median iters \\
     \midrule
-    Std SSI + Wilson K     & 9{,}756 & 99.3\%  & 25.4 & 17 \\
-    Acc SSI + Wilson K     & 9{,}775 & 99.5\%  & 13.7 &  9 \\
-    Acc SSI + Stability K  & 9{,}793 & 99.7\%  & 12.6 &  9 \\
-    Robust (hierarchical)  & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
+    Std SSI + Wilson K           & 9{,}756 & 99.3\%  & 25.4 & 17 \\
+    Acc SSI + Wilson K           & 9{,}775 & 99.5\%  & 13.7 &  9 \\
+    Acc SSI + Stability K        & 9{,}793 & 99.7\%  & 12.6 &  9 \\
+    Robust (hierarchical)        & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
+    \midrule
+    Acc SSI + Table K            & 9{,}818 & 99.9\%  &  9.8 &  6 \\
+    Acc SSI + Table K + Newton   & 9{,}808 & 99.8\%  &  \textbf{6.9} &  5 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 The accelerated SSI reduces the mean iteration count from 25.4 to 13.7
-(a 46\% reduction, or 2.2$\times$ speedup) compared to standard SSI with the same
+(a 46\% reduction, or $1.9\times$ speedup) compared to standard SSI with the same
 Wilson K initialization.
 The speedup is most pronounced near the CO$_2$ critical point and at extreme
 compositions, where standard SSI requires many iterations to converge
 (Fig.~\ref{fig:ssi_heatmap}).
 Using K-values from the stability test as the flash initial guess provides a further
 8\% reduction in iterations (13.7 to 12.6) on average.
+
+When a pre-computed solution table is available---as in sequential simulation
+where flash solutions from the previous time step or neighboring grid cells
+serve as initial guesses---the iteration count drops further to a mean of 9.8
+(median~6), a 25\% improvement over the best cold-start strategy.
+The table was extended from the original $T = 283$--$533$\,K range to cover
+$T = 273$--$673$\,K by running the flash solver at the 35 scan-grid temperatures
+previously outside the table; above $673$\,K no two-phase region exists at
+$P \leq 1500$\,bar.
+This extended table covers 99.9\% of the two-phase scan points, eliminating the
+Wilson-K fallback for virtually all conditions.
+
+Adding Newton polish (Table~\ref{tab:accel_comparison}, bottom row) reduces the
+mean count further to 6.9 (4.8 SSI + 2.1 Newton), a 29\% improvement over
+table-warm-started SSI alone and a 73\% reduction from the standard cold-start.
+Newton polish is triggered at 85.6\% of points; the remaining 14.4\% converge
+in fewer than $\tau_\text{switch} = 10^{-4}$ SSI steps and need no Newton
+correction.
+Despite each Newton iteration being roughly four times more expensive than an
+SSI iteration (due to the analytical $3\times 3$ Jacobian solve), the net
+wall-time savings are approximately 20\% (median: 12.5\,ms with SSI only,
+10.4\,ms with SSI+Newton).
+In the near-CO$_2$-critical region ($T \approx 280$--$330$\,K) the Newton step
+can temporarily diverge; the solver then reverts to the pre-Newton SSI state
+and continues, so no convergence is lost in that region.
+The iteration breakdown and wall-time ratio across the full $(T, P)$ parameter
+space are shown in Fig.~\ref{fig:newton_heatmap_SI}.
 
 \begin{figure}[htb]
   \centering
@@ -1258,10 +1320,13 @@ Key conclusions are:
         \citep{Jex2024} was developed independently and validated against the same binary
         dataset.
         Both models agree within their respective parameterization accuracy.
-        A comprehensive parameter-space scan over 18{,}544 $(T, P, z)$ conditions
-        confirms 100\% convergence with the hierarchical algorithm and a 46\%
-        reduction in SSI iterations (mean 25.4 to 13.7) from the dominant-eigenvalue
-        acceleration.
+        A comprehensive parameter-space scan over 29{,}412 $(T, P, z)$ conditions
+        (9{,}825 two-phase) confirms 100\% convergence with the hierarchical algorithm
+        and a 46\% reduction in SSI iterations (mean 25.4 to 13.7) from the
+        dominant-eigenvalue acceleration.
+        Newton polish applied after SSI warm-start further reduces the mean to 6.9
+        iterations (4.8 SSI + 2.1 Newton), a 29\% improvement over warm-started SSI
+        alone with $\sim$20\% wall-time savings.
 
   \item A precomputed four-dimensional solution table (31T $\times$ 30P $\times$ 18$z$ $\times$
         14$m_s$ = 234{,}360 cells, all filled, $T = 283$--$728$\,K, $P = 1$--$1500$\,bar,
@@ -1470,6 +1535,40 @@ every figure and table in this paper.
            The blue shaded band highlights the pressure range most relevant to
            subsurface CO$_2$ storage ($P = 50$--$600$\,bar).}
   \label{fig:error_heatmap_SI}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/scan/newton_heatmap.png}
+  \caption{SSI + Newton polish iteration breakdown and wall-time ratio across the
+           parameter-space scan (9{,}825 two-phase points, averaged over
+           $z_{\text{CO}_2}$).
+           \emph{Left}: mean SSI iteration count before Newton polish is triggered
+           ($\|\mathbf{g}\| < 10^{-4}$); the near-CO$_2$-critical region
+           ($T \approx 280$--$330$\,K) requires the most SSI iterations even with
+           table warm-start.
+           \emph{Centre}: mean Newton iteration count; most of the domain converges in
+           2--3 Newton steps after 1--5 SSI steps, while the critical region (blue)
+           often reverts to SSI before Newton is beneficial.
+           \emph{Right}: wall-time ratio (SSI-only / SSI+Newton); values $>1$ (green)
+           indicate that Newton polish is faster; values $<1$ (red) indicate that the
+           SSI-only path is faster (primarily near the CO$_2$ critical point where Newton
+           reversion adds overhead).}
+  \label{fig:newton_heatmap_SI}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/scan/strategy_comparison_bar.png}
+  \caption{Flash strategy comparison across all 9{,}825 two-phase conditions
+           ($T = 273$--$698$\,K, $P = 1$--$1500$\,bar,
+           $z_{\text{CO}_2} = 0.001$--$0.999$).
+           (a) Convergence rate; (b) mean total iterations (converged points only).
+           Strategies are ordered from simplest cold-start (standard SSI with Wilson K)
+           to the most optimized (table warm-start with SSI and Newton polish).
+           The final strategy achieves a 73\% reduction in mean iterations relative to
+           the standard cold-start.}
+  \label{fig:strategy_comparison_SI}
 \end{figure}
 
 \end{document}
