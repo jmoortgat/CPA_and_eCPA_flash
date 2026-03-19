@@ -777,6 +777,7 @@ def tie_line_two_comp(
     K_init: np.ndarray | None = None,
     tol: float = 1e-10,
     maxiter: int = 1000,
+    accelerated: bool = True,
 ) -> dict:
     """
     SSI tie-line solver: CO₂ (component 0) + H₂O (component 1).
@@ -822,6 +823,12 @@ def tie_line_two_comp(
 
     x = np.zeros(2); y = np.zeros(2)
     converged = False; it = 0
+    _resid_norm = np.nan   # final ||lng|| at convergence
+
+    # Accelerated SSI state (Jex et al. 2024, Eq. 12–13)
+    _m = 1.0           # step-size factor; starts at 1 (conventional SS)
+    _g_prev = None      # fugacity-ratio vector from previous iteration
+    _M_CAP_HI = 10.0   # upper cap  (= 1/L with L = 0.1 for 2-phase)
 
     for it in range(int(maxiter)):
         if np.linalg.norm(K - 1.0) < 1e-5:
@@ -854,22 +861,50 @@ def tie_line_two_comp(
         lnphi_x = _lnphi_aq (ep_aq,  Zx, Chix,  Chi1x)
         lnphi_y = _lnphi_vap(ep_vap, Zy, Chiy,  Chi1y)
 
-        lnK_new  = lnphi_x - lnphi_y
-        lnK_old  = np.log(np.maximum(K, 1e-300))
-        lnK_step = np.clip(lnK_new - lnK_old, -5.0, 5.0)
-        if np.all(np.abs(lnK_old) < 0.05):
-            lnK_step *= 0.5
+        # Fugacity ratios: g_i = f_{vap,i} / f_{aq,i}
+        # ln g_i = lnphi_y_i + ln(y_i) - lnphi_x_i - ln(x_i)
+        lng = lnphi_y + np.log(np.maximum(y, _LOG_GUARD)) \
+            - lnphi_x - np.log(np.maximum(x, _LOG_GUARD))
 
-        K = np.exp(lnK_old + lnK_step)
-        e = -lnK_step
+        # --- Accelerated step-size (Jex Eq. 12–13) ---
+        # Use lng (log fugacity ratio) directly as the g-vector for the
+        # dominant-eigenvalue acceleration (U = I simplification for 2 comp).
+        if accelerated and _g_prev is not None:
+            dg = _g_prev - lng  # g^{k-1} - g^{k}  (both in log space)
+            num_a   = np.dot(_g_prev, _g_prev)
+            denom_a = np.dot(_g_prev, dg)
+            if abs(denom_a) > 1e-30:
+                _m = abs(num_a / denom_a * _m)
+                _m = float(np.clip(_m, 1.0, _M_CAP_HI))
+            else:
+                _m = 1.0
 
-        if np.linalg.norm(e) < float(tol):
+        _g_prev = lng.copy()
+
+        # SSI update: lnK^{k+1} = lnK^k - m · lng
+        lnK_old  = np.log(np.maximum(K, _LOG_GUARD))
+        lnK_step = -lng    # unscaled step
+
+        # Apply accelerated step size, THEN clip
+        lnK_step_acc = np.clip(_m * lnK_step, -5.0, 5.0)
+
+        # Near-trivial damping (only without acceleration to avoid conflicting)
+        if not accelerated and np.all(np.abs(lnK_old) < 0.05):
+            lnK_step_acc *= 0.5
+
+        K = np.exp(lnK_old + lnK_step_acc)
+
+        # Convergence based on fugacity equilibrium: ||lng|| < tol
+        _resid_norm = float(np.linalg.norm(lng))
+        if _resid_norm < float(tol):
             converged = True; break
 
     out = {
         "converged": bool(converged),
         "iterations": int(it + 1),
         "K": K.copy(), "x": x.copy(), "y": y.copy(),
+        "residual_norm": _resid_norm,
+        "final_m": float(_m),
     }
 
     if converged:
@@ -899,6 +934,290 @@ def tie_line_two_comp(
             "assoc_t":  np.array([tx, ty]),
             "chi": {"liq": (Chix, Chi1x), "vap": (Chiy, Chi1y)},
         })
+
+    return out
+
+
+# =============================================================================
+# Single-phase lnphi helper (for stability test)
+# =============================================================================
+def _lnphi_single_phase(
+    T: float, P_bar: float, w: np.ndarray,
+    kij12: float, swc: float,
+) -> np.ndarray:
+    """
+    Compute ln(φ_i(w)) for a composition w using the lowest-Gibbs root.
+
+    Tries both aqueous (HV/SRK) and vapour (vdW1f/SRK) models and picks the
+    root with the lower excess Gibbs energy.  This is the correct thing to do
+    when we don't know a priori whether w is liquid-like or vapour-like.
+    """
+    w = np.asarray(w, dtype=float).reshape(2,)
+    w = np.clip(w, _LOG_GUARD, None)
+    w = w / w.sum()
+
+    results = []
+    for phase_fn, eos_fn in [(_lnphi_aq, _eos_aq), (_lnphi_vap, _eos_vap)]:
+        try:
+            ep = eos_fn(T, P_bar, w, kij12)
+            Z, Chi, Chi1 = ZChi(ep["A"], ep["B"], w,
+                                ep["Kapa"], ep["Eps"], swc)
+            if Z == 0.0 or not np.isfinite(Z):
+                continue
+            lnphi = phase_fn(ep, Z, Chi, Chi1)
+            if not np.all(np.isfinite(lnphi)):
+                continue
+            ge = ExcessGibbs(ep["A"], ep["B"], np.array([Z]), w,
+                             np.array([Chi]), np.array([Chi1]))
+            results.append((float(ge[0]), lnphi))
+        except Exception:
+            continue
+
+    if not results:
+        return np.full(2, np.nan)
+    results.sort(key=lambda r: r[0])
+    return results[0][1]
+
+
+# =============================================================================
+# Michelsen TPD stability test (Jex et al. 2024)
+# =============================================================================
+def stability_test(
+    T: float, P_bar: float, z: np.ndarray,
+    Omega: np.ndarray, Tc: np.ndarray, Pc: np.ndarray, Mw: np.ndarray,
+    kij12: float = 0.0, swc: float = 0.0,
+    *,
+    accelerated: bool = True,
+    tol: float = 1e-10,
+    maxiter: int = 200,
+) -> dict:
+    """
+    Michelsen tangent-plane distance (TPD) stability test with multiple
+    initial guesses (Jex et al. 2024, Eq. 1 & 7).
+
+    For each trial, runs (accelerated) successive substitution on the
+    TPD stationary conditions:
+        W_i = exp(d_i - lnphi_i(w))
+    where d_i = ln(z_i) + lnphi_i(z) is evaluated once for the feed.
+
+    Returns dict with:
+        stable    : bool — True if all TPD ≥ -1e-7
+        tpd_min   : float — most negative TPD found
+        K_unstable: np.ndarray or None — K = W/z from most-negative-TPD trial
+        trials    : list of (label, tpd, converged, iterations)
+    """
+    T = float(T); P_bar = float(P_bar)
+    z = np.asarray(z, dtype=float).reshape(2,)
+    z = np.clip(z, _LOG_GUARD, None); z = z / z.sum()
+    Tc    = np.asarray(Tc,    dtype=float).reshape(2,)
+    Pc    = np.asarray(Pc,    dtype=float).reshape(2,)
+    Omega = np.asarray(Omega, dtype=float).reshape(2,)
+
+    # Feed fugacity: d_i = ln(z_i) + lnphi_i(z)
+    lnphi_z = _lnphi_single_phase(T, P_bar, z, kij12, swc)
+    if not np.all(np.isfinite(lnphi_z)):
+        return {"stable": True, "tpd_min": 0.0, "K_unstable": None, "trials": []}
+    d = np.log(z) + lnphi_z
+
+    # Build trial K-value sets
+    K_wil = wilson_K_init(T, P_bar, Omega, Tc, Pc)
+    K_wil = np.clip(K_wil, 1e-12, 1e12)
+    trials_K = [
+        ("Wilson",       K_wil.copy()),
+        ("1/Wilson",     1.0 / K_wil),
+        ("Wilson^1/3",   np.cbrt(K_wil)),
+        ("1/Wilson^1/3", np.cbrt(1.0 / K_wil)),
+        ("CO2-rich",     np.array([0.95 / z[0], 0.05 / z[1]])),
+        ("H2O-rich",     np.array([1e-15 / z[0], (1.0 - 1e-15) / z[1]])),
+    ]
+
+    _M_CAP_HI = 10.0
+    best_tpd = 0.0
+    best_K = None
+    all_trials = []
+
+    for label, K_trial in trials_K:
+        # Initial W = K * z
+        W = np.clip(K_trial * z, _LOG_GUARD, None)
+        _m = 1.0; _g_prev = None
+        conv = False; n_it = 0
+
+        for n_it in range(int(maxiter)):
+            w = W / W.sum()
+            lnphi_w = _lnphi_single_phase(T, P_bar, w, kij12, swc)
+            if not np.all(np.isfinite(lnphi_w)):
+                break
+
+            # Stationary condition residual: ln(W_i) + lnphi_i(w) - d_i = 0
+            lnW = np.log(np.maximum(W, _LOG_GUARD))
+            g_vec = lnW + lnphi_w - d   # should → 0 at convergence
+
+            # Accelerated step-size
+            if accelerated and _g_prev is not None:
+                num_a   = np.dot(_g_prev, _g_prev)
+                denom_a = np.dot(_g_prev, _g_prev - g_vec)
+                if abs(denom_a) > 1e-30:
+                    _m = abs(num_a / denom_a * _m)
+                    _m = np.clip(_m, 1.0, _M_CAP_HI)
+                else:
+                    _m = 1.0
+
+            _g_prev = g_vec.copy()
+
+            # Update: W_i = exp(d_i - lnphi_i(w))  (direct substitution)
+            W_new = np.exp(np.clip(d - lnphi_w, -50, 50))
+
+            # Apply acceleration: blend old and new in log-space
+            lnW_new = d - lnphi_w
+            lnW_step = np.clip(lnW_new - lnW, -5.0, 5.0)
+            W = np.exp(lnW + _m * lnW_step)
+            W = np.clip(W, _LOG_GUARD, 1e10)
+
+            if np.linalg.norm(lnW_step) < float(tol):
+                conv = True; break
+
+        # Compute TPD at converged W
+        sumW = W.sum()
+        tpd = 1.0 + float(np.sum(W * (np.log(np.maximum(W, _LOG_GUARD))
+                                        + lnphi_w - d - 1.0)))
+        # Michelsen form: TPD = Σ W_i (ln W_i + ln φ_i(w) - d_i - 1) + 1
+        # Unstable if TPD < 0 (or equivalently, sumW > 1 at a stationary point)
+
+        all_trials.append((label, float(tpd), bool(conv), int(n_it + 1)))
+
+        if tpd < best_tpd:
+            best_tpd = tpd
+            best_K = W / z   # K = W_i / z_i
+
+    stable = best_tpd >= -1e-7
+    return {
+        "stable":     stable,
+        "tpd_min":    best_tpd,
+        "K_unstable": best_K,
+        "trials":     all_trials,
+    }
+
+
+# =============================================================================
+# Hierarchical flash: stability → flash (Jex et al. 2024, Fig. 1)
+# =============================================================================
+def flash_co2_h2o_tpz_robust(
+    T: float, P_bar: float, z_co2: float,
+    kij12: float | None = None, swc: float | None = None,
+    *,
+    vshift_co2: float = 0.0,
+    vshift_h2o: float = 0.0,
+    accelerated: bool = True,
+    tol: float = 1e-10,
+    maxiter: int = 1000,
+) -> dict:
+    """
+    Hierarchical TPz flash for CO₂(0) + H₂O(1):
+      1. Run stability_test → if stable, return single-phase
+      2. Use K from lowest TPD as initial guess for tie_line_two_comp
+      3. If flash fails, fall back to Wilson K
+
+    Returns same dict as flash_co2_h2o_tpz, with added 'stability' key.
+    """
+    if kij12 is None:
+        kij12 = kij_ecpa(T) if PARAM_SET == "eCPA" else 0.0
+    if swc is None:
+        swc = s14_ecpa(T) if PARAM_SET == "eCPA" else 0.0
+
+    comps = make_components_co2_h2o()
+    z = np.array([z_co2, 1.0 - z_co2])
+
+    # Step 1: Stability test
+    stab = stability_test(
+        T, P_bar, z,
+        Omega=comps["Omega"], Tc=comps["Tc"], Pc=comps["Pc"], Mw=comps["Mw"],
+        kij12=kij12, swc=swc, accelerated=accelerated,
+        tol=tol, maxiter=min(maxiter, 200),
+    )
+
+    base = {"T": float(T), "P_bar": float(P_bar), "z": z.copy(),
+            "stability": stab}
+
+    if stab["stable"]:
+        # Single phase — determine liquid or vapour from feed density
+        base.update({"phase": "single_phase", "beta": np.nan,
+                     "x": z.copy(), "y": z.copy(), "tie": None})
+        return base
+
+    # Step 2: Flash with K from stability test
+    kw = dict(Omega=comps["Omega"], Tc=comps["Tc"], Pc=comps["Pc"],
+              Mw=comps["Mw"], kij12=kij12, swc=swc, tol=tol, maxiter=maxiter)
+
+    K_stab = stab["K_unstable"]
+    result = None
+
+    if K_stab is not None and np.all(np.isfinite(K_stab)) and np.all(K_stab > 0):
+        tie = tie_line_two_comp(T=T, P_bar=P_bar, K_init=K_stab,
+                                accelerated=accelerated, **kw)
+        if tie["converged"]:
+            result = _build_flash_result(T, P_bar, z, tie, comps, base,
+                                         vshift_co2, vshift_h2o)
+
+    # Step 3: Fallback — Wilson K (standard)
+    if result is None:
+        tie = tie_line_two_comp(T=T, P_bar=P_bar, accelerated=accelerated, **kw)
+        if tie["converged"]:
+            result = _build_flash_result(T, P_bar, z, tie, comps, base,
+                                         vshift_co2, vshift_h2o)
+
+    # Step 4: Near S₁₄≈0 (T≈288–292 K) retry with swc=0 (same as flash_co2_h2o_tpz)
+    if result is None and 0 < abs(swc) < 0.005:
+        kw_s0 = dict(kw, swc=0.0)
+        if K_stab is not None and np.all(np.isfinite(K_stab)) and np.all(K_stab > 0):
+            tie = tie_line_two_comp(T=T, P_bar=P_bar, K_init=K_stab,
+                                    accelerated=accelerated, **kw_s0)
+            if tie["converged"]:
+                result = _build_flash_result(T, P_bar, z, tie, comps, base,
+                                             vshift_co2, vshift_h2o)
+        if result is None:
+            tie = tie_line_two_comp(T=T, P_bar=P_bar, accelerated=accelerated,
+                                    **kw_s0)
+            if tie["converged"]:
+                result = _build_flash_result(T, P_bar, z, tie, comps, base,
+                                             vshift_co2, vshift_h2o)
+
+    if result is None:
+        base.update({"phase": "failed", "beta": np.nan, "tie": None})
+        return base
+
+    return result
+
+
+def _build_flash_result(T, P_bar, z, tie, comps, base, vshift_co2, vshift_h2o):
+    """Build flash result dict from a converged tie-line."""
+    x0, y0, z0 = float(tie["x"][0]), float(tie["y"][0]), float(z[0])
+    denom = y0 - x0
+    if abs(denom) < 1e-14:
+        return None
+
+    beta = (z0 - x0) / denom
+    if beta <= 0:
+        phase = "single_liquid"; beta = 0.0
+    elif beta >= 1:
+        phase = "single_vapor";  beta = 1.0
+    else:
+        phase = "two_phase"
+
+    out = dict(base)
+    out.update({"phase": phase, "beta": float(beta), "tie": tie,
+                "x": tie["x"].copy(), "y": tie["y"].copy()})
+
+    # Volume shift (same logic as flash_co2_h2o_tpz)
+    if (vshift_co2 != 0.0 or vshift_h2o != 0.0) and tie.get("rho_mass") is not None:
+        Mw_arr = comps["Mw"]
+        c = np.array([vshift_co2, vshift_h2o]) * 1000  # m³/mol → L/mol
+        for i, xi in enumerate([out["x"], out["y"]]):
+            rho_old = float(tie["rho_mass"][i])
+            if rho_old <= 0:
+                continue
+            M_mix = float(np.dot(Mw_arr, xi))
+            Vm_corr = M_mix / rho_old + float(np.dot(c, xi))
+            tie["rho_mass"][i] = M_mix / Vm_corr if Vm_corr > 0 else rho_old
 
     return out
 
@@ -1024,7 +1343,9 @@ __all__ = [
     "kij_ecpa", "s14_ecpa",
     "ChiChi", "ZChi",
     "tie_line_two_comp",
+    "stability_test",
     "flash_tpz_two_comp",
     "make_components_co2_h2o",
     "flash_co2_h2o_tpz",
+    "flash_co2_h2o_tpz_robust",
 ]

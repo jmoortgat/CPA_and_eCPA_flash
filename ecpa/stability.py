@@ -180,6 +180,7 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     # the strong-interaction lnφ values that correctly detect instability.
     # Warm-starting across SSI iterations (or across a P-scan) keeps fsolve on
     # the same branch and prevents discontinuous jumps.
+    caller_x0 = x0   # preserve original to detect warm-start vs cold-start
     if x0 is None:
         x0 = [max(P_Pa*b/R/T + 0.01, 0.05), 0.9]
 
@@ -190,8 +191,8 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
 
     Zc_best, chi1c_best = float(sol[0]), float(sol[1])
     if ier != 1 or Zc_best <= 0 or chi1c_best <= 0 or chi1c_best >= 2.0:
-        # Converged to unphysical root — retry cold
-        if x0 is not None:
+        # Converged to unphysical root — retry cold (only if we were warm-started)
+        if caller_x0 is not None:
             return _lnphi_c_inner(x1c, T, P, x0=None)
         raise RuntimeError(f"ecpa_lnphi_c: no valid root (x1c={x1c:.4f}, P={P:.2f})")
 
@@ -477,15 +478,17 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
                    x_init: float,
                    max_iter: int = 50,
                    tol: float = 1e-8,
-                   ref_x0=None) -> dict:
+                   ref_x0=None,
+                   accelerated: bool = True) -> dict:
     """
-    Run one Michelsen stability SSI trial.
+    Run one Michelsen stability SSI trial with optional Jex et al. acceleration.
 
     trial   : 'co2_rich' or 'aqueous'
     x_init  : initial x1c (CO₂-rich) or x1w (aqueous)
     ref_x0  : warm-start [Zc, chi1c] for the reference fsolve call.  Pass the
               'ref_sol' from the previous P-value to prevent the reference from
               jumping between solution branches across a pressure scan.
+    accelerated : use Jex et al. 2024 accelerated SSI (extrapolation in log-space).
 
     Reference: CO₂-rich EOS at x1c_feed = z_h2o (valid for full composition
     range; avoids aqueous EOS breakdown at large x4w = z_co2).
@@ -512,12 +515,14 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
         d1 = np.log(max(x1c_feed, 1e-300)) + d1_ref
         d4 = np.log(max(x4c_feed, 1e-300)) + d4_ref
 
-        # ── SSI loop (warm-started within iterations) ─────────────────────────
+        # ── SSI loop (warm-started within iterations, accelerated) ────────────
         x1_t       = float(x_init)
         sol_prev   = None
         converged  = False
         sum_W_prev = np.nan
         lnphi1 = lnphi4 = np.nan
+        _m = 1.0          # acceleration factor
+        _g_prev = None     # previous residual vector for acceleration
 
         for _ in range(max_iter):
             try:
@@ -531,15 +536,47 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
                 sol_prev = None
                 break
 
-            W1    = np.exp(np.clip(d1 - lnphi1, -500, 500))
-            W4    = np.exp(np.clip(d4 - lnphi4, -500, 500))
+            # Current W in log-space
+            lnW1 = np.clip(d1 - lnphi1, -500, 500)
+            lnW4 = np.clip(d4 - lnphi4, -500, 500)
+
+            W1    = np.exp(lnW1)
+            W4    = np.exp(lnW4)
             sum_W = W1 + W4
             if not np.isfinite(sum_W) or sum_W <= 0:
                 break
 
-            x1_new = W1 / sum_W
+            # Stationary-condition residual: g_i = ln(W_i) + lnphi_i - d_i
+            lnW_old = np.array([np.log(max(W1, 1e-300)), np.log(max(W4, 1e-300))])
+            g_vec   = np.array([lnW_old[0] + lnphi1 - d1,
+                                lnW_old[1] + lnphi4 - d4])
 
-            if abs(sum_W - sum_W_prev) < tol * max(1.0, abs(sum_W)):
+            # Accelerated step-size (Jex et al. 2024, Eq. 7)
+            if accelerated and _g_prev is not None:
+                num_a   = np.dot(_g_prev, _g_prev)
+                denom_a = np.dot(_g_prev, _g_prev - g_vec)
+                if abs(denom_a) > 1e-30:
+                    _m = abs(num_a / denom_a * _m)
+                    _m = np.clip(_m, 1.0, 10.0)
+                else:
+                    _m = 1.0
+            _g_prev = g_vec.copy()
+
+            # Direct substitution update in log-space
+            lnW_new = np.array([d1 - lnphi1, d4 - lnphi4])
+            lnW_step = np.clip(lnW_new - lnW_old, -5.0, 5.0)
+
+            # Apply acceleration
+            W_acc = np.exp(lnW_old + _m * lnW_step)
+            W_acc = np.clip(W_acc, 1e-300, 1e10)
+            sum_W = W_acc[0] + W_acc[1]
+            if not np.isfinite(sum_W) or sum_W <= 0:
+                break
+
+            x1_new = W_acc[0] / sum_W
+
+            # Convergence on step norm (not sum_W difference)
+            if np.linalg.norm(lnW_step) < tol:
                 converged  = True
                 x1_t       = x1_new
                 sum_W_prev = sum_W
@@ -564,6 +601,18 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
 
 # ── Public stability API ───────────────────────────────────────────────────────
 
+def _wilson_K(T: float, P_bar: float) -> tuple[float, float]:
+    """Wilson K-values for H₂O (1) and CO₂ (4): K_i = (Pc_i/P)*exp(5.373*(1+ω_i)*(1-Tc_i/T))."""
+    # Acentric factors (same values as CPA2)
+    omega_h2o, omega_co2 = 0.34400, 0.22394
+    # Pc in bar (convert from Pa constants)
+    Pc1_bar = Pc1 / 1e5   # H₂O
+    Pc4_bar = Pc4 / 1e5   # CO₂
+    K_h2o = (Pc1_bar / P_bar) * np.exp(5.373 * (1.0 + omega_h2o) * (1.0 - Tc1 / T))
+    K_co2 = (Pc4_bar / P_bar) * np.exp(5.373 * (1.0 + omega_co2) * (1.0 - Tc4 / T))
+    return float(np.clip(K_h2o, 1e-12, 1e12)), float(np.clip(K_co2, 1e-12, 1e12))
+
+
 def ecpa_stability(
     z_co2: float,
     ms: float,
@@ -576,6 +625,9 @@ def ecpa_stability(
 ) -> dict:
     """
     Michelsen phase stability test for the eCPA CO₂ + H₂O + NaCl system.
+
+    Uses 6 trial guesses (2 original + 4 Wilson-K variants) with early
+    termination when a strongly negative TPD is found (TPD < −0.01).
 
     Parameters
     ----------
@@ -594,53 +646,123 @@ def ecpa_stability(
     -------
     dict with keys:
         stable, tpd_min, trial_type, x1c_trial, x1w_trial,
-        sum_W_c, sum_W_aq, message,
+        sum_W_c, sum_W_aq, message, trials,
         co2_ref_x0, aq_ref_x0  ← pass to next call for warm-starting
     """
-    result_c  = _stability_ssi(z_co2, ms, T, P, params,
-                               trial="co2_rich", x_init=0.01,
-                               ref_x0=co2_ref_x0)
+    z_h2o = 1.0 - z_co2
 
-    x1w_init  = 0.999 / (1.0 + 2.0*ms*Mw) if ms > 0 else 0.999
-    result_aq = _stability_ssi(z_co2, ms, T, P, params,
-                               trial="aqueous", x_init=x1w_init,
-                               ref_x0=aq_ref_x0)
+    # Wilson K-values for trial generation
+    K_h2o, K_co2 = _wilson_K(T, P)
 
-    sum_c  = result_c["sum_W"]
-    sum_aq = result_aq["sum_W"]
+    # Wilson CO₂-rich trial: x1c = W_h2o / sum(W)
+    W_h2o_wil = K_h2o * z_h2o
+    W_co2_wil = K_co2 * z_co2
+    x1c_wilson = W_h2o_wil / (W_h2o_wil + W_co2_wil)
+    x1c_wilson = float(np.clip(x1c_wilson, 1e-6, 1.0 - 1e-6))
 
-    tpd_c  = 1.0 - sum_c  if np.isfinite(sum_c)  else 0.0
-    tpd_aq = 1.0 - sum_aq if np.isfinite(sum_aq) else 0.0
-    tpd_min = min(tpd_c, tpd_aq)
+    # Wilson aqueous trial: x1w = W_h2o / sum(W) using 1/K
+    W_h2o_inv = z_h2o / max(K_h2o, 1e-30)
+    W_co2_inv = z_co2 / max(K_co2, 1e-30)
+    x1w_wilson = W_h2o_inv / (W_h2o_inv + W_co2_inv)
+    x1w_wilson = float(np.clip(x1w_wilson, 0.5, 0.9999))
 
-    unstable_c  = result_c["tpd_negative"]
-    unstable_aq = result_aq["tpd_negative"]
-    stable = not (unstable_c or unstable_aq)
+    # Moderate aqueous: x4w ≈ 0.05 → x1w = (1 - 0.05) / (1 + 2*ms*Mw)
+    x1w_mod = 0.95 / (1.0 + 2.0*ms*Mw) if ms > 0 else 0.95
 
-    if unstable_c and unstable_aq:
-        trial_type = "both"
-        msg = "Both CO₂-rich and aqueous trials indicate instability"
-    elif unstable_c:
-        trial_type = "co2_rich"
-        msg = "CO₂-rich trial indicates instability"
-    elif unstable_aq:
-        trial_type = "aqueous"
-        msg = "Aqueous trial indicates instability"
+    # Build trial list: (label, trial_type, x_init)
+    x1w_default = 0.999 / (1.0 + 2.0*ms*Mw) if ms > 0 else 0.999
+    trials_spec = [
+        ("CO2-rich (x1c=0.01)",     "co2_rich", 0.01),
+        ("Aqueous (default)",       "aqueous",  x1w_default),
+        ("CO2-rich (x1c=0.10)",     "co2_rich", 0.10),
+        ("Aqueous (x4w≈0.05)",      "aqueous",  x1w_mod),
+        ("Wilson CO2-rich",         "co2_rich", x1c_wilson),
+        ("Wilson aqueous",          "aqueous",  x1w_wilson),
+    ]
+
+    best_tpd = 0.0
+    best_result_c  = None
+    best_result_aq = None
+    all_trials = []
+    ref_x0_c  = co2_ref_x0
+    ref_x0_aq = aq_ref_x0
+
+    for label, trial_type, x_init in trials_spec:
+        ref = ref_x0_c if trial_type == "co2_rich" else ref_x0_aq
+        result = _stability_ssi(z_co2, ms, T, P, params,
+                                trial=trial_type, x_init=x_init,
+                                ref_x0=ref, accelerated=True)
+
+        # Propagate warm-start references
+        if trial_type == "co2_rich" and result.get("ref_sol") is not None:
+            ref_x0_c = result["ref_sol"]
+        elif trial_type == "aqueous" and result.get("ref_sol") is not None:
+            ref_x0_aq = result["ref_sol"]
+
+        sum_W = result["sum_W"]
+        tpd = (1.0 - sum_W) if np.isfinite(sum_W) else 0.0
+        all_trials.append((label, trial_type, float(tpd),
+                           result["converged"], result["x1_final"]))
+
+        if tpd < best_tpd:
+            best_tpd = tpd
+            if trial_type == "co2_rich":
+                best_result_c = result
+            else:
+                best_result_aq = result
+
+        # Early termination: strongly unstable
+        if tpd < -0.01:
+            break
+
+    # Collect best results for each trial type
+    if best_result_c is None:
+        # Use the first CO₂-rich trial result (trial 0)
+        best_result_c = _stability_ssi(z_co2, ms, T, P, params,
+                                        trial="co2_rich", x_init=0.01,
+                                        ref_x0=co2_ref_x0, accelerated=True)
+        # This shouldn't normally happen since trial 0 is CO₂-rich
+    if best_result_aq is None:
+        best_result_aq = _stability_ssi(z_co2, ms, T, P, params,
+                                         trial="aqueous", x_init=x1w_default,
+                                         ref_x0=aq_ref_x0, accelerated=True)
+
+    # Determine instability from all trials
+    stable = best_tpd >= -1e-8
+    sum_c  = best_result_c["sum_W"]
+    sum_aq = best_result_aq["sum_W"]
+
+    if not stable:
+        # Identify which trial type found the instability
+        unstable_c  = any(tpd < -1e-8 for _, tt, tpd, conv, _ in all_trials
+                          if tt == "co2_rich")
+        unstable_aq = any(tpd < -1e-8 for _, tt, tpd, conv, _ in all_trials
+                          if tt == "aqueous")
+        if unstable_c and unstable_aq:
+            trial_type = "both"
+            msg = "Both CO₂-rich and aqueous trials indicate instability"
+        elif unstable_c:
+            trial_type = "co2_rich"
+            msg = "CO₂-rich trial indicates instability"
+        else:
+            trial_type = "aqueous"
+            msg = "Aqueous trial indicates instability"
     else:
         trial_type = None
-        msg = "Stable (both trials converged with tpd ≥ 0)"
+        msg = "Stable (all trials converged with tpd ≥ 0)"
 
     return dict(
         stable=stable,
-        tpd_min=float(tpd_min),
+        tpd_min=float(best_tpd),
         trial_type=trial_type,
-        x1c_trial=result_c["x1_final"],
-        x1w_trial=result_aq["x1_final"],
+        x1c_trial=best_result_c["x1_final"],
+        x1w_trial=best_result_aq["x1_final"],
         sum_W_c=float(sum_c),
         sum_W_aq=float(sum_aq),
         message=msg,
-        co2_ref_x0=result_c.get("ref_sol"),   # for warm-starting next P call
-        aq_ref_x0=result_aq.get("ref_sol"),
+        trials=all_trials,
+        co2_ref_x0=ref_x0_c,
+        aq_ref_x0=ref_x0_aq,
     )
 
 
