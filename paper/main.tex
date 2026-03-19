@@ -454,16 +454,65 @@ in the standard (non-accelerated) variant to avoid divergence; warm-started SSI
 (from a table guess with state-vector error $\lesssim 0.01$) converges reliably with
 $\omega = 1.0$ in 3--4 iterations.
 
-Within each SSI iteration, the eCPA fugacity coefficients for the aqueous phase require
-simultaneous solution of three coupled equations: the cubic compressibility factor $Z_w$,
-the relative permittivity $\varepsilon_r$, and the H$_2$O association fraction $\chi_{1w}$.
-These quantities are mutually dependent --- $Z_w$ enters the molar volume and hence the
-Debye--Hückel screening length; $\varepsilon_r$ modifies the electrostatic contribution to
-the fugacity; and $\chi_{1w}$ feeds back into both the physical and association terms ---
-requiring a three-variable Newton solve at each SSI step.
-The CO$_2$-rich phase requires an analogous two-variable Newton solve for $Z_c$ and $\chi_{1c}$.
-The coupling of these inner equations is the primary reason the eCPA flash is more expensive
-per iteration than a conventional cubic EoS flash.
+Within each SSI iteration, the eCPA fugacity coefficients require simultaneous solution of
+the compressibility factor $Z$ and the association site fractions $\chi$ for each phase.
+These quantities are mutually dependent: $Z$ sets the molar volume and hence the packing
+fraction $\eta$, which enters the radial distribution function $g(\eta)$ and therefore the
+association strength $\Delta$; the association fractions $\chi$ in turn feed back into the
+compressibility equation through the Wertheim term.
+For the CO$_2$--H$_2$O binary, the inner problem comprises three coupled equations per phase:
+\begin{align}
+  F_1 &= Z - \frac{Z}{Z - B} + \frac{A}{Z + B}
+         - \left(1 + \frac{\eta}{g}\frac{\mathrm{d}g}{\mathrm{d}\eta}\right)
+         \bigl[x_w(\chi_w - 1) + x_c(\chi_c - 1)\bigr] = 0,
+         \label{eq:funZ} \\
+  F_2 &= c_3 \chi_w^3 + c_2 \chi_w^2 + c_1 \chi_w + c_0 = 0,
+         \label{eq:chiW} \\
+  F_3 &= \chi_c \bigl(Z + 2 x_w \chi_w \delta_1\bigr) - Z = 0,
+         \label{eq:chiC}
+\end{align}
+where the coefficients $c_0$--$c_3$ in $F_2$ depend on $Z$ through $\delta = g(\eta)\kappa\,[\exp(\varepsilon/k_BT)-1]$,
+$\delta_1 = S_{cw}\,\delta$ is the scaled cross-association strength, and
+$A$, $B$ are the dimensionless SRK parameters defined in Section~\ref{sec:eos}.
+Equation~\eqref{eq:funZ} is the residual of the compressibility equation,
+\eqref{eq:chiW} is the cubic equation for the H$_2$O bonding fraction $\chi_w$
+(four sites, 4C scheme), and \eqref{eq:chiC} is the algebraic closure for the CO$_2$
+cross-association fraction $\chi_c$.
+In the full eCPA model (Section~\ref{sec:ecpa}), $F_1$ additionally contains
+the Debye--H\"{u}ckel compressibility $Z^{\rm DH}$ and the permittivity term $Z^{\rm Perm}$,
+and the relative permittivity $\varepsilon_r$ satisfying the Kirkwood implicit
+equation~\citep{MaribMogensen2015} enters the coefficients; the structure of the
+$3\times 3$ Newton system is otherwise unchanged.
+
+We solve Eqs.~\eqref{eq:funZ}--\eqref{eq:chiC} simultaneously by Newton--Raphson,
+using the solution from the previous SSI iteration as the initial guess.
+The $3\times 3$ Jacobian is derived analytically: all partial derivatives of $F_1$,
+$F_2$, and $F_3$ with respect to $(Z, \chi_w, \chi_c)$ are available in closed form
+via the chain rule through $g(\eta)$ and its first two derivatives.
+Starting from a realistic initial guess (the previous SSI iterate, which typically
+lies within 0.5\% of the converged value), the inner Newton solve converges
+in \textbf{3--4 iterations} (median~3, maximum~4 across 9{,}825 two-phase conditions),
+after which the updated $(Z, \chi_w, \chi_c)$ are passed to the fugacity-coefficient
+evaluation and the outer SSI proceeds.
+A scan+Brent fallback is retained for robustness but is never triggered in practice
+once a warm start is available.
+
+To quantify the per-iteration overhead of CPA relative to a plain cubic EoS,
+we timed each component of a single SSI iteration across 871 two-phase
+$(T, P)$ conditions sampled from the CO$_2$--H$_2$O parameter space.
+We compared CPA (with the Newton $Z$/$\chi$ solve) against a notional
+SRK reference (same EoS parameter computation and fugacity evaluation,
+but $Z$ found by direct solution of the cubic and $\chi \equiv 1$).
+The per-iteration median wall times were 98\,\textmu{}s (CPA) versus
+32\,\textmu{}s (SRK), a ratio of \textbf{3.1$\times$}.
+The EoS-parameter and fugacity-evaluation steps are identical between the two
+models; the entire overhead arises in the $Z$/$\chi$ solve, which costs
+75\,\textmu{}s (CPA Newton, two phases) versus 9\,\textmu{}s (SRK direct cubic,
+two phases).
+This factor-of-3 per-iteration cost must be weighed against the additional physics
+captured by CPA: accurate partitioning of a self- and cross-associating system
+over a wide temperature and pressure range, and (in the full eCPA model)
+correct salt activity without empirical brine corrections.
 
 \subsection{Phase envelope}
 \label{sec:envelope}
