@@ -49,6 +49,15 @@
   \bibinfo{pages}{8492--8505}.
 \newblock \DOIprefix\doi{10.1021/acs.iecr.5c00134}.
 %Type = Article
+\bibitem[{Gasser et~al.(1986)Gasser, Sroka and Jennen-Steinmetz}]{Gasser1986}
+\bibinfo{author}{Gasser, T.}, \bibinfo{author}{Sroka, L.},
+  \bibinfo{author}{Jennen-Steinmetz, C.}, \bibinfo{year}{1986}.
+\newblock \bibinfo{title}{Residual variance and residual pattern in nonlinear
+  regression}.
+\newblock \bibinfo{journal}{Biometrika} \bibinfo{volume}{73},
+  \bibinfo{pages}{625--633}.
+\newblock \DOIprefix\doi{10.1093/biomet/73.3.625}.
+%Type = Article
 \bibitem[{Guo et~al.(2015)Guo, Huang, Chen and Zhou}]{Guo2015}
 \bibinfo{author}{Guo, H.}, \bibinfo{author}{Huang, Y.}, \bibinfo{author}{Chen,
   Y.}, \bibinfo{author}{Zhou, Q.}, \bibinfo{year}{2015}.
@@ -59,13 +68,6 @@
   \bibinfo{pages}{466--474}.
 \newblock \DOIprefix\doi{10.1021/acs.jced.5b00799}.
 %Type = Article
-\bibitem[{Harris et~al.(2020)}]{Harris2020}
-\bibinfo{author}{Harris, C.R.}, et~al., \bibinfo{year}{2020}.
-\newblock \bibinfo{title}{Array programming with {NumPy}}.
-\newblock \bibinfo{journal}{Nature} \bibinfo{volume}{585},
-  \bibinfo{pages}{357--362}.
-\newblock \DOIprefix\doi{10.1038/s41586-020-2649-2}.
-%Type = Article
 \bibitem[{Hou et~al.(2013)Hou, Maitland and Trusler}]{Hou2013}
 \bibinfo{author}{Hou, S.X.}, \bibinfo{author}{Maitland, G.C.},
   \bibinfo{author}{Trusler, J.P.M.}, \bibinfo{year}{2013}.
@@ -75,6 +77,16 @@
 \newblock \bibinfo{journal}{J. Supercrit. Fluids} \bibinfo{volume}{73},
   \bibinfo{pages}{87--96}.
 \newblock \DOIprefix\doi{10.1016/j.supflu.2012.11.011}.
+%Type = Article
+\bibitem[{Jex et~al.(2024)Jex, Miky{\v{s}}ka and Firoozabadi}]{Jex2024}
+\bibinfo{author}{Jex, M.}, \bibinfo{author}{Miky{\v{s}}ka, J.},
+  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{Fast and robust multiphase equilibrium calculation at
+  high pressures and temperatures using accelerated successive substitution and
+  new multiple initial guesses for stability analysis}.
+\newblock \bibinfo{journal}{SPE J.} \bibinfo{volume}{29},
+  \bibinfo{pages}{3643--3658}.
+\newblock \DOIprefix\doi{10.2118/219490-PA}.
 %Type = Article
 \bibitem[{Kiepe et~al.(2002)Kiepe, Horstmann, Fischer and Gmehling}]{Kiepe2002}
 \bibinfo{author}{Kiepe, J.}, \bibinfo{author}{Horstmann, S.},
@@ -168,13 +180,6 @@
 \newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61},
   \bibinfo{pages}{2933--2945}.
 \newblock \DOIprefix\doi{10.1002/aic.14829}.
-%Type = Inproceedings
-\bibitem[{McKinney(2010)}]{McKinney2010}
-\bibinfo{author}{McKinney, W.}, \bibinfo{year}{2010}.
-\newblock \bibinfo{title}{Data structures for statistical computing in
-  {Python}}, in: \bibinfo{booktitle}{Proc.\ 9th Python in Science Conf.}, pp.
-  \bibinfo{pages}{51--56}.
-\newblock \DOIprefix\doi{10.25080/Majora-92bf1922-00a}.
 %Type = Article
 \bibitem[{Messabeb et~al.(2016)Messabeb, Contamine, Cézac, Serin and
   Gaucher}]{Messabeb2016}
@@ -198,20 +203,21 @@
 \newblock \bibinfo{publisher}{Cambridge University Press},
   \bibinfo{address}{Cambridge, UK}.
 %Type = Article
-\bibitem[{Michelsen(1982a)}]{Michelsen1982a}
-\bibinfo{author}{Michelsen, M.L.}, \bibinfo{year}{1982}a.
+\bibitem[{Meyer and Harvey(2015)}]{Meyer2015}
+\bibinfo{author}{Meyer, C.W.}, \bibinfo{author}{Harvey, A.H.},
+  \bibinfo{year}{2015}.
+\newblock \bibinfo{title}{Dew-point measurements for water in compressed carbon
+  dioxide}.
+\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61},
+  \bibinfo{pages}{2913--2925}.
+\newblock \DOIprefix\doi{10.1002/aic.14878}.
+%Type = Article
+\bibitem[{Michelsen(1982)}]{Michelsen1982a}
+\bibinfo{author}{Michelsen, M.L.}, \bibinfo{year}{1982}.
 \newblock \bibinfo{title}{The isothermal flash problem. {Part I}: Stability}.
 \newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{9},
   \bibinfo{pages}{1--19}.
 \newblock \DOIprefix\doi{10.1016/0378-3812(82)85001-2}.
-%Type = Article
-\bibitem[{Michelsen(1982b)}]{Michelsen1982b}
-\bibinfo{author}{Michelsen, M.L.}, \bibinfo{year}{1982}b.
-\newblock \bibinfo{title}{The isothermal flash problem. {Part II}: Phase-split
-  calculation}.
-\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{9},
-  \bibinfo{pages}{21--40}.
-\newblock \DOIprefix\doi{10.1016/0378-3812(82)85002-4}.
 %Type = Article
 \bibitem[{Nighswander et~al.(1989)Nighswander, Kalogerakis and
   Mehrotra}]{Nighswander1989}
@@ -291,13 +297,13 @@
   \bibinfo{pages}{445--454}.
 \newblock \DOIprefix\doi{10.2475/ajs.263.5.445}.
 %Type = Article
-\bibitem[{Virtanen et~al.(2020)}]{Virtanen2020}
-\bibinfo{author}{Virtanen, P.}, et~al., \bibinfo{year}{2020}.
-\newblock \bibinfo{title}{{SciPy 1.0}: Fundamental algorithms for scientific
-  computing in {Python}}.
-\newblock \bibinfo{journal}{Nat. Methods} \bibinfo{volume}{17},
-  \bibinfo{pages}{261--272}.
-\newblock \DOIprefix\doi{10.1038/s41592-019-0686-2}.
+\bibitem[{T{\"o}dheide and Franck(1963)}]{Todheide1963}
+\bibinfo{author}{T{\"o}dheide, K.}, \bibinfo{author}{Franck, E.U.},
+  \bibinfo{year}{1963}.
+\newblock \bibinfo{title}{Das {Zweiphasengebiet} und die kritische {Kurve} im
+  {System} {Kohlendioxid-Wasser} bis zu {Drucken} von 3500 bar}.
+\newblock \bibinfo{journal}{Z. Phys. Chem.} \bibinfo{volume}{37},
+  \bibinfo{pages}{387--401}.
 %Type = Article
 \bibitem[{Wertheim(1984)}]{Wertheim1984}
 \bibinfo{author}{Wertheim, M.S.}, \bibinfo{year}{1984}.

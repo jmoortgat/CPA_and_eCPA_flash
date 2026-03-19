@@ -183,10 +183,7 @@ if __name__ == '__main__':
         xc_W = 1.0 - xw_W      # CO2 mole fraction in aqueous phase
         M_mix = xw_W * M_H2O + xc_W * M_CO2   # g/mol
         Vm    = Z_W * R_CGS * T / P_bar        # cm³/mol
-        # Apply Péneloux volume shift (params in m³/mol → convert to cm³/mol)
-        c_H2O = float(params['Peneloux_H2O']) * 1e6   # cm³/mol
-        c_CO2 = float(params['Peneloux_CO2']) * 1e6   # cm³/mol
-        Vm = Vm + xw_W * c_H2O + xc_W * c_CO2
+        # No Péneloux volume shift for H2O or CO2
         if Vm <= 0:
             return np.nan
         return (M_mix / Vm) * 1000.0           # kg/m³
@@ -195,20 +192,17 @@ if __name__ == '__main__':
     print("\nRunning CPA2 and eCPA at experimental conditions …")
     Z_CO2 = 0.3   # z-independent in two-phase region
 
-    # Read Péneloux shifts from params (set in ecpa/constants.py)
-    vs_h2o = float(params['Peneloux_H2O'])  # m³/mol
-    vs_co2 = float(params['Peneloux_CO2'])  # m³/mol
-    print(f"  Péneloux shifts — H₂O: {vs_h2o:.4e} m³/mol  CO₂: {vs_co2:.4e} m³/mol")
+    # No Péneloux volume shift for H2O or CO2
+    print("  No Péneloux volume shift applied for H₂O or CO₂")
 
     rows_out = []
     for _, row in exp_aq.iterrows():
         T, P = float(row['T_K']), float(row['P_bar'])
 
-        # CPA — same shifts applied via vshift kwargs
+        # CPA — no volume shift
         rho_cpa = np.nan
         try:
-            r = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P, z_co2=Z_CO2,
-                                        vshift_h2o=vs_h2o, vshift_co2=vs_co2)
+            r = CPA2.flash_co2_h2o_tpz(T=T, P_bar=P, z_co2=Z_CO2)
             if r['phase'] == 'two_phase' and r['tie']['converged']:
                 rho_cpa = float(r['tie']['rho_mass'][0]) * 1000.0  # kg/L → kg/m³
         except Exception:
@@ -254,88 +248,46 @@ if __name__ == '__main__':
         print(f"  {T:>6.0f}  {len(grp):>3}  "
               f"{aare('rho_cpa'):>8.2f}%  {aare('rho_ecpa'):>9.2f}%")
 
-    # ── Figures ────────────────────────────────────────────────────────────────
-    print("\nGenerating per-temperature figures …")
-    T_vals = sorted(res['T_K'].unique())
-
-    for T in T_vals:
-        sub = res[res['T_K'] == T].sort_values('P_bar')
-        fig, ax = plt.subplots(figsize=(5.5, 4.5))
-
-        # Experiment
-        ax.scatter(sub['P_bar'], sub['rho_exp'], marker='o',
-                   facecolors='none', edgecolors='k', s=50, zorder=5,
-                   label='Experiment')
-
-        # CPA
-        ok_cpa = sub.dropna(subset=['rho_cpa'])
-        if not ok_cpa.empty:
-            ax.plot(ok_cpa['P_bar'], ok_cpa['rho_cpa'], 'b-', lw=1.8,
-                    label='CPA')
-
-        # eCPA
-        ok_ecpa = sub.dropna(subset=['rho_ecpa'])
-        if not ok_ecpa.empty:
-            ax.plot(ok_ecpa['P_bar'], ok_ecpa['rho_ecpa'], 'r--', lw=1.8,
-                    label='eCPA (ms=0)')
-
-        ax.set_xlabel('P [bar]', fontsize=12, fontweight='bold')
-        ax.set_ylabel(r'$\rho_W$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
-        ax.legend(fontsize=10, loc='best', framealpha=0.9)
-        ax.tick_params(labelsize=10)
-
-        # Annotate reference
-        ref = sub['reference'].iloc[0]
-        ax.text(0.02, 0.04, ref, transform=ax.transAxes,
-                fontsize=7, color='gray', va='bottom')
-
-        fig.tight_layout()
-        fpath = f'figures/density/T{int(T)}K.png'
-        fig.savefig(fpath, dpi=150, bbox_inches='tight')
-        plt.close(fig)
-        print(f"  Saved {fpath}")
-
-    # ── Summary figure: all T on one plot (parity) ─────────────────────────────
+    # ── Single eCPA parity plot (no volume shift for H2O) ─────────────────────
+    print("\nGenerating eCPA parity plot …")
     T_all = sorted(res['T_K'].unique())
     cmap  = plt.cm.viridis
     T_norm = plt.Normalize(vmin=min(T_all), vmax=max(T_all))
 
-    # Leave explicit right margin for the colorbar so it never overlaps panels
-    fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.5))
-    fig.subplots_adjust(left=0.08, right=0.84, wspace=0.35)
+    fig, ax = plt.subplots(figsize=(5.5, 5.0))
 
-    for ax, col, model in zip(axes, ['rho_cpa', 'rho_ecpa'], ['CPA', 'eCPA (ms=0)']):
-        ok = res.dropna(subset=[col, 'rho_exp'])
-        for T in T_all:
-            g = ok[ok['T_K'] == T]
-            if g.empty:
-                continue
-            ax.scatter(g['rho_exp'], g[col], color=cmap(T_norm(T)),
-                       s=40, zorder=4)
-        vmin = ok[['rho_exp', col]].min().min() - 5
-        vmax = ok[['rho_exp', col]].max().max() + 5
-        lv = np.linspace(vmin, vmax, 200)
-        ax.plot(lv, lv, 'k-', lw=1.0)
-        ax.fill_between(lv, lv * 0.99, lv * 1.01, color='green',  alpha=0.15, label='±1%')
-        ax.fill_between(lv, lv * 0.98, lv * 1.02, color='orange', alpha=0.12, label='±2%')
-        aare = (ok[col] - ok['rho_exp']).abs().mean() / ok['rho_exp'].mean() * 100
-        ax.set_xlabel(r'Experimental $\rho_W$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
-        ax.set_ylabel(r'Predicted $\rho_W$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
-        ax.set_title(f'{model}  (AARE = {aare:.2f}%)', fontsize=11)
-        ax.legend(fontsize=8, loc='upper left')
-        ax.set_xlim(vmin, vmax); ax.set_ylim(vmin, vmax)
-        ax.set_aspect('equal')
+    ok = res.dropna(subset=['rho_ecpa', 'rho_exp'])
+    for T in T_all:
+        g = ok[ok['T_K'] == T]
+        if g.empty:
+            continue
+        ax.scatter(g['rho_exp'], g['rho_ecpa'], color=cmap(T_norm(T)),
+                   s=50, zorder=4)
 
-    # Colorbar in a dedicated axes to the right of both panels
+    vmin = ok[['rho_exp', 'rho_ecpa']].min().min() - 5
+    vmax = ok[['rho_exp', 'rho_ecpa']].max().max() + 5
+    lv = np.linspace(vmin, vmax, 200)
+    ax.plot(lv, lv, 'k-', lw=1.0)
+    ax.fill_between(lv, lv * 0.99, lv * 1.01, color='green',  alpha=0.15, label='±1%')
+    ax.fill_between(lv, lv * 0.98, lv * 1.02, color='orange', alpha=0.12, label='±2%')
+
+    aare = (ok['rho_ecpa'] - ok['rho_exp']).abs().mean() / ok['rho_exp'].mean() * 100
+    ax.set_xlabel(r'Experimental $\rho_W$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
+    ax.set_ylabel(r'eCPA $\rho_W$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
+    ax.set_title(f'eCPA  (AARE = {aare:.2f}%)', fontsize=11)
+    ax.legend(fontsize=9, loc='upper left')
+    ax.set_xlim(vmin, vmax); ax.set_ylim(vmin, vmax)
+    ax.set_aspect('equal')
+
+    # Colorbar
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=T_norm)
     sm.set_array([])
-    cbar_ax = fig.add_axes([0.87, 0.15, 0.025, 0.70])
-    fig.colorbar(sm, cax=cbar_ax, label='T [K]')
-    cbar_ax.tick_params(labelsize=9)
+    cbar = fig.colorbar(sm, ax=ax, label='T [K]', shrink=0.85, pad=0.02)
+    cbar.ax.tick_params(labelsize=9)
 
-    # no suptitle
-    fig.savefig('figures/density/parity.png', dpi=150, bbox_inches='tight')
+    fig.tight_layout()
+    fig.savefig('figures/density/parity_ecpa.png', dpi=150, bbox_inches='tight')
     plt.close(fig)
-    print("  Saved figures/density/parity.png")
+    print(f"  Saved figures/density/parity_ecpa.png  (AARE = {aare:.2f}%)")
 
     print("\nDone.")
