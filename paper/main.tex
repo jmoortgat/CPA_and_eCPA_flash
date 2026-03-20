@@ -478,17 +478,20 @@ Equation~\eqref{eq:funZ} is the residual of the compressibility equation,
 \eqref{eq:chiW} is the cubic equation for the H$_2$O bonding fraction $\chi_w$
 (four sites, 4C scheme), and \eqref{eq:chiC} is the algebraic closure for the CO$_2$
 cross-association fraction $\chi_c$.
-In the full eCPA model (Section~\ref{sec:ecpa}), $F_1$ additionally contains
-the Debye--H\"{u}ckel compressibility $Z^{\rm DH}$ and the permittivity term $Z^{\rm Perm}$,
-and the relative permittivity $\varepsilon_r$ satisfying the Kirkwood implicit
-equation~\citep{MaribMogensen2015} enters the coefficients; the structure of the
-$3\times 3$ Newton system is otherwise unchanged.
+For the eCPA aqueous phase (Section~\ref{sec:ecpa}), the inner problem is
+\emph{structurally different}: the relative permittivity $\varepsilon_r$ satisfying
+the Kirkwood implicit equation~\citep{MaribMogensen2015} enters as an additional
+unknown, while $\chi_c$ is eliminated algebraically.
+The resulting $3\times 3$ system has variables $(Z_w, \varepsilon_r, \chi_w)$
+with three residuals $G_0$--$G_2$ (Eqs.~\eqref{eq:G0}--\eqref{eq:G2});
+its Jacobian is derived in Appendix~\ref{sec:jac_ecpa}.
 
 We solve Eqs.~\eqref{eq:funZ}--\eqref{eq:chiC} simultaneously by Newton--Raphson,
 using the solution from the previous SSI iteration as the initial guess.
 The $3\times 3$ Jacobian is derived analytically: all partial derivatives of $F_1$,
 $F_2$, and $F_3$ with respect to $(Z, \chi_w, \chi_c)$ are available in closed form
-via the chain rule through $g(\eta)$ and its first two derivatives.
+via the chain rule through $g(\eta)$ and its first two derivatives
+(Appendix~\ref{sec:jac_cpa}).
 Starting from a realistic initial guess (the previous SSI iterate, which typically
 lies within 0.5\% of the converged value), the inner Newton solve converges
 in \textbf{3--4 iterations} (median~3, maximum~4 across 9{,}825 two-phase conditions),
@@ -1458,6 +1461,197 @@ key EoS parameters used in this work, all from \citet{Coelho2025}.
     \bottomrule
   \end{tabular}
 \end{table}
+
+
+%% ============================================================
+\section{Analytical Jacobians for the Inner Newton Solvers}
+\label{sec:jacobians}
+
+Within each SSI iteration two distinct Newton systems are solved, one per phase.
+The CO$_2$-rich phase and both phases of the salt-free CPA binary use a
+$3\times 3$ system in $(Z,\chi_w,\chi_c)$ (Section~\ref{sec:jac_cpa}).
+The eCPA aqueous phase requires a different $3\times 3$ system in
+$(Z_w,\varepsilon_r,\chi_w)$, because the relative permittivity $\varepsilon_r$
+satisfies an additional Kirkwood self-consistency equation
+(Section~\ref{sec:jac_ecpa}).
+
+%% ----------------------------------------------------------------
+\subsection{CPA binary: Newton system for $(Z,\,\chi_w,\,\chi_c)$}
+\label{sec:jac_cpa}
+
+The three fixed-point residuals are
+\begin{align}
+  F_1 &= Z - \frac{Z}{Z-B} + \frac{A}{Z+B}
+         - G\bigl[x_w(\chi_w-1)+x_c(\chi_c-1)\bigr] = 0,
+         \label{eq:F1jac} \\
+  F_2 &= \chi_w - \frac{Z}{D_w} = 0,
+         \label{eq:F2jac} \\
+  F_3 &= \chi_c - \frac{Z}{D_c} = 0,
+         \label{eq:F3jac}
+\end{align}
+with the denominators
+\begin{equation}
+  D_w = Z + 2x_w\chi_w\Delta_w + 2x_c\chi_c\Delta_{cw}, \qquad
+  D_c = Z + 2x_w\chi_w\Delta_{cw},
+  \label{eq:DwDc}
+\end{equation}
+where $\Delta_w = g(\eta)\kappa_w[\exp(\varepsilon_w/k_BT)-1]P/(RT)$,
+$\Delta_{cw} = S_{cw}\Delta_w$, $\eta = B/(2Z)$,
+and $G = 1 + V_g$ with
+\begin{equation}
+  V_g \equiv \frac{\eta g'(\eta)}{g(\eta)} = \frac{\eta(5-2\eta)}{(1-\eta)(2-\eta)}, \qquad
+  W  \equiv \frac{\mathrm{d}V_g}{\mathrm{d}\eta} = \frac{10-8\eta+\eta^2}{(1-\eta)^2(2-\eta)^2},
+  \label{eq:VgW}
+\end{equation}
+for the Carnahan--Starling radial distribution function
+$g(\eta) = (2-\eta)/[2(1-\eta)^3]$.
+Because $\eta \propto Z^{-1}$, the key identity is
+\begin{equation}
+  Z\,\frac{\partial\Delta_w}{\partial Z} = -V_g\,\Delta_w,
+  \label{eq:dDeltadZ}
+\end{equation}
+from which all $Z$-derivatives of $D_w$ and $D_c$ follow.
+Setting $D = x_w(\chi_w-1)+x_c(\chi_c-1)$, the $3\times 3$ Jacobian
+$J_{ij} = \partial F_i/\partial v_j$ with $\mathbf{v}=(Z,\chi_w,\chi_c)^\top$ is:
+
+\paragraph{Row 1.}
+\begin{align}
+  J_{11} &= 1 + \frac{B}{(Z-B)^2} - \frac{A}{(Z+B)^2} + \frac{D\,W\eta}{Z},
+             \label{eq:J11} \\
+  J_{12} &= -G\,x_w, \label{eq:J12} \\
+  J_{13} &= -G\,x_c. \label{eq:J13}
+\end{align}
+
+\paragraph{Row 2.}
+Using $Z\partial D_w/\partial Z = Z - 2(x_w\chi_w + x_c\chi_c S_{cw})V_g\Delta_w$
+and $\chi_w = Z/D_w$:
+\begin{align}
+  J_{21} &= -\frac{2\Delta_w(1+V_g)(x_w\chi_w + x_c\chi_c S_{cw})}{D_w^2},
+             \label{eq:J21} \\
+  J_{22} &= 1 + \frac{2x_w\Delta_w\chi_w}{D_w}, \label{eq:J22} \\
+  J_{23} &= \frac{2x_c S_{cw}\Delta_w\chi_w}{D_w}. \label{eq:J23}
+\end{align}
+
+\paragraph{Row 3.}
+Using $Z\partial D_c/\partial Z = Z - 2x_w\chi_w S_{cw} V_g\Delta_w$
+and $\chi_c = Z/D_c$:
+\begin{align}
+  J_{31} &= -\frac{2x_w\chi_w S_{cw}\Delta_w(1+V_g)}{D_c^2},
+             \label{eq:J31} \\
+  J_{32} &= \frac{2x_w S_{cw}\Delta_w\chi_c}{D_c}, \label{eq:J32} \\
+  J_{33} &= 1. \label{eq:J33}
+\end{align}
+Note $J_{33}=1$ because $D_c$ does not depend on $\chi_c$; Newton therefore
+has a direct update for $\chi_c$ at each step.
+The same Jacobian structure applies to the CO$_2$-rich phase with the
+CO$_2$-rich-phase compositions and parameters.
+
+%% ----------------------------------------------------------------
+\subsection{eCPA aqueous phase: Newton system for $(Z_w,\,\varepsilon_r,\,\chi_w)$}
+\label{sec:jac_ecpa}
+
+In the aqueous phase the relative permittivity $\varepsilon_r$ is an additional
+unknown satisfying the Kirkwood self-consistency equation~\eqref{Eqeps_simp}.
+The CO$_2$ cross-association fraction $\chi_c$ is eliminated algebraically via
+$\chi_c = Z_w/D_c$ with $D_c = Z_w + 2x_w\chi_w S_{cw}\Delta_w$, reducing the
+system to three equations in $\mathbf{v}=(Z_w,\varepsilon_r,\chi_w)^\top$:
+\begin{align}
+  G_0 &= Z_w - Z_w^{\text{phys}} - Z_w^{\text{assoc}}
+              - Z_w^{\text{DH}} - Z_w^{\text{Perm}} = 0, \label{eq:G0} \\
+  G_1 &= T_1(\varepsilon_r,\varepsilon_\infty)
+        - T_2(Z_w,\chi_w) = 0, \label{eq:G1} \\
+  G_2 &= \chi_w - \frac{Z_w}{D_w} = 0, \label{eq:G2}
+\end{align}
+where $T_1$ and $T_2$ are the left- and right-hand sides of the
+Onsager--Kirkwood relative permittivity fixed-point equation \citep{Coelho2025},
+$D_w = Z_w + 2x_w\chi_w\Delta_w + 2x_c\chi_c S_{cw}\Delta_w$, and all
+$Z_w$-derivatives of $\Delta_w$ satisfy the same identity~\eqref{eq:dDeltadZ}
+(with $Z_w$ in place of $Z$).
+
+\paragraph{Row 2 (exact).}
+$G_2$ has the same structure as $F_2$~\eqref{eq:F2jac} with $\varepsilon_r$
+absent from $D_w$, so
+\begin{align}
+  H_{20} &= -\frac{2\Delta_w(1+V_g)(x_w\chi_w + x_c\chi_c S_{cw})}{D_w^2},
+             \label{eq:H20} \\
+  H_{21} &= 0, \label{eq:H21} \\
+  H_{22} &= 1 + \frac{2x_w\Delta_w\chi_w}{D_w}. \label{eq:H22}
+\end{align}
+
+\paragraph{Row 1 (exact).}
+$T_1 = F(\varepsilon_r,\varepsilon_\infty)$ (left-hand side of the Onsager--Kirkwood
+equation) and $T_2 = (N_Ac/9\varepsilon_0k_BT)x_w g_w\mu_{0w}^2$ depend on
+$(Z_w,\varepsilon_r,\chi_w)$ through $\varepsilon_\infty(Z_w)$, $\varepsilon_r$,
+and the Kirkwood g-factor $g_w(\chi_w)$, respectively:
+\begin{align}
+  H_{10} &= \left(\frac{\partial F}{\partial\varepsilon_\infty}\right)
+             \frac{V(\partial\varepsilon_\infty/\partial V)}{Z_w}
+           - \frac{N_A\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_w
+             \left(-\frac{\rho}{Z_w}\,g_w
+                   + \rho\,\frac{\partial g_w}{\partial Z_w}\right),
+             \label{eq:H10} \\
+  H_{11} &= \frac{\partial F}{\partial\varepsilon_r}
+           = \frac{2\varepsilon_r^2+\varepsilon_\infty^2}
+                  {\varepsilon_r^2(\varepsilon_\infty+2)^2},
+             \label{eq:H11} \\
+  H_{12} &= -\frac{N_A\rho\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_w\,
+              \frac{\partial g_w}{\partial\chi_w},
+             \label{eq:H12}
+\end{align}
+where $\rho = P/(Z_wRT)$, $V(\partial\varepsilon_\infty/\partial V)$ follows
+from the Clausius--Mossotti relation for $\varepsilon_\infty$ \citep{Coelho2025},
+and $\partial g_w/\partial Z_w$ and $\partial g_w/\partial\chi_w$ follow from
+differentiating the Kirkwood g-factor \citep{Coelho2025} through
+$\mathcal{P}_{ww}$ and $\mathcal{P}_{wc}$
+using Eq.~\eqref{eq:dDeltadZ} for $\partial\delta_w/\partial Z_w$ and
+$\partial\chi_c/\partial\chi_w = -Z_w\cdot 2x_wS_{cw}\Delta_w/D_c^2$,
+respectively.
+
+\paragraph{Row 0 (partially approximate).}
+The Debye screening length satisfies
+\begin{equation}
+  \frac{\partial\kappa}{\partial Z_w} = -\frac{\kappa}{2Z_w}, \qquad
+  \frac{\partial\kappa}{\partial\varepsilon_r} = -\frac{\kappa}{2\varepsilon_r}.
+  \label{eq:dkappa_jac}
+\end{equation}
+The $\varepsilon_r$-column entry combines DH and permittivity contributions,
+\begin{equation}
+  H_{01} = -\frac{\partial Z_w^{\text{DH}}}{\partial\varepsilon_r}
+           - \frac{\partial Z_w^{\text{Perm}}}{\partial\varepsilon_r},
+  \label{eq:H01}
+\end{equation}
+where $\partial Z_w^{\text{DH}}/\partial\varepsilon_r$ is obtained from the
+DH compressibility expression \citep{Coelho2025} through $\kappa(\varepsilon_r)$
+using Eq.~\eqref{eq:dkappa_jac}, and $\partial Z_w^{\text{Perm}}/\partial\varepsilon_r$
+requires differentiating $Z_w^{\text{Perm}} = -a_{\varepsilon_r}V(\partial\varepsilon_r/\partial V)$
+with respect to $\varepsilon_r$ through $\kappa$ and through $V(\partial\varepsilon_r/\partial V)$,
+using the second-order $F$-derivatives
+\begin{equation}
+  \frac{\partial^2 F}{\partial\varepsilon_r^2}
+    = -\frac{2\varepsilon_\infty^2}{\varepsilon_r^3(\varepsilon_\infty+2)^2}, \qquad
+  \frac{\partial^2 F}{\partial\varepsilon_r\,\partial\varepsilon_\infty}
+    = \frac{4(\varepsilon_\infty - \varepsilon_r^2)}{\varepsilon_r^2(\varepsilon_\infty+2)^3}.
+  \label{eq:d2F_jac}
+\end{equation}
+The $\chi_w$-column entry is
+\begin{equation}
+  H_{02} = -\frac{\partial Z_w^{\text{assoc}}}{\partial\chi_w}
+           - \frac{\partial Z_w^{\text{Perm}}}{\partial\chi_w},
+  \label{eq:H02}
+\end{equation}
+where $\partial Z_w^{\text{assoc}}/\partial\chi_w$ follows from the
+Wertheim association compressibility \citep{Coelho2025} through $\chi_c(\chi_w)$, and
+$\partial Z_w^{\text{Perm}}/\partial\chi_w$ is obtained by differentiating
+the chi cross-derivative system with respect to $\chi_w$ and propagating
+through $\mathcal{P}_{ww}$, $\mathcal{P}_{wc}$, $g_w$, and $V(\partial F/\partial V)$.
+The $Z_w$-column entry $H_{00}$ approximates
+$\partial(Z_w^{\text{phys}}+Z_w^{\text{assoc}}+Z_w^{\text{DH}}+Z_w^{\text{Perm}})/\partial Z_w$
+by omitting the implicit $Z_w$-dependence of $V(\partial\chi_w/\partial V)$ and
+$V(\partial\chi_c/\partial V)$ through the chi cross-derivative system.
+Comparison with centered finite differences confirms this approximation
+incurs a 1--2\,\% error in $H_{00}$ at typical conditions, which does not
+impair Newton convergence from warm starts (the other eight entries are exact
+to machine precision).
 
 
 %% ============================================================
