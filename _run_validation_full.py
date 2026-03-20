@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     from ecpa.parameters import make_params
     from ecpa.solution_table import load_solution_table, make_solution_guess_fn
-    from ecpa.flash import flash_co2_h2o_salt_fast, flash_co2_h2o_salt_ssi
+    from ecpa.flash import flash_co2_h2o_salt_fast
     from ecpa.validate_nacl import (
         load_co2nacl_exp, compute_metrics, print_metrics,
         plot_nacl_T_figures, plot_error_heatmap,

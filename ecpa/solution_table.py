@@ -1,4 +1,11 @@
 """
+LEGACY / OLD INFRASTRUCTURE — build_solution_table() uses flash_co2_h2o_salt_ssi
+(outer ms_aq loop) which has been superseded by flash_co2_h2o_salt_kv.
+For new solution tables, use _build_scan_table_v2.py.
+
+The load_solution_table() and make_solution_guess_fn() helpers remain valid
+for reading existing NPZ tables.
+
 Solution lookup table for fast eCPA flash.
 
 Offline (once):

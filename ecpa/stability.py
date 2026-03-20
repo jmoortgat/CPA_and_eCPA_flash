@@ -59,7 +59,7 @@ import numpy as np
 from scipy.optimize import fsolve
 
 from .constants import *   # noqa: F401,F403  — same pattern as elv.py
-from .flash import flash_co2_h2o_salt_ssi, flash_co2_h2o_salt_kv
+from .flash import flash_co2_h2o_salt_kv
 from .scan import _cpu_count
 
 
@@ -75,9 +75,12 @@ def reset_call_stats():
     s = _tls
     s.n_lnphi_aq        = 0
     s.n_lnphi_c         = 0
-    s.n_newton_aq       = 0   # times Newton was attempted
-    s.n_newton_aq_ok    = 0   # times Newton converged
-    s.n_newton_aq_iters = 0   # total Newton iterations (success + failure)
+    s.n_newton_aq       = 0   # times Newton was attempted (aqueous)
+    s.n_newton_aq_ok    = 0   # times Newton converged (aqueous)
+    s.n_newton_aq_iters = 0   # total Newton iterations (aqueous)
+    s.n_newton_c        = 0   # times Newton was attempted (CO₂-rich)
+    s.n_newton_c_ok     = 0   # times Newton converged (CO₂-rich)
+    s.n_newton_c_iters  = 0   # total Newton iterations (CO₂-rich)
     s.n_fsolve_aq       = 0   # times fsolve path taken (aq)
     s.n_fsolve_aq_nfev  = 0   # total fsolve function evals (aq, all starts)
     s.n_fsolve_c        = 0   # times fsolve path taken (CO₂-rich)
@@ -93,6 +96,9 @@ def get_call_stats() -> dict:
         "n_newton_aq":       getattr(s, "n_newton_aq",       0),
         "n_newton_aq_ok":    getattr(s, "n_newton_aq_ok",    0),
         "n_newton_aq_iters": getattr(s, "n_newton_aq_iters", 0),
+        "n_newton_c":        getattr(s, "n_newton_c",        0),
+        "n_newton_c_ok":     getattr(s, "n_newton_c_ok",     0),
+        "n_newton_c_iters":  getattr(s, "n_newton_c_iters",  0),
         "n_fsolve_aq":       getattr(s, "n_fsolve_aq",       0),
         "n_fsolve_aq_nfev":  getattr(s, "n_fsolve_aq_nfev",  0),
         "n_fsolve_c":        getattr(s, "n_fsolve_c",        0),
@@ -166,6 +172,122 @@ def _eval_c_residual(vars_, x1c, T, P):
     return [Zc - Zc_new, chi1c - chi1c_new]
 
 
+def _eval_c_all_with_jac(Zc, chi1c, x1c, T, P):
+    """
+    Compute residuals AND analytical 2×2 Jacobian for the CO₂-rich inner system.
+
+    Returns (Zc_new, chi1c_new, J) where
+        F = [Zc - Zc_new, chi1c - chi1c_new]
+        J[i,j] = dF[i]/d(vars[j]),  vars = [Zc, chi1c]
+    """
+    P_Pa = P * 1e5
+    x4c  = 1.0 - x1c
+
+    # ── Fixed (T, P, x1c)-dependent constants ────────────────────────────────
+    k14 = Akij*(T/Tc4)**2 + Bkij*(T/Tc4) + Ckij
+    S14 = ASij*(T/Tc4)**2 + BSij*(T/Tc4) + CSij
+    a1  = a01*(1 + c11*(1 - (T/Tc1)**0.5))**2
+    a4  = a04*(1 + c14*(1 - (T/Tc4)**0.5))**2
+    a14 = (a1*a4)**0.5*(1 - k14)
+    a   = x1c**2*a1 + 2*x1c*x4c*a14 + x4c**2*a4
+    b   = b1*x1c + b4*x4c
+    A   = a*P_Pa/R**2/T**2
+    B   = b*P_Pa/R/T
+    E   = kappaW*(np.exp(epsW/T) - 1.0)   # DELTA = g_eta*E*P_Pa/(R*T)
+
+    # ── Z-dependent intermediates ─────────────────────────────────────────────
+    eta       = B / (4.0*Zc)
+    g_eta     = 1.0 / (1.0 - 1.9*eta)
+    dg_deta   = 1.9 * g_eta**2
+    H_pack    = 1.0 + 1.9*eta*g_eta          # = 1 + eta*dg_deta/g_eta
+    DELTA     = g_eta * E * P_Pa / R / T
+
+    # ── Derivatives of DELTA and H_pack w.r.t. Zc ────────────────────────────
+    deta_dZc   = -B / (4.0*Zc**2)
+    dDELTA_dZc = (P_Pa / (R*T)) * E * dg_deta * deta_dZc   # = E*(P/RT)*1.9*g^2*deta_dZc
+    dH_dZc     = 1.9 * deta_dZc * g_eta * H_pack
+
+    # ── chi4c and its derivatives ─────────────────────────────────────────────
+    D4           = Zc + 2.0*x1c*chi1c*S14*DELTA
+    chi4c        = Zc / D4
+    dchi4c_dZc   = 2.0*x1c*chi1c*S14*(DELTA - Zc*dDELTA_dZc) / D4**2
+    dchi4c_dc1c  = -Zc * 2.0*x1c*S14*DELTA / D4**2
+
+    # ── chi1c_new and its derivatives ─────────────────────────────────────────
+    D1              = Zc + 2.0*x1c*chi1c*DELTA + 2.0*x4c*chi4c*S14*DELTA
+    chi1c_new       = Zc / D1
+    dD1_dZc         = (1.0
+                       + 2.0*x1c*chi1c*dDELTA_dZc
+                       + 2.0*x4c*S14*(chi4c*dDELTA_dZc + DELTA*dchi4c_dZc))
+    dchi1c_new_dZc  = (D1 - Zc*dD1_dZc) / D1**2
+    dD1_dc1c        = 2.0*x1c*DELTA + 2.0*x4c*S14*DELTA*dchi4c_dc1c
+    dchi1c_new_dc1c = -Zc * dD1_dc1c / D1**2
+
+    # ── Zc_new and its derivatives ────────────────────────────────────────────
+    Zphys        = Zc/(Zc-B) - A/(Zc+B)
+    Schi         = x1c*(1.0-chi1c) + x4c*(1.0-chi4c)
+    Zc_new       = Zphys - 2.0*H_pack*Schi
+
+    dZphys_dZc   = -B/(Zc-B)**2 + A/(Zc+B)**2
+    dSchi_dZc    = -x4c*dchi4c_dZc
+    dSchi_dc1c   = -x1c - x4c*dchi4c_dc1c
+    dZc_new_dZc  = dZphys_dZc - 2.0*(dH_dZc*Schi + H_pack*dSchi_dZc)
+    dZc_new_dc1c = -2.0*H_pack*dSchi_dc1c
+
+    # ── 2×2 Jacobian of F = [Zc-Zc_new, chi1c-chi1c_new] ────────────────────
+    J = np.array([
+        [1.0 - dZc_new_dZc,    -dZc_new_dc1c        ],
+        [-dchi1c_new_dZc,       1.0 - dchi1c_new_dc1c],
+    ])
+
+    return Zc_new, chi1c_new, J
+
+
+def _newton_c(v0, x1c, T, P, tol=1e-10, maxiter=20):
+    """Newton iteration for the CO₂-rich inner solve using analytical Jacobian.
+
+    Solves F(Zc, chi1c) = 0 where
+        F = [Zc - Zc_new(Zc, chi1c),
+             chi1c - chi1c_new(Zc, chi1c)].
+
+    Uses the analytical 2×2 Jacobian from _eval_c_all_with_jac (1 eval/step).
+    Returns np.array([Zc, chi1c]) on convergence, None otherwise.
+    """
+    _s = _tls
+    _s.n_newton_c = getattr(_s, "n_newton_c", 0) + 1
+    v = np.array(v0, dtype=float)
+
+    for _iter in range(maxiter):
+        Zc, chi1c = v[0], v[1]
+        if Zc <= 0 or chi1c <= 0 or chi1c >= 2.0:
+            _s.n_newton_c_iters = getattr(_s, "n_newton_c_iters", 0) + _iter
+            return None
+        Zc_new, chi1c_new, J = _eval_c_all_with_jac(Zc, chi1c, x1c, T, P)
+        F = np.array([Zc - Zc_new, chi1c - chi1c_new])
+        if np.max(np.abs(F)) < tol:
+            _s.n_newton_c_ok    = getattr(_s, "n_newton_c_ok",    0) + 1
+            _s.n_newton_c_iters = getattr(_s, "n_newton_c_iters", 0) + _iter + 1
+            return v
+        try:
+            dv = np.linalg.solve(J, -F)
+        except np.linalg.LinAlgError:
+            _s.n_newton_c_iters = getattr(_s, "n_newton_c_iters", 0) + _iter + 1
+            return None
+        # Backtracking line search to stay in physical domain
+        alpha = 1.0
+        for _ls in range(6):
+            vt = v + alpha * dv
+            if vt[0] > 0 and 0 < vt[1] < 2.0:
+                break
+            alpha *= 0.5
+        else:
+            _s.n_newton_c_iters = getattr(_s, "n_newton_c_iters", 0) + _iter + 1
+            return None
+        v = vt
+    _s.n_newton_c_iters = getattr(_s, "n_newton_c_iters", 0) + maxiter
+    return None  # maxiter reached without convergence
+
+
 def _lnphi_c_inner(x1c: float, T: float, P: float,
                    x0=None) -> tuple[float, float, np.ndarray]:
     """
@@ -216,8 +338,11 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     # (covolume estimate Z ≈ b·P/RT).  The liquid root is the physically correct
     # branch for the CO₂-rich reference used in stability analysis — it gives
     # the strong-interaction lnφ values that correctly detect instability.
-    # Warm-starting across SSI iterations (or across a P-scan) keeps fsolve on
-    # the same branch and prevents discontinuous jumps.
+    # Warm-starting across SSI iterations (or across a P-scan) keeps the solver
+    # on the same branch and prevents discontinuous jumps.
+    _s = _tls
+    _s.n_lnphi_c = getattr(_s, "n_lnphi_c", 0) + 1
+
     caller_x0 = x0   # preserve original to detect warm-start vs cold-start
     if x0 is None:
         Z_liq = max(P_Pa * b / R / T + 0.01, 0.05)
@@ -227,6 +352,13 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
             [0.5,   0.95],   # intermediate
         ]
     else:
+        # Warm start: try Newton first (fast and accurate when close to solution).
+        v_newton = _newton_c(x0, x1c, T, P)
+        if v_newton is not None:
+            Zc, chi1c = v_newton[0], v_newton[1]
+            lp1, lp4 = _lnphi_from_zc_chi(Zc, chi1c)
+            return lp1, lp4, np.array([Zc, chi1c])
+        # Newton failed — fall back to fsolve warm-started at x0
         cold_starts = [list(x0)]
 
     # Collect all distinct valid roots, then return the thermodynamically stable
@@ -236,8 +368,6 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     # found first but the gas root is the stable state, and using the liquid root
     # for the stability reference while the trial uses the gas root produces a
     # spurious tpd < 0 (root-mixing artefact).
-    _s = _tls
-    _s.n_lnphi_c = getattr(_s, "n_lnphi_c", 0) + 1
     _nfev_c = 0
     valid_roots = []
     for x0_try in cold_starts:
@@ -1468,6 +1598,7 @@ def ecpa_stability_flash(
     guess_table_fn=None,
     co2_ref_x0=None,
     aq_ref_x0=None,
+    tpd_threshold: float = -0.02,
 ) -> dict:
     """
     Combined phase stability + flash — hierarchical algorithm (Jex et al. 2024).
@@ -1495,6 +1626,10 @@ def ecpa_stability_flash(
                      Pass result['stability']['co2_ref_x0'] from the previous
                      P call to keep the reference on the correct EOS root.
     aq_ref_x0      : same for the aqueous reference fsolve.
+    tpd_threshold  : if tpd_min > tpd_threshold, classify as single-phase
+                     (near-critical false-positive guard). Default −0.02.
+                     Genuine instabilities have TPD ≪ −0.1; near-critical
+                     false positives have TPD ∈ (−0.03, 0).
 
     Returns
     -------
@@ -1512,6 +1647,18 @@ def ecpa_stability_flash(
                           co2_ref_x0=co2_ref_x0, aq_ref_x0=aq_ref_x0)
 
     if stab["stable"]:
+        return dict(phase="single_phase", stable=True,
+                    T=T, P_bar=P, z_co2=z_co2, ms=ms,
+                    stability=stab)
+
+    # ── Near-critical false-positive guard ────────────────────────────────────
+    # Near the CO₂+H₂O critical locus (T > ~570 K, high P) the stability test
+    # returns slightly negative TPD (typically > −0.03) even though no valid
+    # two-phase material balance exists.  Both K-value SSI and direct ELV
+    # fsolve fail with near-singular Jacobians at these conditions.
+    # Genuine instabilities have TPD ≪ −0.1; the threshold below safely filters
+    # these false positives without misclassifying real two-phase cases.
+    if stab["tpd_min"] > tpd_threshold:
         return dict(phase="single_phase", stable=True,
                     T=T, P_bar=P, z_co2=z_co2, ms=ms,
                     stability=stab)

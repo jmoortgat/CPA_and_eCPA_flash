@@ -1,4 +1,10 @@
 """
+LEGACY / OLD INFRASTRUCTURE — do not use for new scans.
+
+This module uses flash_co2_h2o_salt_ssi (outer ms_aq loop) which has been
+superseded by flash_co2_h2o_salt_kv + ecpa_stability_flash.  For new grid
+scans, use _build_scan_table_v2.py (hierarchical stability + KV flash).
+
 run_flash_scan — grid scan over (T, P, z_co2, ms) using either flash algorithm.
 
 Results are cached to a Parquet file and reloaded on subsequent calls.
