@@ -1092,6 +1092,65 @@ def _wilson_K(T: float, P_bar: float) -> tuple[float, float]:
     return float(np.clip(K_h2o, 1e-12, 1e12)), float(np.clip(K_co2, 1e-12, 1e12))
 
 
+def _make_elv_guess_from_trial(
+    x1c_trial: float,
+    x1w_trial: float,
+    ms: float,
+    T: float,
+    P: float,
+    params=None,
+) -> tuple:
+    """
+    Build a 10-element ELV initial guess from stability trial compositions.
+
+    Calls _lnphi_c_inner at x1c_trial and _lnphi_aq_inner at x1w_trial
+    to obtain self-consistent (Z, chi) values at those compositions.
+    Cross-derivative slots sol[7:10] are initialised to zero; the ELV
+    fsolve finds their correct values during the flash.
+
+    Parameters
+    ----------
+    x1c_trial : H₂O mole fraction in the CO₂-rich trial phase (from stability)
+    x1w_trial : H₂O mole fraction in the aqueous trial phase (from stability)
+    ms        : salt molality for the aqueous inner loop [mol/kg]
+    T, P      : temperature [K], pressure [bar]
+    params    : EoS parameter overrides
+
+    Returns
+    -------
+    sol_init   : ndarray, shape (10,)
+    ms_aq_init : float  (= ms; flash SSI refines it)
+
+    Raises
+    ------
+    RuntimeError if either inner lnphi call fails.
+    """
+    saved = _apply_params(params)
+    try:
+        x1c = float(np.clip(x1c_trial, 1e-6, 1.0 - 1e-6))
+        x1w_max = (1.0 - 1e-9) / (1.0 + 2.0 * ms * Mw) if ms > 0 else (1.0 - 1e-9)
+        x1w = float(np.clip(x1w_trial, 1e-6, x1w_max))
+
+        _, _, sol_c  = _lnphi_c_inner(x1c, T, P)          # [Zc, chi1c]
+        _, _, sol_aq = _lnphi_aq_inner(x1w, ms, T, P)     # [Zw, epsr, chi1w]
+
+        sol_init = np.zeros(10)
+        sol_init[0] = sol_aq[0]   # Zw
+        sol_init[1] = x1w         # x1w
+        sol_init[2] = sol_aq[1]   # epsr
+        sol_init[3] = sol_c[0]    # Zc
+        sol_init[4] = x1c         # x1c
+        sol_init[5] = sol_aq[2]   # chi1w
+        sol_init[6] = sol_c[1]    # chi1c
+        # sol_init[7:10] = cross-derivatives: zero init, fsolve finds them
+
+        return sol_init, float(ms)
+    except Exception as exc:
+        raise RuntimeError(f"_make_elv_guess_from_trial failed: {exc}") from exc
+    finally:
+        _restore_params(saved, params)
+
+
 def ecpa_stability(
     z_co2: float,
     ms: float,
@@ -1407,13 +1466,23 @@ def ecpa_stability_flash(
     P: float,
     params: dict | None = None,
     guess_table_fn=None,
+    co2_ref_x0=None,
+    aq_ref_x0=None,
 ) -> dict:
     """
-    Combined phase stability + flash for the eCPA system.
+    Combined phase stability + flash — hierarchical algorithm (Jex et al. 2024).
 
-    If the stability test indicates a single phase, returns immediately without
-    running the flash.  If unstable, runs flash_co2_h2o_salt_ssi (the TPD
-    trial compositions are available as warm-start seeds in future work).
+    Algorithm
+    ---------
+    1. Run TPD stability test with all 6 initial guesses (2 CO₂-rich,
+       2 aqueous, 2 Wilson-K).
+    2. If stable → return single-phase result immediately.
+    3. Build an ELV initial guess from the converged trial-phase compositions
+       (x1c_trial, x1w_trial) returned by the stability test.  These encode
+       the K-values from the most negative TPD trial, providing a physically
+       informed starting point that adapts to high-salinity conditions where
+       K_CO₂ can exceed 10³.
+    4. If flash attempt 1 fails → fall back to Wilson K-value initialization.
 
     Parameters
     ----------
@@ -1421,29 +1490,66 @@ def ecpa_stability_flash(
     ms             : salt molality [mol/kg H₂O]
     T, P           : temperature [K], pressure [bar]
     params         : EoS parameter overrides
-    guess_table_fn : required for the flash step
+    guess_table_fn : not used; retained for API compatibility
+    co2_ref_x0     : warm-start [Zc, chi1c] for the stability reference fsolve.
+                     Pass result['stability']['co2_ref_x0'] from the previous
+                     P call to keep the reference on the correct EOS root.
+    aq_ref_x0      : same for the aqueous reference fsolve.
 
     Returns
     -------
-    dict — same format as flash_co2_h2o_salt_ssi on success, or:
+    dict — same format as flash_co2_h2o_salt_ssi on success, plus a
+        'stability' key containing the full ecpa_stability result dict.
+    On single-phase:
         {'phase': 'single_phase', 'stable': True, 'T': T, 'P_bar': P,
          'z_co2': z_co2, 'ms': ms, 'stability': stab_result}
+
+    Raises
+    ------
+    RuntimeError if both flash attempts fail.
     """
-    stab = ecpa_stability(z_co2, ms, T, P, params, guess_table_fn)
+    stab = ecpa_stability(z_co2, ms, T, P, params,
+                          co2_ref_x0=co2_ref_x0, aq_ref_x0=aq_ref_x0)
 
     if stab["stable"]:
         return dict(phase="single_phase", stable=True,
                     T=T, P_bar=P, z_co2=z_co2, ms=ms,
                     stability=stab)
 
-    # Unstable → run flash
-    if guess_table_fn is None:
-        raise ValueError("guess_table_fn is required for the flash step")
+    # ── Attempt 1: ELV guess from stability trial K-values ────────────────────
+    try:
+        sol_init, ms_aq_init = _make_elv_guess_from_trial(
+            stab["x1c_trial"], stab["x1w_trial"], ms, T, P, params)
+        result = flash_co2_h2o_salt_ssi(
+            T=T, P_bar=P, z_co2=z_co2, m_tot=ms,
+            params=params, maxiter_ms=40,
+            initial_sol=sol_init, initial_ms_aq=ms_aq_init,
+        )
+        result["stability"] = stab
+        return result
+    except Exception:
+        pass
 
-    result = flash_co2_h2o_salt_ssi(
-        T=T, P_bar=P, z_co2=z_co2, m_tot=ms,
-        guess_table_fn=guess_table_fn,
-        params=params,
-    )
-    result["stability"] = stab
-    return result
+    # ── Attempt 2: Wilson K initialization ────────────────────────────────────
+    K_h2o, K_co2 = _wilson_K(T, P)
+    z_h2o = 1.0 - z_co2
+    x1c_wil = float(np.clip(
+        K_h2o * z_h2o / (K_h2o * z_h2o + K_co2 * z_co2), 1e-6, 1.0 - 1e-6))
+    x1w_max = (1.0 - 1e-9) / (1.0 + 2.0 * ms * Mw) if ms > 0 else (1.0 - 1e-9)
+    x1w_wil = float(np.clip(
+        (z_h2o / K_h2o) / (z_h2o / K_h2o + z_co2 / K_co2), 0.5, x1w_max))
+    try:
+        sol_wil, ms_aq_wil = _make_elv_guess_from_trial(
+            x1c_wil, x1w_wil, ms, T, P, params)
+        result = flash_co2_h2o_salt_ssi(
+            T=T, P_bar=P, z_co2=z_co2, m_tot=ms,
+            params=params, maxiter_ms=40,
+            initial_sol=sol_wil, initial_ms_aq=ms_aq_wil,
+        )
+        result["stability"] = stab
+        return result
+    except Exception:
+        raise RuntimeError(
+            f"flash did not converge (T={T:.1f}K P={P:.2f}bar z={z_co2:.3f} "
+            f"ms={ms:.2f}): stability K-init and Wilson K-init both failed."
+        )
