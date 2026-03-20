@@ -326,6 +326,198 @@ $\partial \chi_c / \partial N_c = 0$. All the other derivatives are given next:
 \begin{equation}
         N\left ( \frac{\partial \delta_w}{\partial N_i} \right ) = \frac{\delta_w \eta b_i}{g_\eta b} \frac{\mathrm{d} g_\eta} {\mathrm{d} \eta}.
         \label{NddeltadNi}
-\end{equation} 
+\end{equation}
 
+
+\subsection{Newton Solver for the Aqueous Inner Loop}
+
+Computing $\ln\phi_i$ in the aqueous phase requires the simultaneous solution of
+three self-consistency equations in the unknowns
+$\mathbf{v} = (Z_w,\,\varepsilon_r,\,\chi_w)^\top$:
+\begin{align}
+  F_0(Z_w, \varepsilon_r, \chi_w) &= Z_w - Z_w^{\text{phys}} - Z_w^{\text{assoc}}
+    - Z_w^{\text{DH}} - Z_w^{\text{Perm}} = 0, \label{Eq:F0} \\
+  F_1(Z_w, \varepsilon_r, \chi_w) &= T_1(\varepsilon_r,\varepsilon_\infty)
+    - T_2(Z_w, \chi_w) = 0, \label{Eq:F1} \\
+  F_2(Z_w, \varepsilon_r, \chi_w) &= \chi_w - \chi_w^{\text{new}}(Z_w, \chi_w) = 0. \label{Eq:F2}
+\end{align}
+Here $Z_w^{\text{phys}}$, $Z_w^{\text{assoc}}$, $Z_w^{\text{DH}}$ and $Z_w^{\text{Perm}}$
+are defined in Eqs.~\eqref{Eq:Z_phys}--\eqref{Eq:ZPerm}, $T_1$ and $T_2$ are,
+respectively, the left- and right-hand sides of the relative permittivity
+self-consistency equation~\eqref{Eqeps_simp},
+and $\chi_w^{\text{new}}$ follows from the H-function, Eq.~\eqref{Hfunction}.
+
+Writing the dimensionless association strength $\Delta = \delta_w P/(RT)$, the
+cross-associating fraction is
+\begin{equation}
+  \chi_c = \frac{Z_w}{Z_w + 2x_w \chi_w S_{cw} \Delta}, \qquad
+  D_c \equiv Z_w + 2x_w \chi_w S_{cw} \Delta,
+  \label{Eq:chic_Zform}
+\end{equation}
+and the aqueous H$_2$O fraction reads
+\begin{equation}
+  \chi_w^{\text{new}} = \frac{Z_w}{Z_w + 2x_w \chi_w \Delta + 2x_c \chi_c S_{cw} \Delta},
+  \qquad D_w \equiv Z_w + 2x_w \chi_w \Delta + 2x_c \chi_c S_{cw} \Delta.
+  \label{Eq:chiw_Zform}
+\end{equation}
+
+Newton's method is applied to Eqs.~\eqref{Eq:F0}--\eqref{Eq:F2}:
+\begin{equation}
+  \mathbf{v}_{k+1} = \mathbf{v}_k - \mathbf{J}(\mathbf{v}_k)^{-1}\,
+  \mathbf{F}(\mathbf{v}_k),
+  \label{Eq:Newton}
+\end{equation}
+where the $3\times 3$ analytical Jacobian $J_{ij}=\partial F_i/\partial v_j$ is
+derived below.
+
+\subsubsection*{Row 2: $\partial F_2 / \partial \mathbf{v}$}
+
+Because $F_2 = \chi_w - Z_w/D_w$, the chain of dependencies
+$\chi_c(\chi_w)$ and $\chi_c(Z_w)$ must be carried through $D_w$.
+
+The partial of $\chi_c$ with respect to $Z_w$ is
+\begin{equation}
+  \frac{\partial \chi_c}{\partial Z_w} = \frac{D_c - Z_w\,\partial D_c/\partial Z_w}{D_c^2},
+  \qquad
+  \frac{\partial D_c}{\partial Z_w} = 1 + 2x_w \chi_w S_{cw} \frac{\partial \Delta}{\partial Z_w},
+  \label{Eq:dchic_dZw}
+\end{equation}
+with $\partial\Delta/\partial Z_w$ obtained from $\Delta = \delta_w P/(RT)$ and
+$\rho \propto Z_w^{-1}$ at fixed $T$, $P$:
+\begin{equation}
+  Z_w \frac{\partial \Delta}{\partial Z_w}
+  = Z_w \frac{\partial \delta_w}{\partial Z_w}\frac{P}{RT}
+  = V\frac{\partial \delta_w}{\partial V}\frac{P}{RT}
+  = -\frac{\Delta \eta}{g_\eta}\frac{\mathrm{d}g_\eta}{\mathrm{d}\eta}.
+  \label{Eq:dDelta_dZw}
+\end{equation}
+Analogously, $\partial \chi_c/\partial\chi_w = -Z_w \cdot 2x_w S_{cw}\Delta / D_c^2$.
+With $D_w$ defined in Eq.~\eqref{Eq:chiw_Zform}, the Jacobian entries are:
+\begin{align}
+  J_{20} &= -\frac{\partial \chi_w^{\text{new}}}{\partial Z_w}
+    = -\frac{D_w - Z_w\,\partial D_w/\partial Z_w}{D_w^2}, \label{Eq:J20} \\
+  J_{21} &= 0, \label{Eq:J21} \\
+  J_{22} &= 1 - \frac{\partial \chi_w^{\text{new}}}{\partial \chi_w}
+    = 1 + \frac{Z_w\,\partial D_w/\partial \chi_w}{D_w^2}, \label{Eq:J22}
+\end{align}
+where
+\begin{align}
+  \frac{\partial D_w}{\partial Z_w} &=
+    1 + \left(2x_w\chi_w + 2x_c\chi_c S_{cw}\right)\frac{\partial \Delta}{\partial Z_w}
+    + 2x_c S_{cw} \Delta\,\frac{\partial \chi_c}{\partial Z_w}, \\
+  \frac{\partial D_w}{\partial \chi_w} &=
+    2x_w\Delta + 2x_c S_{cw} \Delta\,\frac{\partial \chi_c}{\partial \chi_w}.
+\end{align}
+
+\subsubsection*{Row 1: $\partial F_1 / \partial \mathbf{v}$}
+
+$T_1 = F(\varepsilon_r,\varepsilon_\infty)$ is the left-hand side of
+Eq.~\eqref{Eqeps_simp}.  Its partial derivatives are those already given in
+Eqs.~\eqref{dFder} and \eqref{dFdeinf}.
+$T_2 = (N_A c / 9\varepsilon_0 k_B T)\,x_w g_w \mu_{0w}^2$ depends on $Z_w$ through
+$\rho = P/(Z_w RT)$ and on $\chi_w$ through $g_w$.
+
+The three entries are:
+\begin{align}
+  J_{10} &= \left(\frac{\partial F}{\partial\varepsilon_\infty}\right)
+             \frac{V(\partial\varepsilon_\infty/\partial V)}{Z_w}
+             - \frac{N_A\mu_{0w}^2}{9\varepsilon_0 k_B T}\,x_w
+             \left(\frac{\partial\rho}{\partial Z_w}\,g_w
+                   + \rho\,\frac{\partial g_w}{\partial Z_w}\right), \label{Eq:J10} \\
+  J_{11} &= \left(\frac{\partial F}{\partial\varepsilon_r}\right)
+           = \frac{2\varepsilon_r^2 + \varepsilon_\infty^2}
+                  {\varepsilon_r^2(\varepsilon_\infty+2)^2}, \label{Eq:J11} \\
+  J_{12} &= -\frac{N_A\rho\mu_{0w}^2}{9\varepsilon_0 k_B T}\,x_w\,
+              \frac{\partial g_w}{\partial \chi_w}, \label{Eq:J12}
+\end{align}
+where $V(\partial\varepsilon_\infty/\partial V)$ is given by Eq.~\eqref{deinfdV},
+$\partial\rho/\partial Z_w = -\rho/Z_w$, and $\partial g_w/\partial Z_w$ follows
+from differentiating Eq.~\eqref{Kirkwood_simp} through $P_{ww}$ and $P_{wc}$
+(Eqs.~\eqref{dPwwdV}--\eqref{dPwcdNi}) at fixed $\chi_w$, $\chi_c$, using
+Eq.~\eqref{Eq:dDelta_dZw} for $\partial\delta_w/\partial Z_w$.  Similarly,
+$\partial g_w/\partial\chi_w$ uses $\partial\chi_c/\partial\chi_w$ derived above.
+
+\subsubsection*{Row 0: $\partial F_0 / \partial \mathbf{v}$}
+
+The Debye screening length $\kappa = \left(e^2 N_A\rho\sum_j x_j z_j^2 /
+k_BT\varepsilon_0\varepsilon_r\right)^{1/2}$ gives
+\begin{equation}
+  \frac{\partial\kappa}{\partial Z_w} = -\frac{\kappa}{2Z_w}, \qquad
+  \frac{\partial\kappa}{\partial\varepsilon_r} = -\frac{\kappa}{2\varepsilon_r}.
+  \label{Eq:dkappa}
+\end{equation}
+For the DH contribution:
+\begin{equation}
+  J_{01} = -\frac{\partial Z^{\text{DH}}}{\partial\varepsilon_r}
+           - \frac{\partial Z^{\text{Perm}}}{\partial\varepsilon_r}.
+  \label{Eq:J01}
+\end{equation}
+The first term follows from differentiating Eq.~\eqref{Eq:ZDH} through
+$\kappa(\varepsilon_r)$ using Eq.~\eqref{Eq:dkappa}.  The second requires
+differentiating $Z^{\text{Perm}} = -a_{DH+B,\varepsilon_r}\,V(\partial\varepsilon_r/\partial V)$
+with respect to $\varepsilon_r$, yielding
+\begin{equation}
+  \frac{\partial Z^{\text{Perm}}}{\partial\varepsilon_r} =
+    -\left[\frac{\partial a_{DH+B,\varepsilon_r}}{\partial\varepsilon_r}\,V\!\left(\frac{\partial\varepsilon_r}{\partial V}\right)
+    + a_{DH+B,\varepsilon_r}\,\frac{\partial}{\partial\varepsilon_r}
+      V\!\left(\frac{\partial\varepsilon_r}{\partial V}\right)\right],
+  \label{Eq:dZPerm_der}
+\end{equation}
+where
+\begin{equation}
+  \frac{\partial a_{DH+B,\varepsilon_r}}{\partial\varepsilon_r}
+  = \frac{a_{DH+B,\varepsilon_r}}{H_{DH}}\,
+    \frac{\partial H_{DH}}{\partial\kappa}\,
+    \frac{\partial\kappa}{\partial\varepsilon_r}
+    - \frac{2\,a_{DH+B,\varepsilon_r}}{\varepsilon_r},
+  \label{Eq:daDHBder}
+\end{equation}
+with $H_{DH} = \sum_j x_j z_j^2\!\left(\kappa/(1+\kappa\sigma_j) - 1/R_{B,j}\right)$
+and $\partial H_{DH}/\partial\kappa = \sum_j x_j z_j^2/(1+\kappa\sigma_j)^2$.
+The derivative of $V(\partial\varepsilon_r/\partial V)$ with respect to $\varepsilon_r$
+is obtained by differentiating Eq.~\eqref{Ffunction_V} through $\partial F/\partial\varepsilon_r$
+and $\partial F/\partial\varepsilon_\infty$ (which both depend on $\varepsilon_r$):
+\begin{equation}
+  \frac{\partial}{\partial\varepsilon_r}V\!\left(\frac{\partial\varepsilon_r}{\partial V}\right)
+  = -\frac{V(\partial\varepsilon_r/\partial V)}{\partial F/\partial\varepsilon_r}\,
+     \frac{\partial^2 F}{\partial\varepsilon_r^2}
+  - \frac{1}{\partial F/\partial\varepsilon_r}\,
+    \frac{\partial^2 F}{\partial\varepsilon_r\,\partial\varepsilon_\infty}\,
+    V\!\left(\frac{\partial\varepsilon_\infty}{\partial V}\right),
+  \label{Eq:d_VderdV_der}
+\end{equation}
+where the second-order partial derivatives of $F$ (Eq.~\eqref{Eqeps_simp}) are
+\begin{equation}
+  \frac{\partial^2 F}{\partial\varepsilon_r^2}
+  = -\frac{2\varepsilon_\infty^2}{\varepsilon_r^3(\varepsilon_\infty+2)^2}, \qquad
+  \frac{\partial^2 F}{\partial\varepsilon_r\,\partial\varepsilon_\infty}
+  = \frac{4(\varepsilon_\infty - \varepsilon_r^2)}{\varepsilon_r^2(\varepsilon_\infty+2)^3}.
+  \label{Eq:d2F}
+\end{equation}
+
+The entry $J_{02}$ arises from the $\chi_w$-dependence of $Z^{\text{assoc}}$ and of
+$Z^{\text{Perm}}$ (through $V(\partial\varepsilon_r/\partial V)$, which depends on
+$g_w$ and thus on $\chi_w$):
+\begin{equation}
+  J_{02} = -\frac{\partial Z^{\text{assoc}}}{\partial\chi_w}
+           - \frac{\partial Z^{\text{Perm}}}{\partial\chi_w},
+  \label{Eq:J02}
+\end{equation}
+where $\partial Z^{\text{assoc}}/\partial\chi_w$ follows directly from
+Eq.~\eqref{Eq:Z_assoc} (differentiating through $\chi_c(\chi_w)$), and
+$\partial Z^{\text{Perm}}/\partial\chi_w = a_{DH+B,\varepsilon_r}\,
+(\partial V(\partial\varepsilon_r/\partial V)/\partial\chi_w)$ requires
+differentiating the chi cross-derivative system (Eqs.~\eqref{Gfunction_Phi}
+and \eqref{Hfunction_Phi}) with respect to $\chi_w$ to obtain
+$\partial(V\partial\chi_w/\partial V)/\partial\chi_w$ and
+$\partial(V\partial\chi_c/\partial V)/\partial\chi_w$, and then propagating
+through $P_{ww}$, $P_{wc}$, $g_w$, and $V(\partial F/\partial V)$.
+
+The entry $J_{00}$ approximates $\partial(Z^{\text{phys}}+Z^{\text{assoc}}+Z^{\text{DH}}
++Z^{\text{Perm}})/\partial Z_w$ by omitting one chain-rule contribution:
+the term arising from the implicit $Z_w$-dependence of
+$V(\partial\chi_w/\partial V)$ and $V(\partial\chi_c/\partial V)$ through the
+chi cross-derivative system.  Validating against centered finite differences
+shows this residual to be 1--2\,\% at typical conditions, which does not
+impair Newton convergence from warm starts.
 
