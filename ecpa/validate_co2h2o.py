@@ -226,7 +226,7 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
         t_ms            : float (total wall time [ms])
         cpa2_seeded     : bool  (True if CPA2-seeded fallback was used)
     """
-    from .flash import flash_co2_h2o_salt_fast, flash_co2_h2o_salt_ssi
+    from .flash import flash_co2_h2o_salt_fast, flash_co2_h2o_salt_kv
     from .stability import ecpa_stability
 
     T = float(T); P_bar = float(P_bar)
@@ -344,10 +344,17 @@ def run_ecpa_flash(T, P_bar, z_co2, ms, solution_guess_fn, params,
                 if guess is not None:
                     sol_10, ms_aq_est = guess
                     try:
-                        r2 = flash_co2_h2o_salt_ssi(
+                        # Build K-init and warm-starts from CPA2-derived sol_10
+                        _x1w = float(sol_10[1]); _x1c = float(sol_10[4])
+                        _x4w = 1.0 - _x1w - 2.0 * _x1w * ms_aq_est * 0.018015
+                        _K1 = _x1c / max(_x1w, 1e-30)
+                        _K4 = (1.0 - _x1c) / max(_x4w, 1e-30)
+                        r2 = flash_co2_h2o_salt_kv(
                             T=T, P_bar=P_bar, z_co2=z_co2, m_tot=ms,
-                            params=params, initial_sol=sol_10,
-                            initial_ms_aq=ms_aq_est, maxiter_ms=40, omega=0.7)
+                            params=params, K_init=(_K1, _K4),
+                            sol_aq_x0=np.array([sol_10[0], sol_10[2], sol_10[5]]),
+                            sol_c_x0=np.array([sol_10[3], sol_10[6]]),
+                            maxiter=80)
                         r2["phase"] = "two_phase"
                         r2["stable"] = False
                         r2["tpd_min"] = None

@@ -116,7 +116,8 @@ def test_tieline_invariance(T, P_bar, z_co2_values, m_tot,
     Parameters
     ----------
     flash_fn : callable or None
-        Flash function to use.  Defaults to flash_co2_h2o_salt_ssi.
+        Flash function to use.  Defaults to flash_co2_h2o_salt_kv (K-value SSI).
+    Signature must accept (T, P_bar, z_co2, m_tot, guess_table_fn, params).
 
     Returns
     -------
@@ -124,8 +125,10 @@ def test_tieline_invariance(T, P_bar, z_co2_values, m_tot,
                               x1c, x4c, converged, status
     """
     if flash_fn is None:
-        from .flash import flash_co2_h2o_salt_ssi
-        flash_fn = flash_co2_h2o_salt_ssi
+        from .flash import flash_co2_h2o_salt_kv
+        flash_fn = lambda T, P_bar, z_co2, m_tot, guess_table_fn=None, params=None: \
+            flash_co2_h2o_salt_kv(T=T, P_bar=P_bar, z_co2=z_co2, m_tot=m_tot,
+                                  params=params)
 
     print(f"Tie-line invariance test: T={T} K, P={P_bar} bar, m_tot={m_tot} mol/kg")
     print(f"Varying z_co2 over {len(z_co2_values)} feed compositions\n")

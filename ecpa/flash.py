@@ -359,7 +359,17 @@ def flash_co2_h2o_salt_1d(
     }
 
 
-# ── SSI flash ──────────────────────────────────────────────────────────────────
+# ── SSI flash (DEPRECATED — legacy outer ms_aq loop) ──────────────────────────
+# DEPRECATED: flash_co2_h2o_salt_ssi uses an outer damped SSI loop over ms_aq
+# and an inner 10-variable ELV fsolve.  It is retained only for benchmarking
+# and historical comparison.  Do NOT use in production code.
+#
+# Use instead:
+#   flash_co2_h2o_salt_kv   — K-value SSI (ms_aq as algebraic constraint, no
+#                              outer loop); ~3–5× faster and more robust.
+#   ecpa_stability_flash    — full hierarchical flash (stability → K-init →
+#                              flash_co2_h2o_salt_kv; from ecpa.stability).
+# ──────────────────────────────────────────────────────────────────────────────
 
 def flash_co2_h2o_salt_ssi(
     T, P_bar, z_co2, m_tot,
@@ -377,6 +387,8 @@ def flash_co2_h2o_salt_ssi(
     initial_ms_aq=None,
 ):
     """
+    DEPRECATED — use flash_co2_h2o_salt_kv or ecpa_stability_flash instead.
+
     Two-phase flash using a damped SSI (successive substitution) on ms_aq.
 
     Algorithm

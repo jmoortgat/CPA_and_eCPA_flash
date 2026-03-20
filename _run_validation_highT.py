@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     from ecpa.parameters import make_params
     from ecpa.solution_table import make_solution_guess_fn
-    from ecpa.flash import flash_co2_h2o_salt_ssi, flash_co2_h2o_salt_fast
+    from ecpa.flash import flash_co2_h2o_salt_kv, flash_co2_h2o_salt_fast
     from ecpa.guess_table import load_cpa_guess_table, make_guess_fn
     from ecpa.validate_nacl import (
         load_co2nacl_exp, compute_metrics, print_metrics, plot_nacl_T_figures,
@@ -78,40 +78,29 @@ if __name__ == '__main__':
         return np.nan
 
     def flash_one(T, P, ms, params, guess_fn, cpa_guess_fn):
-        """Try warm-start flash, fall back to cold SSI."""
+        """Try warm-start K-value SSI flash, fall back to cold start."""
         use_warm = (T <= TABLE_T_MAX) and (ms <= TABLE_MS_MAX)
         if use_warm:
-            # Use solution table warm start at a representative z
-            def _ssi(z):
-                return flash_co2_h2o_salt_ssi(
-                    T=T, P_bar=P, z_co2=z, m_tot=ms,
-                    params=params,
-                    maxiter_ms=50,
-                    guess_table_fn=None,
-                    initial_sol=None,
-                    initial_ms_aq=None,
-                )
-            # Actually use guess_fn to get warm start, then pass to ssi
-            def _ssi_warm(z):
+            def _kv_warm(z):
                 sol0, ms0, _ = guess_fn(T, P, z, ms)
-                return flash_co2_h2o_salt_ssi(
+                _x1w = float(sol0[1]); _x1c = float(sol0[4])
+                _x4w = 1.0 - _x1w - 2.0 * _x1w * ms0 * 0.018015
+                _K1 = _x1c / max(_x1w, 1e-30)
+                _K4 = (1.0 - _x1c) / max(_x4w, 1e-30)
+                return flash_co2_h2o_salt_kv(
                     T=T, P_bar=P, z_co2=z, m_tot=ms,
-                    params=params,
-                    maxiter_ms=50,
-                    initial_sol=sol0,
-                    initial_ms_aq=ms0,
-                )
-            return _ssi_warm
+                    params=params, K_init=(_K1, _K4),
+                    sol_aq_x0=np.array([sol0[0], sol0[2], sol0[5]]),
+                    sol_c_x0=np.array([sol0[3], sol0[6]]),
+                    maxiter=80)
+            return _kv_warm
         else:
-            # Cold start with binary guess table (clamped to max T=533K internally)
-            def _ssi_cold(z):
-                return flash_co2_h2o_salt_ssi(
+            # Cold start — kv tries built-in cold-start K guesses
+            def _kv_cold(z):
+                return flash_co2_h2o_salt_kv(
                     T=T, P_bar=P, z_co2=z, m_tot=ms,
-                    params=params,
-                    maxiter_ms=50,
-                    guess_table_fn=cpa_guess_fn,
-                )
-            return _ssi_cold
+                    params=params, maxiter=80)
+            return _kv_cold
 
     results = []
     for k, row in enumerate(high_T.to_dict('records')):
