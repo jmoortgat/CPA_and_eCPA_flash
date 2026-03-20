@@ -94,16 +94,18 @@ def _make_stacked(iz, data_arr, zlabel, vmax, outname,
     fig.subplots_adjust(left=0.0, right=0.96, top=0.97, bottom=0.02)
     ax = fig.add_subplot(1, 1, 1, projection="3d")
 
-    for (ims, ms_val), colour in zip(zip(IMS_PANELS, MS_VALS), MS_COLOURS):
+    # draw highest surface last so it sits in front (painter's algorithm)
+    for (ims, ms_val), colour in zip(
+            zip(reversed(IMS_PANELS), reversed(MS_VALS)), reversed(MS_COLOURS)):
         val  = data_arr[:, :, iz, ims].T * 100    # (nP, nT)
         mask = is_two[:, :, iz, ims].T
 
         # close isolated holes to eliminate NaN-boundary artefacts
         mask_cl = binary_closing(mask, structure=np.ones((close_size, close_size)))
-        # fill closed holes with local mean; clip to vmax to suppress boundary spikes
+        # fill closed holes with local mean; no upper clipping — show true data range
         fill_val = float(np.nanmean(val[mask])) if mask.any() else 0.0
         val_surf = np.where(mask_cl, np.where(mask, val, fill_val), np.nan)
-        val_surf = np.clip(val_surf, 0, vmax)   # prevent rendering spikes
+        val_surf = np.clip(val_surf, 0, None)   # only clip negatives (numerical noise)
 
         ax.plot_surface(
             T_mesh, logP_mesh, val_surf,
@@ -122,9 +124,11 @@ def _make_stacked(iz, data_arr, zlabel, vmax, outname,
     ax.set_xticklabels(["300", "400", "500", "600"], fontsize=7.5)
     ax.set_yticks(LOGP_TICKS)
     ax.set_yticklabels(P_TICKLABELS, fontsize=7.5)
-    ax.set_zticks(np.arange(0, vmax + 0.1, vmax / 5))
-    ax.set_zticklabels([f"{v:.0f}" for v in np.arange(0, vmax + 0.1, vmax / 5)],
-                       fontsize=7.5)
+    # clean round z-ticks: 5 intervals, snapped to nearest 5 or 1
+    step = max(1, round(vmax / 5 / 5) * 5) if vmax >= 10 else 1
+    zticks = np.arange(0, vmax + step * 0.01, step)
+    ax.set_zticks(zticks)
+    ax.set_zticklabels([f"{v:.0f}" for v in zticks], fontsize=7.5)
 
     ax.set_xlabel(r"$T$ (K)",   labelpad=5, fontsize=9)
     ax.set_ylabel(r"$P$ (bar)", labelpad=5, fontsize=9)
@@ -177,7 +181,7 @@ for iz in IZ_PANELS:
     z_pct  = round(z_val * 100)
     outname = f"ecpa_aq_co2_z{z_pct:03d}_3d"
     print(f"  z = {z_val:.2f} ({z_pct}%) ...")
-    _make_stacked(iz, x4w, zlabel_aq, vmax=10.0, outname=outname)
+    _make_stacked(iz, x4w, zlabel_aq, vmax=25.0, outname=outname)
 
 # ── H2O in CO2-rich phase  (mol-%) ───────────────────────────────────────────
 print("\nH2O in CO2-rich phase ...")
@@ -188,7 +192,7 @@ for iz in IZ_PANELS:
     z_pct  = round(z_val * 100)
     outname = f"ecpa_co2_h2o_z{z_pct:03d}_3d"
     print(f"  z = {z_val:.2f} ({z_pct}%) ...")
-    _make_stacked(iz, x1c, zlabel_c, vmax=15.0, outname=outname,
+    _make_stacked(iz, x1c, zlabel_c, vmax=75.0, outname=outname,
                   close_size=5, elev=ELEV_H2O, azim=AZIM_H2O)
 
 print("\nDone.")
