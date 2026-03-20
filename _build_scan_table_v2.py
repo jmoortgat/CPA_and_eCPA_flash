@@ -9,8 +9,8 @@ Grid
   ms  = [0, 1e-5, 0.5, 1, 2, 3, 4, 5, 6] mol/kg  (9 salinities)
 
   ms = 0    → CPA2.flash_co2_h2o_tpz_robust   (pure CO₂–H₂O, no salt/electrostatics)
-  ms = 1e-5 → flash_co2_h2o_salt_ssi           (eCPA, effectively salt-free)
-  ms ≥ 0.5  → flash_co2_h2o_salt_ssi           (eCPA at target salinity)
+  ms > 0    → ecpa_stability_flash             (eCPA hierarchical: stability K-init
+                                               → Wilson K fallback)
 
   Total: 73 × 50 × 25 × 14 = 1,277,500 grid points.
 
@@ -180,25 +180,6 @@ def _parse_cpa2_result(res, z_co2):
 
 # ── eCPA path (ms > 0) ────────────────────────────────────────────────────────
 
-def _ecpa_stability(T, P, z_co2, ms, co2_ref_x0, aq_ref_x0):
-    """
-    Run the full eCPA Michelsen stability test (6 trial guesses, accelerated
-    SSI, Newton ZChi) and return (is_two_phase, co2_ref_x0_new, aq_ref_x0_new).
-
-    co2_ref_x0 / aq_ref_x0 warm-start the inner reference fsolve across P.
-    """
-    from ecpa.stability import ecpa_stability
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        res = ecpa_stability(
-            z_co2=float(z_co2), ms=float(ms), T=float(T), P=float(P),
-            params=_W_params,
-            co2_ref_x0=co2_ref_x0,
-            aq_ref_x0=aq_ref_x0,
-        )
-    return (not res["stable"]), res.get("co2_ref_x0"), res.get("aq_ref_x0")
-
-
 def _ecpa_flash_warm(T, P, z_co2, ms, sol_prev, ms_aq_prev):
     """
     Warm-started eCPA flash.  elv_maxfev=400 keeps failures fast (warm-started
@@ -218,21 +199,26 @@ def _ecpa_flash_warm(T, P, z_co2, ms, sol_prev, ms_aq_prev):
     return out, out["sol"].copy(), float(out["ms_aq"])
 
 
-def _ecpa_flash_cold(T, P, z_co2, ms):
+def _ecpa_stability_flash(T, P, z_co2, ms, co2_ref_x0, aq_ref_x0):
     """
-    Cold-start eCPA flash (no stability pre-check — caller must have already
-    confirmed two-phase via ecpa_stability).
-    Returns (out_dict, sol_new, ms_aq_new) or raises on failure.
+    Hierarchical stability + flash (Jex et al. 2024):
+      1. TPD stability (6 guesses, accel SSI, Newton ZChi).
+      2. If two-phase: flash with ELV guess from stability trial K-values.
+      3. Fallback: Wilson K initialization.
+
+    Returns the ecpa_stability_flash result dict, which includes a 'stability'
+    sub-dict containing updated co2_ref_x0 / aq_ref_x0 for the next P call.
+    Raises RuntimeError on convergence failure.
     """
-    from ecpa.flash import flash_co2_h2o_salt_ssi
+    from ecpa.stability import ecpa_stability_flash
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        out = flash_co2_h2o_salt_ssi(
-            T=float(T), P_bar=float(P), z_co2=float(z_co2), m_tot=float(ms),
-            params=_W_params, maxiter_ms=30,
-            guess_table_fn=_W_guess_fn,
+        return ecpa_stability_flash(
+            z_co2=float(z_co2), ms=float(ms), T=float(T), P=float(P),
+            params=_W_params,
+            co2_ref_x0=co2_ref_x0,
+            aq_ref_x0=aq_ref_x0,
         )
-    return out, out["sol"].copy(), float(out["ms_aq"])
 
 
 # ── Row worker ────────────────────────────────────────────────────────────────
@@ -319,36 +305,33 @@ def _scan_row_worker(task):
             except Exception:
                 out = None   # fall through to stability check
 
-        # Attempt 2: ecpa_stability → cold-start flash
+        # Attempt 2: hierarchical stability + flash
+        #   (stability K-init → Wilson K fallback)
         if out is None:
             try:
-                two_phase_flag, co2_ref_x0, aq_ref_x0 = _ecpa_stability(
+                sf = _ecpa_stability_flash(
                     T_val, P_val, z_val, ms_val, co2_ref_x0, aq_ref_x0)
-            except Exception:
-                two_phase_flag = True   # stability failed; try flash anyway
+                co2_ref_x0 = sf["stability"]["co2_ref_x0"]
+                aq_ref_x0  = sf["stability"]["aq_ref_x0"]
 
-            if not two_phase_flag:
-                # Confirmed single-phase — record and continue.
-                # Keep sol_prev unchanged for possible re-entry into two-phase.
-                err_type = "single_phase"
-            else:
-                # Confirmed (or suspected) two-phase — cold-start flash.
-                try:
-                    out, sol_new, ms_aq_new = _ecpa_flash_cold(
-                        T_val, P_val, z_val, ms_val)
+                if sf.get("phase") == "single_phase":
+                    err_type = "single_phase"
+                    # Keep sol_prev for possible re-entry into two-phase region.
+                else:
+                    out = sf
                     is_2ph = True
-                    sol_prev   = sol_new
-                    ms_aq_prev = ms_aq_new
+                    sol_prev   = np.asarray(out["sol"]).copy()
+                    ms_aq_prev = float(out["ms_aq"])
                     n_ssi = int(out.get("n_iter_ms", 0))
                     n_elv = int(out.get("n_elv_nfev", 0))
-                except RuntimeError as exc:
-                    err_type = ("ssi_no_convergence"
-                                if "did not converge" in str(exc)
-                                else f"runtime:{str(exc)[:60]}")
-                    sol_prev = None; ms_aq_prev = None
-                except Exception as exc:
-                    err_type = f"error:{type(exc).__name__}"
-                    sol_prev = None; ms_aq_prev = None
+            except RuntimeError as exc:
+                err_type = ("ssi_no_convergence"
+                            if "did not converge" in str(exc)
+                            else f"runtime:{str(exc)[:60]}")
+                sol_prev = None; ms_aq_prev = None
+            except Exception as exc:
+                err_type = f"error:{type(exc).__name__}"
+                sol_prev = None; ms_aq_prev = None
 
         # Collect instrumentation stats
         istats = _stab.get_call_stats()
