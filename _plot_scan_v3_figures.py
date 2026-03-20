@@ -1,13 +1,16 @@
 """
 Generate publication-quality figures from the eCPA v3 solution table (scan_v3_table.npz).
 
+Style: scienceplots 'science' + cmcrameri colormaps + LaTeX rendering.
+
 Produces (all saved to figures/scan_v3/):
-  1. ecpa_phase_map.png/pdf     — T-P two-phase fraction for 6 NaCl molalities
-  2. ecpa_composition_aq.png/pdf — T-P map of CO2 mole-% in aqueous phase
-  3. ecpa_composition_c.png/pdf  — T-P map of H2O mole-% in CO2-rich phase
-  4. ecpa_ssi_heatmap.png/pdf   — T-P median SSI iteration count (ternary extension)
-  5. ecpa_newton_stats.png/pdf  — Newton iteration counts (aq and CO2-rich solvers)
-  6. ecpa_phase_envelope.png/pdf — Bubble/dew point lines in T-P for selected ms
+  1. ecpa_phase_map.png/pdf      — T-P two-phase fraction (6 NaCl molalities)
+  2. ecpa_composition_aq.png/pdf — T-P aqueous CO2 mol-% (2 rows × 3 ms panels)
+  3. ecpa_composition_c.png/pdf  — T-P CO2-rich H2O mol-% (2 rows × 3 ms panels)
+  4. ecpa_ssi_heatmap.png/pdf    — T-P median SSI iterations (ternary extension)
+  5. ecpa_newton_stats.png/pdf   — Newton convergence histograms + success maps
+  6. ecpa_phase_envelope.png/pdf — Bubble/dew lines in T-P (z and ms sweeps)
+  7. ecpa_salting_out.png/pdf    — CO2 solubility vs NaCl molality (5 isotherms)
 
 Usage:
     python _plot_scan_v3_figures.py
@@ -19,584 +22,559 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.gridspec import GridSpec
-from matplotlib.patches import Patch
+import matplotlib.ticker as mticker
+import cmcrameri.cm as cmc
+import scienceplots  # noqa: F401 — registers styles
 import os
 
 # ── output directory ──────────────────────────────────────────────────────────
 OUT_DIR = "figures/scan_v3"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# ── load data ─────────────────────────────────────────────────────────────────
-print("Loading scan_v3_table.npz …")
-npz = np.load("results/scan_v3_table.npz")
-T_grid  = npz["T_grid"]          # (70,)
-P_grid  = npz["P_grid"]          # (50,)
-z_grid  = npz["z_grid"]          # (25,)
-ms_grid = npz["ms_grid"]         # (14,)
-is_two  = npz["is_two_phase"]    # (70, 50, 25, 14)  bool
-x4w     = npz["x4w"]            # CO2 mole fraction in aqueous phase
-x1c     = npz["x1c"]            # H2O mole fraction in CO2-rich phase
-beta    = npz["beta"]            # vapour/CO2-rich mole fraction
+# ── global style ──────────────────────────────────────────────────────────────
+plt.style.use(["science"])   # LaTeX, clean ticks, minimal frame
+# Override a handful of defaults for larger readability
+plt.rcParams.update({
+    "figure.dpi":      150,
+    "savefig.dpi":     300,
+    "savefig.bbox":    "tight",
+    "axes.linewidth":  0.6,
+    "xtick.major.width": 0.6,
+    "ytick.major.width": 0.6,
+    "xtick.minor.width": 0.4,
+    "ytick.minor.width": 0.4,
+})
 
-print("Loading scan_v3_metrics.parquet …")
-df = pd.read_parquet("results/scan_v3_metrics.parquet")
-# eCPA-only rows (CPA2 rows have eos_type != 'eCPA')
+# ── load data ─────────────────────────────────────────────────────────────────
+print("Loading scan_v3_table.npz ...")
+npz    = np.load("results/scan_v3_table.npz")
+T_grid = npz["T_grid"]          # (70,)
+P_grid = npz["P_grid"]          # (50,)
+z_grid = npz["z_grid"]          # (25,)
+ms_grid= npz["ms_grid"]         # (14,)
+is_two = npz["is_two_phase"]    # (70, 50, 25, 14)  bool
+x4w    = npz["x4w"]             # CO2 mole fraction in aqueous phase  (NaN if single-ph)
+x1c    = npz["x1c"]             # H2O mole fraction in CO2-rich phase
+x1w    = npz["x1w"]             # H2O mole fraction in aqueous phase
+Mw     = 0.018015               # kg/mol H2O
+
+print("Loading scan_v3_metrics.parquet ...")
+df      = pd.read_parquet("results/scan_v3_metrics.parquet")
 df_ecpa = df[df["eos_type"] == "eCPA"].copy()
 df_2ph  = df_ecpa[df_ecpa["is_two_phase"]].copy()
 
-# map ms_grid → ims indices used throughout
-ms_labels = {m: f"{m:.1f}" for m in ms_grid}
-# select representative ms indices for multi-panel figures
-MS_PANEL_IDX = [0, 2, 4, 6, 10, 13]   # ms ≈ 0, 0.1, 0.5, 1, 3, 6  (NPZ-based figs)
-MS_PANEL_VAL = ms_grid[MS_PANEL_IDX]
-# ms=0 uses CPA (not eCPA); for parquet/eCPA-only figures use 1e-5 instead
-MS_PANEL_IDX_ECPA = [1, 2, 4, 6, 10, 13]   # ms ≈ 1e-5, 0.1, 0.5, 1, 3, 6
-MS_PANEL_VAL_ECPA = ms_grid[MS_PANEL_IDX_ECPA]
+# ── panel indices ─────────────────────────────────────────────────────────────
+# For NPZ-based panels (includes ms=0 CPA rows in phase/composition maps)
+MS_NPZ_IDX = [0, 2, 4, 6, 10, 13]        # ms = 0, 0.1, 0.5, 1, 3, 6
+MS_NPZ_VAL = ms_grid[MS_NPZ_IDX]
 
-# ── colour style ──────────────────────────────────────────────────────────────
-GREY      = "#d0d0d0"
-DARK_GREY = "#888888"
-CMAP_FRAC  = "Blues"
-CMAP_CO2   = "YlOrRd"
-CMAP_H2O   = "BuPu"
-CMAP_SSI   = "inferno_r"
+# For parquet/eCPA-only panels (skip ms=0 which uses CPA)
+MS_ECPA_IDX = [1, 2, 4, 6, 10, 13]       # ms ≈ 1e-5, 0.1, 0.5, 1, 3, 6
+MS_ECPA_VAL = ms_grid[MS_ECPA_IDX]
 
-plt.rcParams.update({
-    "font.size": 9,
-    "axes.labelsize": 9,
-    "axes.titlesize": 9,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
-    "legend.fontsize": 8,
-    "figure.dpi": 150,
-    "savefig.dpi": 300,
-    "savefig.bbox": "tight",
-})
+# Fixed z ≈ 0.55 for composition panels
+IZ_MID = 14   # z_grid[14] = 0.546
+
+# ── colormaps ─────────────────────────────────────────────────────────────────
+CMAP_FRAC  = cmc.batlow      # two-phase fraction (0–1)
+CMAP_AQ    = cmc.lapaz       # CO2 in aq: deep blue → light → cream
+CMAP_CO2   = cmc.lajolla     # H2O in CO2-rich: cream → deep red
+CMAP_SSI   = cmc.lajolla     # iterations: few=light, many=dark red
+CMAP_SUCC  = cmc.cork        # success rate: diverging green/pink
+CMAP_TEMP  = cmc.lipari      # temperature colour scale for line plots
+
+GREY       = "#c8c8c8"       # single-phase background
+DARK_GREY  = "#666666"
 
 
-def _axes_style(ax, xlabel=True, ylabel=True):
-    ax.set_yscale("log")
-    ax.set_xlim(T_grid[0], T_grid[-1])
-    ax.set_ylim(P_grid[0], P_grid[-1])
-    if xlabel:
-        ax.set_xlabel("Temperature  (K)")
-    if ylabel:
-        ax.set_ylabel("Pressure  (bar)")
-    ax.yaxis.set_major_formatter(matplotlib.ticker.LogFormatter(labelOnlyBase=False))
-    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-
-
-def _add_cbar(fig, im, ax, label, orientation="vertical"):
-    """Attach a colourbar next to ax without disturbing layout."""
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    divider = make_axes_locatable(ax)
-    if orientation == "vertical":
-        cax = divider.append_axes("right", size="5%", pad=0.05)
+# ── helpers ───────────────────────────────────────────────────────────────────
+def _ms_label(ms_val):
+    """Nice LaTeX string for a molality value."""
+    if ms_val < 1e-4:
+        return r"$m_s = 0$"
+    elif ms_val < 0.01:
+        return r"$m_s \approx 0$"
     else:
-        cax = divider.append_axes("bottom", size="8%", pad=0.35)
-    cb = fig.colorbar(im, cax=cax, orientation=orientation)
-    cb.set_label(label, fontsize=8)
+        s = f"{ms_val:g}"
+        return rf"$m_s = {s}\ \mathrm{{mol\,kg^{{-1}}}}$"
+
+
+def _log_yaxis(ax, show_labels=True):
+    ax.set_yscale("log")
+    ax.set_ylim(P_grid[0], P_grid[-1])
+    if show_labels:
+        ax.yaxis.set_major_formatter(
+            mticker.LogFormatter(labelOnlyBase=False, minor_thresholds=(2, 0.5)))
+    else:
+        ax.yaxis.set_major_formatter(mticker.NullFormatter())
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
+    ax.tick_params(axis="y", which="minor", length=2)
+
+
+def _pcolor(ax, data, cmap, vmin, vmax, Tm, Pm):
+    """Masked pcolormesh with grey background for NaN (single-phase)."""
+    grey_data = np.where(np.isnan(data), 0.0, np.nan)
+    ax.pcolormesh(Tm, Pm, grey_data,
+                  cmap=mcolors.ListedColormap([GREY]),
+                  shading="nearest", zorder=1)
+    pcm = ax.pcolormesh(Tm, Pm, data, cmap=cmap,
+                        vmin=vmin, vmax=vmax,
+                        shading="nearest", zorder=2)
+    return pcm
+
+
+def _shared_cbar(fig, pcm, axes_row, label, pad=0.04):
+    """Single colourbar spanning a list of axes."""
+    cb = fig.colorbar(pcm, ax=axes_row, pad=pad, fraction=0.025, aspect=25)
+    cb.set_label(label)
+    cb.ax.tick_params(labelsize=7)
     return cb
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Figure 1 — Phase regime maps (two-phase fraction across z, per T-P-ms)
-# ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 1: phase regime maps …")
-fig, axes = plt.subplots(2, 3, figsize=(11, 6.5),
-                          constrained_layout=True)
+Tm, Pm = np.meshgrid(T_grid, P_grid)   # both (nP, nT)
 
-# For each (iT, iP, ims): fraction of z values that are two-phase
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Figure 1 — Phase regime maps
+# ═══════════════════════════════════════════════════════════════════════════════
+print("Figure 1: phase regime maps ...")
+
 frac_2ph = is_two.mean(axis=2)   # (70, 50, 14) — mean over z
 
-for k, (ims, ms_val) in enumerate(zip(MS_PANEL_IDX, MS_PANEL_VAL)):
+fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.8),
+                          constrained_layout=False)
+fig.subplots_adjust(left=0.08, right=0.88, top=0.91, bottom=0.10,
+                    wspace=0.08, hspace=0.35)
+
+for k, (ims, ms_val) in enumerate(zip(MS_NPX := MS_NPZ_IDX, MS_NPZ_VAL)):
     ax = axes.flat[k]
-    data = frac_2ph[:, :, ims].T   # (50, 70): P rows, T cols — imshow expects [row, col]
-
-    # background (single-phase) grey
     ax.set_facecolor(GREY)
-
-    im = ax.imshow(
-        data,
-        origin="lower",
-        extent=[T_grid[0], T_grid[-1], 0, len(P_grid) - 1],
-        aspect="auto",
-        cmap=CMAP_FRAC,
-        vmin=0, vmax=1,
-    )
-    # imshow with log-y is tricky — use pcolormesh instead
-    ax.cla()
-    ax.set_facecolor(GREY)
-
-    # build masked arrays
-    Tm, Pm = np.meshgrid(T_grid, P_grid)
-    frac = frac_2ph[:, :, ims].T   # (nP, nT)
-
-    pcm = ax.pcolormesh(Tm, Pm, frac, cmap=CMAP_FRAC, vmin=0, vmax=1,
-                         shading="nearest")
-    ax.set_yscale("log")
+    data = np.where(frac_2ph[:, :, ims].T > 0,
+                    frac_2ph[:, :, ims].T, np.nan)
+    pcm = _pcolor(ax, frac_2ph[:, :, ims].T, CMAP_FRAC, 0, 1, Tm, Pm)
+    _log_yaxis(ax, show_labels=(k % 3 == 0))
     ax.set_xlim(T_grid[0], T_grid[-1])
-    ax.set_ylim(P_grid[0], P_grid[-1])
-
-    ms_str = f"0" if ms_val < 1e-4 else f"{ms_val:.1f}".rstrip("0").rstrip(".")
-    ax.set_title(fr"$m_s = {ms_str}\ \mathrm{{mol\,kg^{{-1}}}}$")
-
+    ax.set_title(_ms_label(ms_val), pad=3)
     if k >= 3:
-        ax.set_xlabel("Temperature  (K)")
+        ax.set_xlabel(r"$T$ (K)")
     else:
         ax.set_xticklabels([])
     if k % 3 == 0:
-        ax.set_ylabel("Pressure  (bar)")
+        ax.set_ylabel(r"$P$ (bar)")
 
-    _add_cbar(fig, pcm, ax, "Two-phase fraction")
+# shared colourbar on the right
+cbar_ax = fig.add_axes([0.90, 0.10, 0.022, 0.81])
+cb = fig.colorbar(pcm, cax=cbar_ax)
+cb.set_label("Two-phase fraction", labelpad=4)
+cb.set_ticks([0, 0.25, 0.5, 0.75, 1.0])
+cb.ax.tick_params(labelsize=7)
 
 fig.suptitle(
-    r"Fraction of CO$_2$ feed fractions ($z = 0.05$–$0.90$) in two-phase region",
-    fontsize=10, y=1.01,
+    r"Fraction of $z_{\mathrm{CO_2}} \in [0.05, 0.90]$ in two-phase region",
+    fontsize=9, y=0.97,
 )
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_phase_map.{ext}")
 plt.close(fig)
-print("  → saved ecpa_phase_map")
+print("  -> saved ecpa_phase_map")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 2 — CO2 content in aqueous phase  (x4w in mol-%)
+# Figure 2 — Aqueous CO2 composition  (2 rows × 3 ms panels, fixed z≈0.55)
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 2: aqueous CO2 composition maps …")
+print("Figure 2: aqueous CO2 composition maps ...")
 
-# Choose representative (iz, ims) panels — 2 rows × 4 cols
-# Row 1: z = 0.25 (lean), z = 0.50 (intermediate)
-# Row 2: z = 0.75 (rich),  z = 0.90 (very rich)
-# Columns: ms = 0, 1, 3, 6
-IZ_PANELS  = [5, 12, 18, 23]   # z ≈ 0.20, 0.40, 0.65, 0.87
-IMS_PANELS = [0,  6, 10, 13]   # ms = 0, 1, 3, 6
+# choose 6 ms panels (skip ms=0 CPA): ims = 1,2,4,6,10,13
+IMS_COMP = MS_ECPA_IDX       # 6 values
 
-fig, axes = plt.subplots(4, 4, figsize=(12, 10),
-                          constrained_layout=True)
+vmax_aq = 10.0   # mol-%
 
-vmax_co2 = 0.10   # x4w rarely exceeds ~10 mol%
+fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.8),
+                          constrained_layout=False)
+fig.subplots_adjust(left=0.08, right=0.88, top=0.91, bottom=0.10,
+                    wspace=0.08, hspace=0.35)
 
-for row, iz in enumerate(IZ_PANELS):
-    for col, ims in enumerate(IMS_PANELS):
-        ax = axes[row, col]
-        ax.set_facecolor(GREY)
+pcm_ref = None
+for k, ims in enumerate(IMS_COMP):
+    ax  = axes.flat[k]
+    ms_val = ms_grid[ims]
+    ax.set_facecolor(GREY)
 
-        # x4w is NaN where single-phase
-        data_co2 = x4w[:, :, iz, ims].T   # (nP, nT)
-        mask_2ph  = is_two[:, :, iz, ims].T
+    raw  = x4w[:, :, IZ_MID, ims].T   # (nP, nT)
+    mask = is_two[:, :, IZ_MID, ims].T
+    val  = np.where(mask, raw * 100, np.nan)
 
-        Tm, Pm = np.meshgrid(T_grid, P_grid)
+    pcm = _pcolor(ax, val, CMAP_AQ, 0, vmax_aq, Tm, Pm)
+    pcm_ref = pcm
+    _log_yaxis(ax, show_labels=(k % 3 == 0))
+    ax.set_xlim(T_grid[0], T_grid[-1])
+    ax.set_title(_ms_label(ms_val), pad=3)
+    if k >= 3:
+        ax.set_xlabel(r"$T$ (K)")
+    else:
+        ax.set_xticklabels([])
+    if k % 3 == 0:
+        ax.set_ylabel(r"$P$ (bar)")
 
-        # plot single-phase background first
-        sp_mask = ~mask_2ph
-        ax.pcolormesh(Tm, Pm,
-                       np.where(sp_mask, 0.0, np.nan),
-                       cmap=matplotlib.colors.ListedColormap([GREY]),
-                       shading="nearest")
-
-        val = np.where(mask_2ph, data_co2 * 100, np.nan)   # in mol-%
-        pcm = ax.pcolormesh(Tm, Pm, val, cmap=CMAP_CO2,
-                             vmin=0, vmax=vmax_co2 * 100,
-                             shading="nearest")
-        ax.set_yscale("log")
-        ax.set_xlim(T_grid[0], T_grid[-1])
-        ax.set_ylim(P_grid[0], P_grid[-1])
-
-        z_val  = z_grid[iz]
-        ms_val = ms_grid[ims]
-        ms_str = "0" if ms_val < 1e-4 else f"{ms_val:.0f}"
-        ax.set_title(f"$z={z_val:.2f},\\ m_s={ms_str}$", fontsize=8)
-
-        if row == 3:
-            ax.set_xlabel("T (K)", fontsize=8)
-        else:
-            ax.set_xticklabels([])
-        if col == 0:
-            ax.set_ylabel("P (bar)", fontsize=8)
-
-        _add_cbar(fig, pcm, ax,
-                   r"$x_{\mathrm{CO_2}}^{\mathrm{aq}}$ (mol-%)")
+cbar_ax = fig.add_axes([0.90, 0.10, 0.022, 0.81])
+cb = fig.colorbar(pcm_ref, cax=cbar_ax)
+cb.set_label(r"$x_{\mathrm{CO_2}}^{\mathrm{aq}}$ (mol-\%)", labelpad=4)
+cb.ax.tick_params(labelsize=7)
 
 fig.suptitle(
-    r"CO$_2$ mole-% in aqueous phase — eCPA ternary scan",
-    fontsize=11, y=1.01,
+    rf"CO$_2$ mole-\% in aqueous phase ($z = {z_grid[IZ_MID]:.2f}$)",
+    fontsize=9, y=0.97,
 )
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_composition_aq.{ext}")
 plt.close(fig)
-print("  → saved ecpa_composition_aq")
+print("  -> saved ecpa_composition_aq")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 3 — H2O content in CO2-rich phase  (x1c in mol-%)
+# Figure 3 — H2O in CO2-rich phase (same layout as Fig 2)
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 3: CO2-rich H2O composition maps …")
+print("Figure 3: CO2-rich H2O composition maps ...")
 
-fig, axes = plt.subplots(4, 4, figsize=(12, 10),
-                          constrained_layout=True)
+vmax_c = 15.0   # mol-%
 
-vmax_h2o = 15.0   # x1c up to ~15 mol% at high T
+fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.8),
+                          constrained_layout=False)
+fig.subplots_adjust(left=0.08, right=0.88, top=0.91, bottom=0.10,
+                    wspace=0.08, hspace=0.35)
 
-for row, iz in enumerate(IZ_PANELS):
-    for col, ims in enumerate(IMS_PANELS):
-        ax = axes[row, col]
-        ax.set_facecolor(GREY)
+pcm_ref = None
+for k, ims in enumerate(IMS_COMP):
+    ax     = axes.flat[k]
+    ms_val = ms_grid[ims]
+    ax.set_facecolor(GREY)
 
-        data_h2o = x1c[:, :, iz, ims].T   # (nP, nT) H2O in CO2-rich
-        mask_2ph  = is_two[:, :, iz, ims].T
+    raw  = x1c[:, :, IZ_MID, ims].T
+    mask = is_two[:, :, IZ_MID, ims].T
+    val  = np.where(mask, raw * 100, np.nan)
 
-        Tm, Pm = np.meshgrid(T_grid, P_grid)
-        val = np.where(mask_2ph, data_h2o * 100, np.nan)
-        pcm = ax.pcolormesh(Tm, Pm, val, cmap=CMAP_H2O,
-                             vmin=0, vmax=vmax_h2o,
-                             shading="nearest")
-        ax.set_yscale("log")
-        ax.set_xlim(T_grid[0], T_grid[-1])
-        ax.set_ylim(P_grid[0], P_grid[-1])
+    pcm = _pcolor(ax, val, CMAP_CO2, 0, vmax_c, Tm, Pm)
+    pcm_ref = pcm
+    _log_yaxis(ax, show_labels=(k % 3 == 0))
+    ax.set_xlim(T_grid[0], T_grid[-1])
+    ax.set_title(_ms_label(ms_val), pad=3)
+    if k >= 3:
+        ax.set_xlabel(r"$T$ (K)")
+    else:
+        ax.set_xticklabels([])
+    if k % 3 == 0:
+        ax.set_ylabel(r"$P$ (bar)")
 
-        z_val  = z_grid[iz]
-        ms_val = ms_grid[ims]
-        ms_str = "0" if ms_val < 1e-4 else f"{ms_val:.0f}"
-        ax.set_title(f"$z={z_val:.2f},\\ m_s={ms_str}$", fontsize=8)
-
-        if row == 3:
-            ax.set_xlabel("T (K)", fontsize=8)
-        else:
-            ax.set_xticklabels([])
-        if col == 0:
-            ax.set_ylabel("P (bar)", fontsize=8)
-
-        _add_cbar(fig, pcm, ax,
-                   r"$x_{\mathrm{H_2O}}^{\mathrm{CO_2}}$ (mol-%)")
+cbar_ax = fig.add_axes([0.90, 0.10, 0.022, 0.81])
+cb = fig.colorbar(pcm_ref, cax=cbar_ax)
+cb.set_label(r"$x_{\mathrm{H_2O}}^{\mathrm{CO_2}}$ (mol-\%)", labelpad=4)
+cb.ax.tick_params(labelsize=7)
 
 fig.suptitle(
-    r"H$_2$O mole-% in CO$_2$-rich phase — eCPA ternary scan",
-    fontsize=11, y=1.01,
+    rf"H$_2$O mole-\% in CO$_2$-rich phase ($z = {z_grid[IZ_MID]:.2f}$)",
+    fontsize=9, y=0.97,
 )
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_composition_c.{ext}")
 plt.close(fig)
-print("  → saved ecpa_composition_c")
+print("  -> saved ecpa_composition_c")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 4 — SSI iteration heatmap (eCPA ternary extension of fig:ssi_heatmap)
+# Figure 4 — SSI iteration heatmap
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 4: SSI iteration heatmap …")
+print("Figure 4: SSI iteration heatmap ...")
 
-# Build 2D median-iteration map per (T, P, ms) from parquet
-# Only two-phase eCPA rows
 pivot_cache = {}
-for ims_p, ms_val in zip(MS_PANEL_IDX_ECPA, MS_PANEL_VAL_ECPA):
+for ims, ms_val in zip(MS_ECPA_IDX, MS_ECPA_VAL):
     sub = df_2ph[np.abs(df_2ph["ms_feed"] - ms_val) < 1e-6]
-    # pivot: T on x, P on y
     piv = sub.groupby(["T", "P"])["n_ssi_iters"].median().unstack("T")
-    pivot_cache[ims_p] = piv
-
-fig, axes = plt.subplots(2, 3, figsize=(11, 6.5),
-                          constrained_layout=True)
+    piv_full = piv.reindex(columns=T_grid, index=P_grid)
+    pivot_cache[ims] = piv_full.values   # (nP, nT)
 
 vmin_ssi, vmax_ssi = 1, 20
 
-for k, (ims_p, ms_val) in enumerate(zip(MS_PANEL_IDX_ECPA, MS_PANEL_VAL_ECPA)):
+fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.8),
+                          constrained_layout=False)
+fig.subplots_adjust(left=0.08, right=0.88, top=0.91, bottom=0.10,
+                    wspace=0.08, hspace=0.35)
+
+pcm_ref = None
+for k, (ims, ms_val) in enumerate(zip(MS_ECPA_IDX, MS_ECPA_VAL)):
     ax = axes.flat[k]
     ax.set_facecolor(GREY)
 
-    # two-phase fraction mask (any z)
-    frac = frac_2ph[:, :, ims_p].T   # (nP, nT)
-    Tm, Pm = np.meshgrid(T_grid, P_grid)
+    # grey for single-phase (where all z are single-phase)
+    frac = frac_2ph[:, :, ims].T
+    data = np.where(frac > 0, pivot_cache[ims], np.nan)
 
-    piv = pivot_cache[ims_p]
-    # align to full T,P grid
-    piv_full = piv.reindex(columns=T_grid, index=P_grid)
-    data = piv_full.values   # (nP, nT), NaN where single-phase
-
-    # grey background for single-phase area
-    ax.pcolormesh(Tm, Pm, np.where(frac > 0, np.nan, 1.0),
-                   cmap=matplotlib.colors.ListedColormap([GREY]),
-                   shading="nearest")
-
-    pcm = ax.pcolormesh(Tm, Pm, data, cmap=CMAP_SSI,
-                         vmin=vmin_ssi, vmax=vmax_ssi,
-                         shading="nearest")
-    ax.set_yscale("log")
+    pcm = _pcolor(ax, data, CMAP_SSI, vmin_ssi, vmax_ssi, Tm, Pm)
+    pcm_ref = pcm
+    _log_yaxis(ax, show_labels=(k % 3 == 0))
     ax.set_xlim(T_grid[0], T_grid[-1])
-    ax.set_ylim(P_grid[0], P_grid[-1])
-
-    ms_str = "≈0" if ms_val < 1e-4 else f"{ms_val:.1f}".rstrip("0").rstrip(".")
-    ax.set_title(fr"$m_s = {ms_str}\ \mathrm{{mol\,kg^{{-1}}}}$")
-
+    ax.set_title(_ms_label(ms_val), pad=3)
     if k >= 3:
-        ax.set_xlabel("Temperature  (K)")
+        ax.set_xlabel(r"$T$ (K)")
     else:
         ax.set_xticklabels([])
     if k % 3 == 0:
-        ax.set_ylabel("Pressure  (bar)")
+        ax.set_ylabel(r"$P$ (bar)")
 
-    cb = _add_cbar(fig, pcm, ax, "Median SSI iterations")
-    cb.set_ticks([1, 5, 10, 15, 20])
+cbar_ax = fig.add_axes([0.90, 0.10, 0.022, 0.81])
+cb = fig.colorbar(pcm_ref, cax=cbar_ax, extend="max")
+cb.set_label("Median SSI iterations", labelpad=4)
+cb.set_ticks([1, 5, 10, 15, 20])
+cb.ax.tick_params(labelsize=7)
 
-    # add legend for single-phase region (first panel only)
-    if k == 0:
-        from matplotlib.patches import Rectangle
-        handles = [Rectangle((0, 0), 1, 1, facecolor=GREY, edgecolor=DARK_GREY,
-                               label="Single-phase")]
-        ax.legend(handles=handles, loc="upper right", fontsize=7)
+# add legend patch for single-phase background
+from matplotlib.patches import Rectangle
+handles = [Rectangle((0, 0), 1, 1, fc=GREY, ec=DARK_GREY, lw=0.5,
+                      label="Single-phase")]
+axes.flat[0].legend(handles=handles, loc="upper right", fontsize=6,
+                     handlelength=1.2, handletextpad=0.4, borderpad=0.4)
 
 fig.suptitle(
-    r"Median SSI iterations — eCPA ternary flash (CO$_2$+H$_2$O+NaCl)",
-    fontsize=10, y=1.01,
+    r"Median SSI iterations --- eCPA ternary flash (CO$_2$+H$_2$O+NaCl)",
+    fontsize=9, y=0.97,
 )
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_ssi_heatmap.{ext}")
 plt.close(fig)
-print("  → saved ecpa_ssi_heatmap")
+print("  -> saved ecpa_ssi_heatmap")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 5 — Newton iteration statistics (aqueous + CO2-rich solvers)
+# Figure 5 — Newton solver statistics
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 5: Newton iteration statistics …")
-
-# Panel A: histogram of n_newton_aq_iters / call (warm-start aq Newton)
-# Panel B: histogram of n_newton_c_iters / call (warm-start CO2-rich Newton)
-# Panel C: T-P heatmap of n_newton_aq_ok / n_newton_aq (success rate) for ms=1
-# Panel D: T-P heatmap of n_newton_c_ok / n_newton_c  (success rate) for ms=1
+print("Figure 5: Newton iteration statistics ...")
 
 ims_ref = 6   # ms = 1.0 mol/kg
 ms_ref  = ms_grid[ims_ref]
-
 sub_ref = df_2ph[np.abs(df_2ph["ms_feed"] - ms_ref) < 1e-6]
 
-fig = plt.figure(figsize=(12, 9), constrained_layout=True)
-gs  = GridSpec(2, 2, figure=fig)
+fig, axes = plt.subplots(2, 2, figsize=(6.5, 5.2))
+fig.subplots_adjust(left=0.10, right=0.95, top=0.90, bottom=0.10,
+                    wspace=0.40, hspace=0.44)
 
-# --- A: aqueous Newton iterations per call (avg iters per SSI step)
-ax_a = fig.add_subplot(gs[0, 0])
-aq_iters = df_2ph["n_newton_aq_iters"] / df_2ph["n_newton_aq"].clip(lower=1)
-aq_iters_clean = aq_iters[df_2ph["n_newton_aq"] > 0]
-ax_a.hist(aq_iters_clean, bins=30, color="#3a86ff", edgecolor="white", linewidth=0.4)
-ax_a.set_xlabel("Mean Newton iterations/call (aqueous solver)")
-ax_a.set_ylabel("Count (flash calls)")
-ax_a.set_title("Aqueous Newton convergence")
-med = aq_iters_clean.median()
-ax_a.axvline(med, color="k", linestyle="--", linewidth=1)
-ax_a.text(med + 0.05, ax_a.get_ylim()[1] * 0.85, f"median={med:.1f}", fontsize=8)
+# --- A: aqueous Newton iters per warm-start call
+ax_a = axes[0, 0]
+aq_iters = (df_2ph["n_newton_aq_iters"] /
+            df_2ph["n_newton_aq"].clip(lower=1)).where(df_2ph["n_newton_aq"] > 0)
+ax_a.hist(aq_iters.dropna(), bins=np.arange(0.5, 12.5, 1.0),
+          color=cmc.batlow(0.3), rwidth=0.8)
+med_aq = aq_iters.dropna().median()
+ax_a.axvline(med_aq, color="0.2", lw=0.8, ls="--")
+ax_a.text(med_aq + 0.15, ax_a.get_ylim()[1] * 0.90,
+          rf"median$={med_aq:.1f}$", fontsize=7)
+ax_a.set_xlabel(r"Mean Newton iter./call (aqueous)")
+ax_a.set_ylabel("Count")
+ax_a.set_title("Aqueous inner solver")
 
-# --- B: CO2-rich Newton iterations per call
-ax_b = fig.add_subplot(gs[0, 1])
-c_iters = df_2ph["n_newton_c_iters"] / df_2ph["n_newton_c"].clip(lower=1)
-c_iters_clean = c_iters[df_2ph["n_newton_c"] > 0]
-ax_b.hist(c_iters_clean, bins=30, color="#ff6b6b", edgecolor="white", linewidth=0.4)
-ax_b.set_xlabel(r"Mean Newton iterations/call (CO$_2$-rich solver)")
-ax_b.set_ylabel("Count (flash calls)")
-ax_b.set_title(r"CO$_2$-rich Newton convergence")
-med_c = c_iters_clean.median()
-ax_b.axvline(med_c, color="k", linestyle="--", linewidth=1)
-ax_b.text(med_c + 0.05, ax_b.get_ylim()[1] * 0.85, f"median={med_c:.1f}", fontsize=8)
+# --- B: CO2-rich Newton iters per call
+ax_b = axes[0, 1]
+c_iters = (df_2ph["n_newton_c_iters"] /
+           df_2ph["n_newton_c"].clip(lower=1)).where(df_2ph["n_newton_c"] > 0)
+ax_b.hist(c_iters.dropna(), bins=np.arange(0.5, 8.5, 1.0),
+          color=cmc.lajolla(0.55), rwidth=0.8)
+med_c = c_iters.dropna().median()
+ax_b.axvline(med_c, color="0.2", lw=0.8, ls="--")
+ax_b.text(med_c + 0.1, ax_b.get_ylim()[1] * 0.90,
+          rf"median$={med_c:.1f}$", fontsize=7)
+ax_b.set_xlabel(r"Mean Newton iter./call (CO$_2$-rich)")
+ax_b.set_ylabel("Count")
+ax_b.set_title(r"CO$_2$-rich inner solver")
 
-# --- C: aqueous Newton success rate over T-P (ms=1)
-ax_c = fig.add_subplot(gs[1, 0])
+# --- C: aqueous Newton success rate T-P map
+ax_c = axes[1, 0]
 ax_c.set_facecolor(GREY)
 piv_aq_ok  = sub_ref.groupby(["T", "P"])["n_newton_aq_ok"].sum().unstack("T")
 piv_aq_tot = sub_ref.groupby(["T", "P"])["n_newton_aq"].sum().unstack("T")
-piv_aq_rate = (piv_aq_ok / piv_aq_tot.clip(lower=1)).reindex(
-    columns=T_grid, index=P_grid)
-Tm, Pm = np.meshgrid(T_grid, P_grid)
-pcm_c = ax_c.pcolormesh(Tm, Pm, piv_aq_rate.values * 100,
-                          cmap="RdYlGn", vmin=0, vmax=100, shading="nearest")
-ax_c.set_yscale("log")
+rate_aq = (piv_aq_ok / piv_aq_tot.clip(lower=1)).reindex(
+    columns=T_grid, index=P_grid).values * 100
+pcm_aq = _pcolor(ax_c, rate_aq, CMAP_SUCC, 60, 100, Tm, Pm)
+_log_yaxis(ax_c)
 ax_c.set_xlim(T_grid[0], T_grid[-1])
-ax_c.set_ylim(P_grid[0], P_grid[-1])
-ax_c.set_xlabel("Temperature  (K)")
-ax_c.set_ylabel("Pressure  (bar)")
-ax_c.set_title(fr"Aqueous Newton success rate (%)  [$m_s={ms_ref:.0f}$]")
-_add_cbar(fig, pcm_c, ax_c, "Success rate (%)")
+ax_c.set_xlabel(r"$T$ (K)")
+ax_c.set_ylabel(r"$P$ (bar)")
+ax_c.set_title(rf"Aqueous success rate [\%], $m_s={ms_ref:.0f}$")
+cb_c = fig.colorbar(pcm_aq, ax=ax_c, pad=0.03, fraction=0.046)
+cb_c.set_label(r"Success (\%)", labelpad=3)
+cb_c.ax.tick_params(labelsize=7)
 
-# --- D: CO2-rich Newton success rate over T-P (ms=1)
-ax_d = fig.add_subplot(gs[1, 1])
+# --- D: CO2-rich Newton success rate T-P map
+ax_d = axes[1, 1]
 ax_d.set_facecolor(GREY)
 piv_c_ok  = sub_ref.groupby(["T", "P"])["n_newton_c_ok"].sum().unstack("T")
 piv_c_tot = sub_ref.groupby(["T", "P"])["n_newton_c"].sum().unstack("T")
-piv_c_rate = (piv_c_ok / piv_c_tot.clip(lower=1)).reindex(
-    columns=T_grid, index=P_grid)
-pcm_d = ax_d.pcolormesh(Tm, Pm, piv_c_rate.values * 100,
-                          cmap="RdYlGn", vmin=0, vmax=100, shading="nearest")
-ax_d.set_yscale("log")
+rate_c = (piv_c_ok / piv_c_tot.clip(lower=1)).reindex(
+    columns=T_grid, index=P_grid).values * 100
+pcm_c = _pcolor(ax_d, rate_c, CMAP_SUCC, 60, 100, Tm, Pm)
+_log_yaxis(ax_d)
 ax_d.set_xlim(T_grid[0], T_grid[-1])
-ax_d.set_ylim(P_grid[0], P_grid[-1])
-ax_d.set_xlabel("Temperature  (K)")
-ax_d.set_ylabel("Pressure  (bar)")
-ax_d.set_title(fr"CO$_2$-rich Newton success rate (%)  [$m_s={ms_ref:.0f}$]")
-_add_cbar(fig, pcm_d, ax_d, "Success rate (%)")
+ax_d.set_xlabel(r"$T$ (K)")
+ax_d.set_ylabel(r"$P$ (bar)")
+ax_d.set_title(rf"CO$_2$-rich success rate [\%], $m_s={ms_ref:.0f}$")
+cb_d = fig.colorbar(pcm_c, ax=ax_d, pad=0.03, fraction=0.046)
+cb_d.set_label(r"Success (\%)", labelpad=3)
+cb_d.ax.tick_params(labelsize=7)
 
-fig.suptitle("Inner Newton solver performance — eCPA ternary scan", fontsize=11)
+fig.suptitle("Inner Newton solver performance --- eCPA ternary scan",
+             fontsize=9, y=0.97)
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_newton_stats.{ext}")
 plt.close(fig)
-print("  → saved ecpa_newton_stats")
+print("  -> saved ecpa_newton_stats")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 6 — Phase envelope: bubble/dew lines in T-P for several ms and z
+# Figure 6 — Phase envelope: bubble/dew lines in T-P
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 6: phase envelope plots …")
+print("Figure 6: phase envelope ...")
 
-# Strategy: for each (z, ms), find the high-P boundary (bubble point) and
-# low-P boundary (dew point) by scanning P at fixed T and locating where
-# is_two_phase transitions from False to True.
-
-def _find_envelope(is_2ph_Tp):
+def _find_envelope(is_2ph_iT_iP):
     """
-    is_2ph_Tp: (nT, nP) bool array — True where two-phase.
-    Returns bubble_P[nT], dew_P[nT] arrays (NaN where boundary not found).
+    is_2ph_iT_iP: (nT, nP) bool — True where two-phase.
+    Returns dew_P[nT], bubble_P[nT] (NaN where boundary not found).
     """
-    nT, nP = is_2ph_Tp.shape
-    bubble = np.full(nT, np.nan)   # high-P boundary (entering 2ph from high P)
-    dew    = np.full(nT, np.nan)   # low-P boundary (entering 2ph from low P)
+    nT, nP = is_2ph_iT_iP.shape
+    dew    = np.full(nT, np.nan)
+    bubble = np.full(nT, np.nan)
     for iT in range(nT):
-        row = is_2ph_Tp[iT, :]
+        row = is_2ph_iT_iP[iT, :]
         if not row.any():
             continue
-        # lowest P that is two-phase
-        idx_lo = np.argmax(row)   # first True
+        idx_lo = np.argmax(row)
         if idx_lo > 0:
             dew[iT] = P_grid[idx_lo]
-        # highest P that is two-phase
         idx_hi = len(row) - 1 - np.argmax(row[::-1])
         if idx_hi < nP - 1:
             bubble[iT] = P_grid[idx_hi]
     return dew, bubble
 
 
-# Two panels: left=fixed z sweep over ms, right=fixed ms sweep over z
-Z_ENVELOPE_IDX  = [8, 14, 20]     # z ≈ 0.30, 0.50, 0.70
-MS_ENVELOPE_IDX = [0, 4, 6, 10]   # ms = 0, 0.5, 1, 3
+# left: sweep z at ms=0 (CPA)
+Z_ENV_IDX  = [5, 11, 17, 22]    # z ≈ 0.20, 0.40, 0.60, 0.80
+MS_ENV_IDX = [1, 4, 6, 10]      # ms ≈ 1e-5, 0.5, 1, 3
 
-colours_z  = ["#2196F3", "#FF9800", "#4CAF50"]
-colours_ms = ["#1a1aff", "#ff5500", "#228B22", "#9B59B6"]
+# 4 colours from lipari for z, 4 from batlow for ms
+c_z  = [cmc.lipari(v) for v in [0.15, 0.38, 0.62, 0.85]]
+c_ms = [cmc.batlow(v) for v in [0.15, 0.40, 0.60, 0.85]]
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 5), constrained_layout=True)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.5, 3.2))
+fig.subplots_adjust(left=0.09, right=0.97, top=0.89, bottom=0.14,
+                    wspace=0.38)
 
-# Left: fixed ms=0, sweep z
-ims_env = 0  # ms = 0
-for colour, iz in zip(colours_z, Z_ENVELOPE_IDX):
-    is_2ph = is_two[:, :, iz, ims_env]   # (nT, nP)
+ims_left = 0   # ms=0 for left panel
+for colour, iz in zip(c_z, Z_ENV_IDX):
+    is_2ph = is_two[:, :, iz, ims_left]   # (nT, nP)
     dew, bubble = _find_envelope(is_2ph)
-    z_val = z_grid[iz]
-    ax1.semilogy(T_grid, dew,    color=colour, lw=1.5, ls="-",
-                  label=f"$z={z_val:.2f}$")
-    ax1.semilogy(T_grid, bubble, color=colour, lw=1.5, ls="--")
+    label = rf"$z = {z_grid[iz]:.2f}$"
+    ax1.semilogy(T_grid, dew,    color=colour, lw=1.2, ls="-",  label=label)
+    ax1.semilogy(T_grid, bubble, color=colour, lw=1.2, ls="--")
 
 ax1.set_xlim(T_grid[0], T_grid[-1])
 ax1.set_ylim(P_grid[0], P_grid[-1])
-ax1.set_xlabel("Temperature  (K)")
-ax1.set_ylabel("Pressure  (bar)")
-ax1.set_title(r"Dew (—) and bubble (- -) lines, $m_s = 0$")
-ax1.legend(title="CO₂ feed fraction", fontsize=8)
-ax1.grid(True, which="both", ls=":", alpha=0.4)
+ax1.set_xlabel(r"$T$ (K)")
+ax1.set_ylabel(r"$P$ (bar)")
+ax1.set_title(r"Sweep $z_{\mathrm{CO_2}}$, $m_s = 0$")
+from matplotlib.lines import Line2D
+h_auto, l_auto = ax1.get_legend_handles_labels()
+h_extra = [Line2D([0], [0], color="0.35", lw=1.2, ls="-",  label="Dew"),
+           Line2D([0], [0], color="0.35", lw=1.2, ls="--", label="Bubble")]
+ax1.legend(handles=h_auto + h_extra, labels=l_auto + ["Dew", "Bubble"],
+           fontsize=6.5, title=r"CO$_2$ feed", title_fontsize=7,
+           handlelength=2.0, framealpha=0.9)
 
-# Right: fixed z=0.50, sweep ms
-iz_env = 14   # z ≈ 0.50
-for colour, ims in zip(colours_ms, MS_ENVELOPE_IDX):
-    is_2ph = is_two[:, :, iz_env, ims]
+iz_right = IZ_MID  # z ≈ 0.55
+for colour, ims in zip(c_ms, MS_ENV_IDX):
+    is_2ph = is_two[:, :, iz_right, ims]
     dew, bubble = _find_envelope(is_2ph)
     ms_val = ms_grid[ims]
-    ms_str = "0" if ms_val < 1e-4 else f"{ms_val:.1f}".rstrip("0").rstrip(".")
-    ax2.semilogy(T_grid, dew,    color=colour, lw=1.5, ls="-",
-                  label=fr"$m_s={ms_str}$")
-    ax2.semilogy(T_grid, bubble, color=colour, lw=1.5, ls="--")
+    ms_str = r"\approx 0" if ms_val < 1e-3 else f"{ms_val:g}"
+    label  = rf"$m_s = {ms_str}$"
+    ax2.semilogy(T_grid, dew,    color=colour, lw=1.2, ls="-",  label=label)
+    ax2.semilogy(T_grid, bubble, color=colour, lw=1.2, ls="--")
 
 ax2.set_xlim(T_grid[0], T_grid[-1])
 ax2.set_ylim(P_grid[0], P_grid[-1])
-ax2.set_xlabel("Temperature  (K)")
-ax2.set_ylabel("Pressure  (bar)")
-ax2.set_title(r"Dew (—) and bubble (- -) lines, $z = 0.50$")
-ax2.legend(title="NaCl molality", fontsize=8)
-ax2.grid(True, which="both", ls=":", alpha=0.4)
+ax2.set_xlabel(r"$T$ (K)")
+ax2.set_ylabel(r"$P$ (bar)")
+ax2.set_title(rf"Sweep $m_s$, $z = {z_grid[iz_right]:.2f}$")
+ax2.legend(fontsize=6.5, title=r"NaCl molality", title_fontsize=7,
+           handlelength=2.0, framealpha=0.9)
 
 fig.suptitle(
-    r"Phase envelope — CO$_2$+H$_2$O+NaCl (eCPA EoS, $T=288$–$633$ K)",
-    fontsize=11,
+    r"Phase envelope --- CO$_2$+H$_2$O+NaCl (eCPA, $T = 288$--633\,K)",
+    fontsize=9, y=0.98,
 )
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_phase_envelope.{ext}")
 plt.close(fig)
-print("  → saved ecpa_phase_envelope")
+print("  -> saved ecpa_phase_envelope")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Figure 7 — Summary: Salting-out effect (CO2 solubility vs ms at fixed T,P,z)
+# Figure 7 — Salting-out: CO2 solubility vs NaCl molality
 # ═══════════════════════════════════════════════════════════════════════════════
-print("Figure 7: salting-out summary …")
+print("Figure 7: salting-out summary ...")
 
-# x4w (CO2 aq mole fraction) as a function of ms at fixed (T, P, z) for several T
-Mw = 0.018015  # kg/mol H2O
-# mc [mol/kg] = x4w / (x1w * Mw)
+IZ_SALT  = 14    # z ≈ 0.546
+IP_SALT  = 30    # P ≈ 88 bar
+IMS_SALT = slice(1, None)   # skip ms=0 (CPA, phase labels swap at high T)
 
-IZ_SALT = 14    # z ≈ 0.546
-IP_SALT = 30    # P ≈ 88 bar
-# skip ms=0 (CPA, not eCPA — phase labels can swap near critical region)
-IMS_SALT = slice(1, None)   # ms_grid[1:] = 1e-5 … 6 mol/kg
-
-T_SALT_IDX = [8, 16, 24, 32, 44]   # 5 isotherms spread over 288–633 K
+# Choose 5 isotherms, well-spread, all in two-phase region at these conditions
+T_SALT_IDX = [4, 12, 22, 34, 48]
 T_SALT_VAL = T_grid[T_SALT_IDX]
 
-cmap_T = plt.cm.plasma
 norm_T = mcolors.Normalize(vmin=T_SALT_VAL.min(), vmax=T_SALT_VAL.max())
-
-fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=(10, 4.5), constrained_layout=True)
-
 ms_plot = ms_grid[IMS_SALT]
-x1w_arr = npz["x1w"]
+
+fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=(6.5, 3.0))
+fig.subplots_adjust(left=0.10, right=0.86, top=0.88, bottom=0.16,
+                    wspace=0.40)
 
 for iT, T_val in zip(T_SALT_IDX, T_SALT_VAL):
-    clr = cmap_T(norm_T(T_val))
-    x4w_vs_ms  = x4w[iT, IP_SALT, IZ_SALT, IMS_SALT]
-    x1w_vs_ms  = x1w_arr[iT, IP_SALT, IZ_SALT, IMS_SALT]
-    mask       = is_two[iT, IP_SALT, IZ_SALT, IMS_SALT]
+    clr = CMAP_TEMP(norm_T(T_val))
+    x4w_ms  = x4w[iT, IP_SALT, IZ_SALT, IMS_SALT]
+    x1w_ms  = x1w[iT, IP_SALT, IZ_SALT, IMS_SALT]
+    mask    = is_two[iT, IP_SALT, IZ_SALT, IMS_SALT]
+    mc   = np.where(mask, x4w_ms / (x1w_ms * Mw), np.nan)
+    xco2 = np.where(mask, x4w_ms * 100, np.nan)
+    ax_l.plot(ms_plot, mc,   color=clr, lw=1.2, marker="o", ms=3,
+               label=rf"${T_val:.0f}$ K")
+    ax_r.plot(ms_plot, xco2, color=clr, lw=1.2, marker="o", ms=3)
 
-    mc   = np.where(mask, x4w_vs_ms / (x1w_vs_ms * Mw), np.nan)
-    xco2 = np.where(mask, x4w_vs_ms * 100, np.nan)
+ax_l.set_xlabel(r"$m_s$ (mol\,kg$^{-1}$)")
+ax_l.set_ylabel(r"$m_c^{\mathrm{aq}}$ (mol\,kg$^{-1}$)")
+ax_l.set_title(rf"CO$_2$ solubility, $z={z_grid[IZ_SALT]:.2f}$, $P={P_grid[IP_SALT]:.0f}$ bar")
+ax_l.legend(fontsize=7, title="$T$", title_fontsize=7,
+             handlelength=1.5, framealpha=0.9)
 
-    ax_l.plot(ms_plot, mc,   color=clr, lw=1.5, marker="o", ms=4,
-               label=f"{T_val:.0f} K")
-    ax_r.plot(ms_plot, xco2, color=clr, lw=1.5, marker="o", ms=4)
+ax_r.set_xlabel(r"$m_s$ (mol\,kg$^{-1}$)")
+ax_r.set_ylabel(r"$x_{\mathrm{CO_2}}^{\mathrm{aq}}$ (mol-\%)")
+ax_r.set_title(rf"CO$_2$ mole-\%, $z={z_grid[IZ_SALT]:.2f}$, $P={P_grid[IP_SALT]:.0f}$ bar")
 
-ax_l.set_xlabel(r"NaCl molality $m_s$ (mol kg$^{-1}$)")
-ax_l.set_ylabel(r"CO$_2$ solubility $m_c$ (mol kg$^{-1}$)")
-ax_l.set_title(f"CO$_2$ solubility vs. salinity\n"
-               f"($z={z_grid[IZ_SALT]:.2f}$, $P={P_grid[IP_SALT]:.0f}$ bar)")
-ax_l.legend(title="Temperature", fontsize=8)
-ax_l.grid(True, ls=":", alpha=0.5)
-
-ax_r.set_xlabel(r"NaCl molality $m_s$ (mol kg$^{-1}$)")
-ax_r.set_ylabel(r"$x_{\mathrm{CO_2}}^{\mathrm{aq}}$ (mol-%)")
-ax_r.set_title(f"CO$_2$ mole-% in aqueous phase\n"
-               f"($z={z_grid[IZ_SALT]:.2f}$, $P={P_grid[IP_SALT]:.0f}$ bar)")
-ax_r.grid(True, ls=":", alpha=0.5)
-
-sm = plt.cm.ScalarMappable(cmap=cmap_T, norm=norm_T)
+sm = plt.cm.ScalarMappable(cmap=CMAP_TEMP, norm=norm_T)
 sm.set_array([])
-fig.colorbar(sm, ax=[ax_l, ax_r], label="Temperature  (K)", shrink=0.8)
+cbar_ax = fig.add_axes([0.88, 0.16, 0.025, 0.72])
+cb = fig.colorbar(sm, cax=cbar_ax)
+cb.set_label(r"$T$ (K)", labelpad=3)
+cb.ax.tick_params(labelsize=7)
 
-fig.suptitle(r"Salting-out effect — CO$_2$+H$_2$O+NaCl (eCPA)", fontsize=11)
+fig.suptitle(
+    r"Salting-out effect --- CO$_2$+H$_2$O+NaCl (eCPA EoS)",
+    fontsize=9, y=0.99,
+)
 
 for ext in ("png", "pdf"):
     fig.savefig(f"{OUT_DIR}/ecpa_salting_out.{ext}")
 plt.close(fig)
-print("  → saved ecpa_salting_out")
+print("  -> saved ecpa_salting_out")
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Done
-# ═══════════════════════════════════════════════════════════════════════════════
 print(f"\nAll figures saved to {OUT_DIR}/")
