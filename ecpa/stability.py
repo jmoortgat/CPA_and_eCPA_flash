@@ -182,19 +182,52 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     # the same branch and prevents discontinuous jumps.
     caller_x0 = x0   # preserve original to detect warm-start vs cold-start
     if x0 is None:
-        x0 = [max(P_Pa*b/R/T + 0.01, 0.05), 0.9]
+        Z_liq = max(P_Pa * b / R / T + 0.01, 0.05)
+        cold_starts = [
+            [Z_liq, 0.9],    # liquid-like (dense CO₂-rich, high P)
+            [0.9,   0.99],   # gas-like (P < Pc or high T)
+            [0.5,   0.95],   # intermediate
+        ]
+    else:
+        cold_starts = [list(x0)]
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        sol, info, ier, _ = fsolve(
-            _eval_c_residual, x0, args=(x1c, T, P), full_output=True)
+    # Collect all distinct valid roots, then return the thermodynamically stable
+    # one (minimum residual Gibbs energy G^res/RT = Σᵢ xᵢ lnφᵢ).
+    # Taking the first valid root without comparing is wrong when two roots exist
+    # (e.g. at P < P_sat(H₂O) with H₂O-rich composition): the liquid root is
+    # found first but the gas root is the stable state, and using the liquid root
+    # for the stability reference while the trial uses the gas root produces a
+    # spurious tpd < 0 (root-mixing artefact).
+    valid_roots = []
+    for x0_try in cold_starts:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sol, info, ier, _ = fsolve(
+                _eval_c_residual, x0_try, args=(x1c, T, P), full_output=True)
+        Zc_t, chi1c_t = float(sol[0]), float(sol[1])
+        if ier != 1 or Zc_t <= 0 or not (0 < chi1c_t < 2.0):
+            continue
+        # Deduplicate: skip if within 1% of an already-found root
+        duplicate = any(abs(Zc_t - Zc_p) / max(abs(Zc_p), 1e-10) < 0.01
+                        for Zc_p, _ in valid_roots)
+        if not duplicate:
+            valid_roots.append((Zc_t, chi1c_t))
 
-    Zc_best, chi1c_best = float(sol[0]), float(sol[1])
-    if ier != 1 or Zc_best <= 0 or chi1c_best <= 0 or chi1c_best >= 2.0:
-        # Converged to unphysical root — retry cold (only if we were warm-started)
+    if not valid_roots:
+        # All cold starts failed — retry cold if we were warm-started
         if caller_x0 is not None:
             return _lnphi_c_inner(x1c, T, P, x0=None)
         raise RuntimeError(f"ecpa_lnphi_c: no valid root (x1c={x1c:.4f}, P={P:.2f})")
+
+    # Pick the root with the lowest residual Gibbs energy Σᵢ xᵢ lnφᵢ
+    best_G = np.inf
+    Zc_best = chi1c_best = -1.0
+    for Zc_t, chi1c_t in valid_roots:
+        lp1_t, lp4_t = _lnphi_from_zc_chi(Zc_t, chi1c_t)
+        G_res = x1c * lp1_t + x4c * lp4_t
+        if G_res < best_G:
+            best_G = G_res
+            Zc_best, chi1c_best = Zc_t, chi1c_t
 
     lp1, lp4 = _lnphi_from_zc_chi(Zc_best, chi1c_best)
     return lp1, lp4, np.array([Zc_best, chi1c_best])
@@ -780,6 +813,8 @@ def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
             [Zw0,       60.0, 0.4],   # dense/liquid-like
             [Zw0 * 1.3, 70.0, 0.6],   # slightly higher Z / epsr
             [Zw0,       60.0, 0.99],  # near-unity chi1w (low-P limit)
+            [Zw0,       50.0, 0.2],   # low chi1w (strongly bonded, T > ~300 K)
+            [Zw0,       50.0, 0.1],   # very low chi1w (high-T / high-P liquid)
         ]
     else:
         # Warm start: try Newton first (fast when close to solution).

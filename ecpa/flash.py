@@ -20,6 +20,13 @@ flash_co2_h2o_salt_fast(T, P_bar, z_co2, m_tot, solution_guess_fn, ...)  [fast]
     Production-oriented flash using a solution_table interpolant as the
     starting point.  Typically 1–3 SSI iterations instead of 20–40.
 
+flash_co2_h2o_salt_kv(T, P_bar, z_co2, m_tot, K_init, ...)  [K-value SSI]
+    Single-level iteration on K-values (K₁, K₄); ms_aq is computed
+    analytically at each step — no nested ms_aq loop.  Jex-accelerated.
+
+flash_co2_h2o_salt_fast_kv(T, P_bar, z_co2, m_tot, solution_guess_fn, ...)
+    Like flash_co2_h2o_salt_fast but uses K-value SSI internally.
+
 Result dict keys
 ----------------
 T, P_bar, z_co2, m_tot
@@ -676,6 +683,549 @@ def flash_co2_h2o_salt_fast(
             out["tpd_min"] = tpd_min
             return out
         raise
+
+
+# ── K-value SSI flash ──────────────────────────────────────────────────────────
+
+# Cold-start K-value candidates tried in sequence when K_init=None.
+# (K1, K4) = (x1c/x1w, x4c/x4w): K1<1 (H₂O aqueous), K4>1 (CO₂ CO₂-rich).
+# Ordered from typical reservoir conditions toward near-critical.
+_KV_COLD_STARTS = [
+    (0.005, 30.0),   # typical: deep reservoir, P > 50 bar
+    (0.05,  5.0),    # near-critical: high T, moderate P
+    (0.3,   2.0),    # very near-critical: K-values approaching 1
+    (0.01,  15.0),   # intermediate: moderate T/P
+]
+
+
+def _flash_kv_core(
+    T, P_bar, z_co2, m_tot, n_h2o, n_co2, n_salt,
+    K1, K4, sol_aq_x0, sol_c_x0,
+    maxiter, tol, accelerated, verbose,
+    _lnphi_aq_inner, _lnphi_c_inner,
+):
+    """
+    One K-value SSI attempt from a single (K1, K4) starting point.
+    Returns the result dict on success, raises RuntimeError on failure.
+    Called by flash_co2_h2o_salt_kv for each cold-start candidate.
+    """
+    K1 = float(np.clip(K1, 1e-9, 1.0 - 1e-9))
+    K4 = float(np.clip(K4, 1.0 + 1e-9, 1e9))
+
+    lnK    = np.array([np.log(K1), np.log(K4)])
+    _m_jex = 1.0
+    _g_prev = None
+    sol_aq = np.asarray(sol_aq_x0, dtype=float) if sol_aq_x0 is not None else None
+    sol_c  = np.asarray(sol_c_x0,  dtype=float) if sol_c_x0  is not None else None
+
+    converged = False
+    n_iter = 0
+    x1w = x1c = x4w = x4c = x2w = x3w = float('nan')
+    N_aq = N_c = ms_aq = float('nan')
+    g_vec = np.zeros(2)
+
+    for it in range(maxiter):
+        K1, K4 = float(np.exp(lnK[0])), float(np.exp(lnK[1]))
+        dK = K4 - K1
+        if dK < 1e-9:
+            raise RuntimeError(
+                f"K4 ≈ K1 ({K4:.4g}) at iter {it+1} — near-critical.")
+
+        # ── Step 1: scalar equation for x₁w ──────────────────────────────
+        x1w_max = (n_h2o - 1e-10) / K1
+        x1w_min = n_h2o / (n_co2 * K4 + n_h2o * K1) + 1e-10
+        if x1w_min >= x1w_max:
+            break
+
+        def _eq_x1w(f):
+            u = 1.0 - K1 * f
+            v = n_h2o - K1 * f
+            if u <= 0.0 or v <= 0.0 or f <= 0.0:
+                return 1e10
+            Naq_f = K4 * v / (u * f * dK)
+            if Naq_f <= 0.0:
+                return 1e10
+            return f + 2.0 * n_salt / Naq_f + u / K4 - 1.0
+
+        r_lo = _eq_x1w(x1w_min)
+        r_hi = _eq_x1w(x1w_max)
+        if not (np.isfinite(r_lo) and np.isfinite(r_hi)):
+            break
+        if r_lo * r_hi > 0.0:
+            break
+
+        try:
+            x1w_new = brentq(_eq_x1w, x1w_min, x1w_max,
+                             xtol=1e-12, rtol=1e-12, maxiter=100)
+        except ValueError:
+            break
+
+        # ── Step 2: compositions and ms_aq analytically ───────────────────
+        x1w = float(x1w_new)
+        x1c = K1 * x1w
+        x4c = 1.0 - x1c
+        x4w = x4c / K4
+
+        det = x1w * x4c - x4w * x1c
+        if abs(det) < 1e-15:
+            break
+        N_aq = (n_h2o * x4c - n_co2 * x1c) / det
+        N_c  = (n_co2 * x1w - n_h2o * x4w) / det
+        if N_aq <= 0.0 or N_c <= 0.0:
+            break
+
+        ms_aq = n_salt / (N_aq * x1w * Mw)
+        if ms_aq <= 0.0:
+            break
+        x2w = x3w = x1w * ms_aq * Mw
+
+        # ── Step 3: lnφ via warm-started inner solves ─────────────────────
+        try:
+            lnphi1_aq, lnphi4_aq, sol_aq = _lnphi_aq_inner(
+                x1w, ms_aq, T, P_bar, x0=sol_aq)
+            lnphi1_c,  lnphi4_c,  sol_c  = _lnphi_c_inner(
+                x1c, T, P_bar, x0=sol_c)
+        except RuntimeError:
+            break
+
+        # ── Step 4: K-value residual ──────────────────────────────────────
+        lnK_new = np.array([lnphi1_aq - lnphi1_c,
+                             lnphi4_aq - lnphi4_c])
+        g_vec = lnK_new - lnK
+
+        if verbose:
+            print(f"[KV] iter {it+1}: "
+                  f"lnK=[{lnK[0]:.5f},{lnK[1]:.5f}]  "
+                  f"x1w={x1w:.6f}  ms_aq={ms_aq:.5f}  "
+                  f"|g|={np.linalg.norm(g_vec):.2e}")
+
+        if np.linalg.norm(g_vec) < tol:
+            converged = True
+            lnK = lnK_new
+            n_iter = it + 1
+            break
+
+        # ── Step 5: Jex et al. 2024 acceleration ─────────────────────────
+        if accelerated and _g_prev is not None:
+            num_a   = np.dot(_g_prev, _g_prev)
+            denom_a = np.dot(_g_prev, _g_prev - g_vec)
+            if abs(denom_a) > 1e-30:
+                _m_jex = abs(num_a / denom_a * _m_jex)
+                _m_jex = float(np.clip(_m_jex, 1.0, 10.0))
+            else:
+                _m_jex = 1.0
+        _g_prev = g_vec.copy()
+
+        lnK = lnK + _m_jex * g_vec
+        n_iter = it + 1
+
+    if not converged:
+        raise RuntimeError(
+            f"K-value SSI did not converge in {maxiter} iterations "
+            f"(T={T:.1f}K P={P_bar:.2f}bar z={z_co2:.3f} ms={m_tot:.3f}, "
+            f"last ‖g‖={np.linalg.norm(g_vec):.2e}).")
+
+    beta  = N_c / (N_aq + N_c)
+    Zw    = float(sol_aq[0]) if sol_aq is not None else float('nan')
+    epsr  = float(sol_aq[1]) if sol_aq is not None else float('nan')
+    chi1w = float(sol_aq[2]) if sol_aq is not None else float('nan')
+    Zc    = float(sol_c[0])  if sol_c  is not None else float('nan')
+    chi1c = float(sol_c[1])  if sol_c  is not None else float('nan')
+
+    sol_vec = np.array([Zw, x1w, epsr, Zc, x1c,
+                        chi1w, chi1c, float('nan'), float('nan'), float('nan')])
+    return {
+        "T": T, "P_bar": P_bar, "z_co2": z_co2, "m_tot": m_tot,
+        "n_totals": dict(n_co2_tot=n_co2, n_h2o_tot=n_h2o, n_salt_tot=n_salt),
+        "ms_aq":  ms_aq,
+        "N_aq":   N_aq,  "N_c":   N_c,
+        "beta":   beta,
+        "x_aq":   dict(x1w=x1w, x2w=x2w, x3w=x3w, x4w=x4w),
+        "x_c":    dict(x1c=x1c, x4c=x4c),
+        "Z_aq":   Zw,    "Z_c":   Zc,
+        "sol":    sol_vec,
+        "n_iter_ms":  n_iter,
+        "K_vals":     (float(np.exp(lnK[0])), float(np.exp(lnK[1]))),
+        "sol_aq_x0":  np.asarray(sol_aq) if sol_aq is not None else None,
+        "sol_c_x0":   np.asarray(sol_c)  if sol_c  is not None else None,
+    }
+
+
+def flash_co2_h2o_salt_kv(
+    T, P_bar, z_co2, m_tot,
+    K_init=None,
+    sol_aq_x0=None,
+    sol_c_x0=None,
+    params=None,
+    maxiter=80,
+    tol=1e-8,
+    accelerated=True,
+    verbose=False,
+):
+    """
+    Two-phase flash via K-value SSI with Jex et al. (2024) acceleration.
+
+    Replaces the ms_aq outer-loop approach with a single-level iteration on
+    K-values (K₁ = x1c/x1w for H₂O, K₄ = x4c/x4w for CO₂).  NaCl is
+    non-volatile (K_NaCl = 0), so ms_aq is computed algebraically at every
+    step from the current K-values — it is never an independent variable.
+
+    Each iteration:
+      1. Solve one scalar equation for x₁w given (K₁, K₄) and feed
+         constraints (including salt).  All other compositions and ms_aq
+         follow analytically from x₁w.
+      2. Evaluate lnφ for each phase via warm-started inner Newton/fsolve.
+      3. Update lnK_i ← lnφ_i^aq − lnφ_i^c with Jex acceleration.
+
+    Convergence criterion: ‖lnK_new − lnK‖ < tol, which equals the
+    fugacity-equality residual ‖ln(f_i^aq) − ln(f_i^c)‖.
+
+    Parameters
+    ----------
+    K_init : (float, float) or None
+        Initial (K₁, K₄).  From a solution table: K₁ = x1c/x1w,
+        K₄ = (1−x1c)/x4w.  If None, all candidates in _KV_COLD_STARTS
+        are tried in sequence; the first to converge is returned.
+    sol_aq_x0 : array-like [Zw, epsr, chi1w] or None
+        Warm-start for the aqueous phase inner solve.
+    sol_c_x0 : array-like [Zc, chi1c] or None
+        Warm-start for the CO₂-rich phase inner solve.
+    tol : float
+        Convergence tolerance on ‖lnK_new − lnK‖ (= fugacity residual).
+    accelerated : bool
+        Apply Jex et al. 2024 step-size acceleration on the lnK update.
+
+    Returns
+    -------
+    Same dict format as flash_co2_h2o_salt_ssi, plus:
+        "K_vals"     : (K1, K4) at convergence
+        "sol_aq_x0"  : [Zw, epsr, chi1w] for warm-starting the next call
+        "sol_c_x0"   : [Zc, chi1c] for warm-starting the next call
+    """
+    # Lazy import avoids circular dependency (stability.py imports from flash.py)
+    from .stability import (_lnphi_aq_inner, _lnphi_c_inner,
+                            _apply_params, _restore_params, _wilson_K)
+
+    T     = float(T);   P_bar = float(P_bar)
+    z_co2 = float(z_co2);  m_tot = float(m_tot)
+
+    if not (0.0 < z_co2 < 1.0):
+        raise ValueError("z_co2 must be strictly between 0 and 1.")
+    if m_tot <= 0.0:
+        raise ValueError("m_tot must be > 0.")
+
+    # Feed (basis: n_H2O + n_CO2 = 1)
+    n_h2o  = 1.0 - z_co2
+    n_co2  = z_co2
+    n_salt = m_tot * n_h2o * Mw   # moles NaCl per basis
+
+    saved = _apply_params(params)
+    try:
+        # ── Build list of (K1, K4) starting points to try ────────────────────
+        if K_init is not None:
+            # Explicit start: single attempt only.
+            cold_starts = [(float(K_init[0]), float(K_init[1]))]
+        else:
+            # Cold start: try each candidate in _KV_COLD_STARTS in order.
+            cold_starts = list(_KV_COLD_STARTS)
+
+        for _cs_K1, _cs_K4 in cold_starts:
+            try:
+                return _flash_kv_single(
+                    T, P_bar, z_co2, m_tot, n_h2o, n_co2, n_salt,
+                    K1=_cs_K1, K4=_cs_K4,
+                    sol_aq_x0=sol_aq_x0, sol_c_x0=sol_c_x0,
+                    maxiter=maxiter, tol=tol, accelerated=accelerated,
+                    verbose=verbose,
+                    _lnphi_aq_inner=_lnphi_aq_inner,
+                    _lnphi_c_inner=_lnphi_c_inner,
+                )
+            except RuntimeError:
+                continue
+
+        raise RuntimeError(
+            f"K-value SSI did not converge with any of {len(cold_starts)} "
+            f"cold starts (T={T:.1f}K P={P_bar:.2f}bar "
+            f"z={z_co2:.3f} ms={m_tot:.3f}).")
+
+    finally:
+        _restore_params(saved, params)
+
+
+def _flash_kv_single(
+    T, P_bar, z_co2, m_tot, n_h2o, n_co2, n_salt,
+    K1, K4,
+    sol_aq_x0, sol_c_x0,
+    maxiter, tol, accelerated, verbose,
+    _lnphi_aq_inner, _lnphi_c_inner,
+):
+    """One K-value SSI attempt from a single (K1, K4) starting point.
+    Returns the result dict on convergence; raises RuntimeError on failure."""
+    # Safety clips: K1 (H₂O) should be < 1, K4 (CO₂) should be > 1
+    K1 = float(np.clip(K1, 1e-9, 1.0 - 1e-9))
+    K4 = float(np.clip(K4, 1.0 + 1e-9, 1e9))
+
+    lnK       = np.array([np.log(K1), np.log(K4)])
+    _m_jex    = 1.0
+    _g_prev   = None
+    sol_aq    = np.asarray(sol_aq_x0, dtype=float) if sol_aq_x0 is not None else None
+    sol_c     = np.asarray(sol_c_x0,  dtype=float) if sol_c_x0  is not None else None
+
+    converged = False
+    n_iter    = 0
+    # Working variables (populated in loop, needed for result dict)
+    x1w = x1c = x4w = x4c = x2w = x3w = float('nan')
+    N_aq = N_c = ms_aq = float('nan')
+    g_vec = np.zeros(2)
+
+    for it in range(maxiter):
+        K1, K4 = float(np.exp(lnK[0])), float(np.exp(lnK[1]))
+        dK = K4 - K1
+        if dK < 1e-9:
+            raise RuntimeError(
+                f"K4 ≈ K1 ({K4:.4g} ≈ {K1:.4g}) at iter {it+1} — "
+                "near-critical; K-value SSI cannot proceed.")
+
+        # ── Step 1: scalar equation for x₁w ─────────────────────────────
+        #
+        # Aqueous mole-fraction normalisation, with salt and CO₂ expressed
+        # via K-values and the analytical N_aq formula:
+        #
+        #   x₁w  +  2·n_salt / N_aq(x₁w)  +  (1 − K₁·x₁w)/K₄  =  1
+        #
+        # where N_aq = K₄·(n_h2o − K₁·x₁w) / [(1 − K₁·x₁w)·x₁w·(K₄ − K₁)]
+        #
+        # Valid domain: x₁w ∈ (x1w_min, x1w_max) so that N_aq > 0, N_c > 0.
+        #   x1w_max = n_h2o / K₁               (N_aq numerator > 0)
+        #   x1w_min = n_h2o / (n_co2·K₄ + n_h2o·K₁)  (N_c numerator > 0)
+
+        x1w_max = (n_h2o - 1e-10) / K1
+        x1w_min = n_h2o / (n_co2 * K4 + n_h2o * K1) + 1e-10
+        if x1w_min >= x1w_max:
+            break   # degenerate bracket — K-values not meaningful
+
+        def _eq_x1w(f):
+            u = 1.0 - K1 * f        # = x4c  (must be > 0)
+            v = n_h2o - K1 * f      # N_aq numerator (must be > 0)
+            if u <= 0.0 or v <= 0.0 or f <= 0.0:
+                return 1e10
+            Naq_f = K4 * v / (u * f * dK)
+            if Naq_f <= 0.0:
+                return 1e10
+            return f + 2.0 * n_salt / Naq_f + u / K4 - 1.0
+
+        r_lo = _eq_x1w(x1w_min)
+        r_hi = _eq_x1w(x1w_max)
+        if not (np.isfinite(r_lo) and np.isfinite(r_hi)):
+            break
+        if r_lo * r_hi > 0.0:
+            # No sign change — can occur during the first few iterations
+            # from a poor start.
+            break
+
+        try:
+            x1w_new = brentq(_eq_x1w, x1w_min, x1w_max,
+                              xtol=1e-12, rtol=1e-12, maxiter=100)
+        except ValueError:
+            break
+
+        # ── Step 2: all compositions and ms_aq, analytically ─────────────
+        x1w = float(x1w_new)
+        x1c = K1 * x1w
+        x4c = 1.0 - x1c
+        x4w = x4c / K4
+
+        # N_aq, N_c from 2×2 H₂O / CO₂ material balance (Cramer's rule)
+        det = x1w * x4c - x4w * x1c
+        if abs(det) < 1e-15:
+            break
+        N_aq = (n_h2o * x4c - n_co2 * x1c) / det
+        N_c  = (n_co2 * x1w - n_h2o * x4w) / det
+        if N_aq <= 0.0 or N_c <= 0.0:
+            break
+
+        ms_aq = n_salt / (N_aq * x1w * Mw)
+        if ms_aq <= 0.0:
+            break
+        x2w = x3w = x1w * ms_aq * Mw
+
+        # ── Step 3: lnφ evaluation (warm-started inner solves) ────────────
+        try:
+            lnphi1_aq, lnphi4_aq, sol_aq = _lnphi_aq_inner(
+                x1w, ms_aq, T, P_bar, x0=sol_aq)
+            lnphi1_c,  lnphi4_c,  sol_c  = _lnphi_c_inner(
+                x1c, T, P_bar, x0=sol_c)
+        except RuntimeError:
+            break
+
+        # ── Step 4: K-value residual = fugacity equality residual ─────────
+        # g_i = lnφ_i^aq − lnφ_i^c − lnK_i = ln(f_i^aq) − ln(f_i^c)
+        lnK_new = np.array([lnphi1_aq - lnphi1_c,
+                             lnphi4_aq - lnphi4_c])
+        g_vec   = lnK_new - lnK
+
+        if verbose:
+            print(f"[KV] iter {it+1}: "
+                  f"lnK=[{lnK[0]:.5f},{lnK[1]:.5f}]  "
+                  f"x1w={x1w:.6f}  ms_aq={ms_aq:.5f}  "
+                  f"|g|={np.linalg.norm(g_vec):.2e}")
+
+        if np.linalg.norm(g_vec) < tol:
+            converged = True
+            lnK   = lnK_new
+            n_iter = it + 1
+            break
+
+        # ── Step 5: Jex et al. 2024 acceleration ─────────────────────────
+        if accelerated and _g_prev is not None:
+            num_a   = np.dot(_g_prev, _g_prev)
+            denom_a = np.dot(_g_prev, _g_prev - g_vec)
+            if abs(denom_a) > 1e-30:
+                _m_jex = abs(num_a / denom_a * _m_jex)
+                _m_jex = float(np.clip(_m_jex, 1.0, 10.0))
+            else:
+                _m_jex = 1.0
+        _g_prev = g_vec.copy()
+
+        lnK = lnK + _m_jex * g_vec
+        n_iter = it + 1
+
+    if not converged:
+        raise RuntimeError(
+            f"K-value SSI did not converge in {maxiter} iterations "
+            f"(T={T:.1f}K P={P_bar:.2f}bar z={z_co2:.3f} ms={m_tot:.3f}, "
+            f"last ‖g‖={np.linalg.norm(g_vec):.2e}).")
+
+    # ── Build result dict ─────────────────────────────────────────────────
+    beta = N_c / (N_aq + N_c)
+    Zw   = float(sol_aq[0]) if sol_aq is not None else float('nan')
+    epsr = float(sol_aq[1]) if sol_aq is not None else float('nan')
+    chi1w = float(sol_aq[2]) if sol_aq is not None else float('nan')
+    Zc   = float(sol_c[0])  if sol_c  is not None else float('nan')
+    chi1c = float(sol_c[1]) if sol_c  is not None else float('nan')
+
+    # 10-element sol array compatible with ELV layout for warm-starting;
+    # the chi-derivative slots [7-9] are NaN (not computed here).
+    sol_vec = np.array([Zw, x1w, epsr, Zc, x1c,
+                        chi1w, chi1c, float('nan'), float('nan'), float('nan')])
+
+    return {
+        "T": T, "P_bar": P_bar, "z_co2": z_co2, "m_tot": m_tot,
+        "n_totals": dict(n_co2_tot=n_co2, n_h2o_tot=n_h2o,
+                         n_salt_tot=n_salt),
+        "ms_aq":  ms_aq,
+        "N_aq":   N_aq,  "N_c":  N_c,
+        "beta":   beta,
+        "x_aq":   dict(x1w=x1w, x2w=x2w, x3w=x3w, x4w=x4w),
+        "x_c":    dict(x1c=x1c, x4c=x4c),
+        "Z_aq":   Zw,    "Z_c":  Zc,
+        "sol":    sol_vec,
+        "n_iter_ms": n_iter,      # same key name for drop-in compatibility
+        "K_vals":    (float(np.exp(lnK[0])), float(np.exp(lnK[1]))),
+        "sol_aq_x0": np.asarray(sol_aq) if sol_aq is not None else None,
+        "sol_c_x0":  np.asarray(sol_c)  if sol_c  is not None else None,
+    }
+
+
+def flash_co2_h2o_salt_fast_kv(
+    T, P_bar, z_co2, m_tot,
+    solution_guess_fn,
+    params=None,
+    maxiter=10,
+    tol=1e-8,
+    accelerated=True,
+    fallback_to_ssi=True,
+    force_stability_check=False,
+):
+    """
+    Fast two-phase flash: solution-table warm start + K-value SSI.
+
+    Replaces the ms_aq SSI in flash_co2_h2o_salt_fast with K-value SSI.
+    The solution table provides (K₁, K₄) and inner ZChi warm-starts so that
+    only ~3–5 outer K-value iterations are needed.
+
+    Parameters
+    ----------
+    solution_guess_fn : callable
+        (T, P_bar, z_co2, ms) → (sol_10, ms_aq, is_two_phase_hint)
+    fallback_to_ssi : bool
+        If K-value SSI fails, fall back to flash_co2_h2o_salt_ssi with the
+        same table warm-start.
+    force_stability_check : bool
+        Always run Michelsen TPD even when the table says two-phase.
+    """
+    from .stability import ecpa_stability
+
+    T     = float(T);  P_bar = float(P_bar)
+    z_co2 = float(z_co2);  m_tot = float(m_tot)
+
+    # Step 1: table interpolation
+    sol_guess, ms_aq_guess, is_two_phase_hint = solution_guess_fn(
+        T, P_bar, z_co2, m_tot)
+
+    # Step 2: phase identification
+    stab_result = None
+    if is_two_phase_hint and not force_stability_check:
+        is_two_phase = True
+        stable = None
+        tpd_min = None
+    else:
+        stab_result  = ecpa_stability(z_co2, m_tot, T, P_bar, params)
+        is_two_phase = not stab_result["stable"]
+        stable       = stab_result["stable"]
+        tpd_min      = float(stab_result["tpd_min"])
+
+    if not is_two_phase:
+        return {
+            "T": T, "P_bar": P_bar, "z_co2": z_co2, "m_tot": m_tot,
+            "phase": "single_phase", "stable": True, "tpd_min": tpd_min,
+        }
+
+    # Step 3: extract K-values and ZChi warm-starts from the table solution
+    sol_g   = np.asarray(sol_guess, dtype=float)
+    x1w_g   = float(sol_g[1])
+    x1c_g   = float(sol_g[4])
+    x4c_g   = 1.0 - x1c_g
+    x2w_g   = x1w_g * float(ms_aq_guess) * Mw
+    x4w_g   = max(1.0 - x1w_g - 2.0 * x2w_g, 1e-9)
+
+    K1_g = x1c_g / max(x1w_g, 1e-9)
+    K4_g = x4c_g / x4w_g
+
+    sol_aq_x0 = sol_g[[0, 2, 5]]   # [Zw, epsr, chi1w]
+    sol_c_x0  = sol_g[[3, 6]]      # [Zc, chi1c]
+
+    # Step 4: K-value SSI
+    try:
+        out = flash_co2_h2o_salt_kv(
+            T=T, P_bar=P_bar, z_co2=z_co2, m_tot=m_tot,
+            K_init=(K1_g, K4_g),
+            sol_aq_x0=sol_aq_x0,
+            sol_c_x0=sol_c_x0,
+            params=params,
+            maxiter=maxiter,
+            tol=tol,
+            accelerated=accelerated,
+        )
+        out["phase"]   = "two_phase"
+        out["stable"]  = stable
+        out["tpd_min"] = tpd_min
+        return out
+
+    except RuntimeError:
+        if not fallback_to_ssi:
+            raise
+        # Fall back to ms_aq SSI with same table warm-start
+        out = flash_co2_h2o_salt_ssi(
+            T=T, P_bar=P_bar, z_co2=z_co2, m_tot=m_tot,
+            params=params,
+            initial_sol=sol_g,
+            initial_ms_aq=float(ms_aq_guess),
+        )
+        out["phase"]   = "two_phase"
+        out["stable"]  = stable
+        out["tpd_min"] = tpd_min
+        return out
 
 
 # Registry — maps algo name to function.  Remove 'brent' entry to drop Brent.
