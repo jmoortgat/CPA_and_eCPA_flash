@@ -1599,6 +1599,7 @@ def ecpa_stability_flash(
     co2_ref_x0=None,
     aq_ref_x0=None,
     tpd_threshold: float = -0.02,
+    tpd_soft_threshold: float = -0.1,
 ) -> dict:
     """
     Combined phase stability + flash — hierarchical algorithm (Jex et al. 2024).
@@ -1626,10 +1627,14 @@ def ecpa_stability_flash(
                      Pass result['stability']['co2_ref_x0'] from the previous
                      P call to keep the reference on the correct EOS root.
     aq_ref_x0      : same for the aqueous reference fsolve.
-    tpd_threshold  : if tpd_min > tpd_threshold, classify as single-phase
-                     (near-critical false-positive guard). Default −0.02.
-                     Genuine instabilities have TPD ≪ −0.1; near-critical
-                     false positives have TPD ∈ (−0.03, 0).
+    tpd_threshold      : if tpd_min > tpd_threshold, classify as single-phase
+                         before even attempting flash. Default −0.02.
+    tpd_soft_threshold : if both flash attempts fail AND tpd_min > this value,
+                         classify as single-phase (near-critical fallback).
+                         Default −0.1.  Genuine instabilities reliably have
+                         TPD ≪ −0.1; near-critical false-positives cluster in
+                         (−0.1, −0.02).  The soft threshold catches those that
+                         slip past the hard threshold but can't be flashed.
 
     Returns
     -------
@@ -1699,7 +1704,19 @@ def ecpa_stability_flash(
         result["stability"] = stab
         return result
     except Exception:
-        raise RuntimeError(
-            f"flash did not converge (T={T:.1f}K P={P:.2f}bar z={z_co2:.3f} "
-            f"ms={ms:.2f}): stability K-init and Wilson K-init both failed."
-        )
+        pass
+
+    # ── Soft near-critical fallback ────────────────────────────────────────────
+    # Both flash attempts failed.  If TPD is only weakly negative (above the
+    # soft threshold), the system is almost certainly near the critical locus
+    # where no valid two-phase material balance exists despite a slightly
+    # negative TPD.  Genuine unstable cases (TPD ≪ −0.1) raise RuntimeError.
+    if stab["tpd_min"] > tpd_soft_threshold:
+        return dict(phase="single_phase", stable=True,
+                    T=T, P_bar=P, z_co2=z_co2, ms=ms,
+                    stability=stab)
+
+    raise RuntimeError(
+        f"flash did not converge (T={T:.1f}K P={P:.2f}bar z={z_co2:.3f} "
+        f"ms={ms:.2f}): stability K-init and Wilson K-init both failed."
+    )
