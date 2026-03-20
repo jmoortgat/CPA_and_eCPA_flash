@@ -59,7 +59,7 @@ import numpy as np
 from scipy.optimize import fsolve
 
 from .constants import *   # noqa: F401,F403  — same pattern as elv.py
-from .flash import flash_co2_h2o_salt_ssi
+from .flash import flash_co2_h2o_salt_ssi, flash_co2_h2o_salt_kv
 from .scan import _cpu_count
 
 
@@ -1516,14 +1516,25 @@ def ecpa_stability_flash(
                     T=T, P_bar=P, z_co2=z_co2, ms=ms,
                     stability=stab)
 
-    # ── Attempt 1: ELV guess from stability trial K-values ────────────────────
+    # ── Attempt 1: K-values from stability trial compositions ─────────────────
+    # x1c_trial / x1w_trial are the converged CO₂-rich and aqueous trial
+    # compositions.  Their ratio gives K₁ = x1c/x1w and K₄ = x4c/x4w directly,
+    # accounting for salting-out (x4w_trial → 0 at high ms → K₄ → ∞ naturally).
+    # _make_elv_guess_from_trial supplies the inner warm-start sols for free.
     try:
-        sol_init, ms_aq_init = _make_elv_guess_from_trial(
+        sol_init, _ = _make_elv_guess_from_trial(
             stab["x1c_trial"], stab["x1w_trial"], ms, T, P, params)
-        result = flash_co2_h2o_salt_ssi(
+        x1c_t = float(sol_init[4]);  x1w_t = float(sol_init[1])
+        x4w_t = 1.0 - x1w_t - 2.0 * x1w_t * ms * Mw
+        K1_t = x1c_t / max(x1w_t, 1e-30)
+        K4_t = (1.0 - x1c_t) / max(x4w_t, 1e-30)
+        sol_aq_x0 = sol_init[[0, 2, 5]]   # [Zw, epsr, chi1w]
+        sol_c_x0  = sol_init[[3, 6]]       # [Zc, chi1c]
+        result = flash_co2_h2o_salt_kv(
             T=T, P_bar=P, z_co2=z_co2, m_tot=ms,
-            params=params, maxiter_ms=40,
-            initial_sol=sol_init, initial_ms_aq=ms_aq_init,
+            K_init=(K1_t, K4_t),
+            sol_aq_x0=sol_aq_x0, sol_c_x0=sol_c_x0,
+            params=params, maxiter=80,
         )
         result["stability"] = stab
         return result
@@ -1532,19 +1543,11 @@ def ecpa_stability_flash(
 
     # ── Attempt 2: Wilson K initialization ────────────────────────────────────
     K_h2o, K_co2 = _wilson_K(T, P)
-    z_h2o = 1.0 - z_co2
-    x1c_wil = float(np.clip(
-        K_h2o * z_h2o / (K_h2o * z_h2o + K_co2 * z_co2), 1e-6, 1.0 - 1e-6))
-    x1w_max = (1.0 - 1e-9) / (1.0 + 2.0 * ms * Mw) if ms > 0 else (1.0 - 1e-9)
-    x1w_wil = float(np.clip(
-        (z_h2o / K_h2o) / (z_h2o / K_h2o + z_co2 / K_co2), 0.5, x1w_max))
     try:
-        sol_wil, ms_aq_wil = _make_elv_guess_from_trial(
-            x1c_wil, x1w_wil, ms, T, P, params)
-        result = flash_co2_h2o_salt_ssi(
+        result = flash_co2_h2o_salt_kv(
             T=T, P_bar=P, z_co2=z_co2, m_tot=ms,
-            params=params, maxiter_ms=40,
-            initial_sol=sol_wil, initial_ms_aq=ms_aq_wil,
+            K_init=(K_h2o, K_co2),
+            params=params, maxiter=80,
         )
         result["stability"] = stab
         return result
