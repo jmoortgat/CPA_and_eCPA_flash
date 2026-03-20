@@ -3,7 +3,7 @@ _build_scan_table_v2.py — Comprehensive eCPA/CPA solution table + performance 
 
 Grid
 ----
-  T   = 288–468 K  (10 K steps, 19 points)
+  T   = 273–633 K  (5 K steps, 73 points)
   P   = 1–1500 bar (log-spaced, 30 points)
   z   = 0.05–0.90  (uniform, 18 points)
   ms  = [0, 1e-5, 0.5, 1, 2, 3, 4, 5, 6] mol/kg  (9 salinities)
@@ -12,7 +12,7 @@ Grid
   ms = 1e-5 → flash_co2_h2o_salt_ssi           (eCPA, effectively salt-free)
   ms ≥ 0.5  → flash_co2_h2o_salt_ssi           (eCPA at target salinity)
 
-  Total: 19 × 30 × 18 × 9 = 92,340 grid points.
+  Total: 73 × 50 × 25 × 14 = 1,277,500 grid points.
 
 Solution table (NPZ, new path — does not overwrite the existing table)
 -----------------------------------------------------------------------
@@ -59,10 +59,11 @@ import pandas as pd
 
 # ── Grid definition ────────────────────────────────────────────────────────────
 
-T_GRID  = np.arange(288.0, 469.0, 10.0)           # 19 temperatures: 288…468 K
-P_GRID  = np.logspace(0.0, np.log10(1500.0), 30)  # 30 log-spaced pressures
-Z_GRID  = np.linspace(0.05, 0.90, 18)             # 18 feed CO₂ fractions
-MS_GRID = np.array([0.0, 1e-5, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0])  # 9 salinities
+T_GRID  = np.arange(273.0, 634.0, 5.0)            # 73 temperatures: 273…633 K  (5 K steps)
+P_GRID  = np.logspace(0.0, np.log10(1500.0), 50)  # 50 log-spaced pressures
+Z_GRID  = np.linspace(0.05, 0.90, 25)             # 25 feed CO₂ fractions
+MS_GRID = np.array([0.0, 1e-5, 0.1, 0.25, 0.5, 0.75,
+                    1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0])  # 14 salinities
 
 SOL_DIM = 10   # ELV solution vector length
 
