@@ -156,40 +156,64 @@ def solve_heuristic_newton(x1w, ms, T, P, newton_fn=_newton_an_count):
     return sol, fevals, -1   # -1 Newton iters = fsolve fallback
 
 
-def solve_1fsolve_then_newton(x1w, ms, T, P, maxfev_loose=20,
-                               newton_fn=_newton_an_count):
-    """Strategy C: budget-limited fsolve (≈5 quasi-Newton steps) → Newton polish.
-    maxfev_loose limits the rough phase; Newton then polishes quadratically."""
-    def residual(v):
-        return _residual(v, x1w, ms, T, P)
-    x0 = None; fevals = 0
-    for start in _heuristic_starts(x1w, ms, T, P):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sol, info, ier, _ = fsolve(residual, start, full_output=True,
-                                       maxfev=maxfev_loose)
-        fevals += info['nfev']
-        v = sol
-        # Accept if physically valid AND residual already reduced somewhat
+class _SwitchNow(Exception):
+    def __init__(self, v, fevals): self.v = v.copy(); self.fevals = fevals
+
+
+# Threshold chosen from profiling: Fnorm < 0.1 gives 100% Newton success.
+# The range Fnorm ∈ [0.2, 2] is a dead zone where fsolve's dogleg steps can
+# land in configurations that are geometrically outside Newton's basin even
+# though the residual looks moderate.  Switching at 0.1 avoids that zone.
+SWITCH_THRESH = 0.1
+
+
+def solve_fsolve_then_newton(x1w, ms, T, P, switch_thresh=SWITCH_THRESH,
+                              newton_fn=_newton_an_count):
+    """Strategy C: fsolve with Fnorm-threshold callback → Newton.
+
+    Runs fsolve until max|F| < switch_thresh (preserving Broyden history),
+    then hands off to Newton.  Falls back to full tight fsolve for conditions
+    that never reach the threshold from any heuristic start.
+    """
+    def residual_with_stop(v):
         Fv = _residual(v, x1w, ms, T, P)
-        if v[0] > 0 and v[1] > 1 and 0 < v[2] < 2.0 and np.max(np.abs(Fv)) < 1e2:
-            x0 = v; break
-    if x0 is None:
-        # Loose fsolve didn't land anywhere useful — try tight fsolve fallback
-        sol, fevals2, _ = solve_fsolve_only(x1w, ms, T, P)
-        return sol, fevals + fevals2, -1 if sol is not None else 0
-    # Newton polish from the rough estimate
-    sol, iters = newton_fn(x0, x1w, ms, T, P)
-    if sol is not None:
-        return sol, fevals, iters
-    # Newton failed: tight fsolve from x0
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        sol2, info2, ier2, _ = fsolve(residual, x0, full_output=True)
-    fevals += info2['nfev']
-    if ier2 == 1 and sol2[0] > 0 and sol2[1] > 1 and 0 < sol2[2] < 2.0:
-        return sol2, fevals, -1
-    return None, fevals, 0
+        if np.max(np.abs(Fv)) < switch_thresh:
+            raise _SwitchNow(v, counter[0])
+        return Fv
+
+    total_fevals = 0
+    for start in _heuristic_starts(x1w, ms, T, P):
+        counter = [0]
+        def _res(v):
+            counter[0] += 1
+            Fv = _residual(v, x1w, ms, T, P)
+            if np.max(np.abs(Fv)) < switch_thresh:
+                raise _SwitchNow(v, counter[0])
+            return Fv
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                fsolve(_res, start, maxfev=200)
+            total_fevals += counter[0]
+        except _SwitchNow as sw:
+            total_fevals += sw.fevals
+            v0 = sw.v
+            sol, iters = newton_fn(v0, x1w, ms, T, P)
+            if sol is not None:
+                return sol, total_fevals, iters
+            # Newton failed unexpectedly — finish with fsolve from v0
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                def _res2(v): return _residual(v, x1w, ms, T, P)
+                sol2, info2, ier2, _ = fsolve(_res2, v0, full_output=True)
+            total_fevals += info2['nfev']
+            if ier2 == 1 and sol2[0] > 0 and sol2[1] > 1 and 0 < sol2[2] < 2.0:
+                return sol2, total_fevals, -1
+            return None, total_fevals, 0
+
+    # Threshold never reached from any heuristic start — fall back to tight fsolve
+    sol, fevals2, _ = solve_fsolve_only(x1w, ms, T, P)
+    return sol, total_fevals + fevals2, -1 if sol is not None else 0
 
 
 # ── Condition grid ─────────────────────────────────────────────────────────────
@@ -220,13 +244,13 @@ strategies = [
      lambda x1w, ms, T, P: solve_fsolve_only(x1w, ms, T, P)),
     ("B  heuristic→Newton  ", None,
      lambda x1w, ms, T, P: solve_heuristic_newton(x1w, ms, T, P, _newton_an_count)),
-    ("C  1-fsolve→Newton   ", None,
-     lambda x1w, ms, T, P: solve_1fsolve_then_newton(
+    ("C  fsolve(Fnorm<0.1)→Newton ", None,
+     lambda x1w, ms, T, P: solve_fsolve_then_newton(
          x1w, ms, T, P, newton_fn=_newton_an_count)),
-    ("B' heuristic→FD-Newt ", None,
+    ("B' heuristic→FD-Newt       ", None,
      lambda x1w, ms, T, P: solve_heuristic_newton(x1w, ms, T, P, _newton_fd_count)),
-    ("C' 1-fsolve→FD-Newt  ", None,
-     lambda x1w, ms, T, P: solve_1fsolve_then_newton(
+    ("C' fsolve(Fnorm<0.1)→FD-N  ", None,
+     lambda x1w, ms, T, P: solve_fsolve_then_newton(
          x1w, ms, T, P, newton_fn=_newton_fd_count)),
 ]
 
