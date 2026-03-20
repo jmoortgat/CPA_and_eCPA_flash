@@ -3,10 +3,10 @@ _build_scan_table_v2.py — Comprehensive eCPA/CPA solution table + performance 
 
 Grid
 ----
-  T   = 273–633 K  (5 K steps, 73 points)
-  P   = 1–1500 bar (log-spaced, 30 points)
-  z   = 0.05–0.90  (uniform, 18 points)
-  ms  = [0, 1e-5, 0.5, 1, 2, 3, 4, 5, 6] mol/kg  (9 salinities)
+  T   = T_min–633 K  (5 K steps; default T_min=273 → 73 points)
+  P   = 1–1500 bar (log-spaced, 50 points)
+  z   = 0.05–0.90  (uniform, 25 points)
+  ms  = [0, 1e-5, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0] mol/kg
 
   ms = 0    → CPA2.flash_co2_h2o_tpz_robust   (pure CO₂–H₂O, no salt/electrostatics)
   ms > 0    → ecpa_stability_flash             (eCPA hierarchical: stability K-init
@@ -57,9 +57,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# ── Grid definition ────────────────────────────────────────────────────────────
+# ── Fixed grid axes (T_GRID set dynamically in run_scan from --T-min) ──────────
 
-T_GRID  = np.arange(273.0, 634.0, 5.0)            # 73 temperatures: 273…633 K  (5 K steps)
 P_GRID  = np.logspace(0.0, np.log10(1500.0), 50)  # 50 log-spaced pressures
 Z_GRID  = np.linspace(0.05, 0.90, 25)             # 25 feed CO₂ fractions
 MS_GRID = np.array([0.0, 1e-5, 0.1, 0.25, 0.5, 0.75,
@@ -274,6 +273,7 @@ def _scan_row_worker(task):
                 "n_newton_aq": 0, "n_newton_aq_ok": 0, "n_newton_aq_iters": 0,
                 "n_fsolve_aq": 0, "n_fsolve_aq_nfev": 0,
                 "n_fsolve_c": 0, "n_fsolve_c_nfev": 0,
+                "n_newton_c": 0, "n_newton_c_ok": 0, "n_newton_c_iters": 0,
                 "wall_time_ms": wall_ms,
             }
             row_data.append(rec)
@@ -378,6 +378,9 @@ def _scan_row_worker(task):
             "n_fsolve_aq_nfev":  istats.get("n_fsolve_aq_nfev",  0),
             "n_fsolve_c":        istats.get("n_fsolve_c",        0),
             "n_fsolve_c_nfev":   istats.get("n_fsolve_c_nfev",   0),
+            "n_newton_c":        istats.get("n_newton_c",        0),
+            "n_newton_c_ok":     istats.get("n_newton_c_ok",     0),
+            "n_newton_c_iters":  istats.get("n_newton_c_iters",  0),
             "wall_time_ms": wall_ms,
         }
         row_data.append(rec)
@@ -387,7 +390,7 @@ def _scan_row_worker(task):
 
 # ── Main scan ──────────────────────────────────────────────────────────────────
 
-def run_scan(n_workers=None, out_prefix="results/scan_v2"):
+def run_scan(n_workers=None, out_prefix="results/scan_v2", T_min=273.0):
     """Build the solution table and performance metrics."""
     sys.path.insert(0, SCRIPT_DIR)
 
@@ -396,6 +399,8 @@ def run_scan(n_workers=None, out_prefix="results/scan_v2"):
 
     params     = make_params()
     CPA_GROUPS, CPA_TEMPS = load_cpa_guess_table()
+
+    T_GRID = np.arange(float(T_min), 634.0, 5.0)   # e.g. 288–633 K (70 pts) or 273–633 K (73 pts)
 
     nT  = len(T_GRID)
     nP  = len(P_GRID)
@@ -493,6 +498,7 @@ def run_scan(n_workers=None, out_prefix="results/scan_v2"):
                     "n_newton_aq", "n_newton_aq_ok", "n_newton_aq_iters",
                     "n_fsolve_aq", "n_fsolve_aq_nfev",
                     "n_fsolve_c", "n_fsolve_c_nfev",
+                    "n_newton_c", "n_newton_c_ok", "n_newton_c_iters",
                     "wall_time_ms",
                 ]}
                 all_metrics.append(m)
@@ -554,6 +560,8 @@ if __name__ == "__main__":
                         help="Number of parallel workers (default: cpu_count-1)")
     parser.add_argument("--out-prefix", type=str, default="results/scan_v2",
                         help="Output file prefix (default: results/scan_v2)")
+    parser.add_argument("--T-min", type=float, default=273.0,
+                        help="Minimum temperature in K (default: 273; grid steps 5 K to 633 K)")
     args = parser.parse_args()
 
-    run_scan(n_workers=args.workers, out_prefix=args.out_prefix)
+    run_scan(n_workers=args.workers, out_prefix=args.out_prefix, T_min=args.T_min)
