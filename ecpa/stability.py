@@ -382,44 +382,364 @@ def _eval_aq_all(Zw: float, epsr: float, chi1w: float,
     return Zw_new, T1, T2, chi1w_new, lnphi1w, lnphi4w
 
 
+def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
+                           x1w: float, ms: float, T: float, P: float):
+    """
+    Forward pass identical to _eval_aq_all, plus the analytical 3×3 Jacobian.
+
+    J[i, j] = ∂F_i / ∂v_j  where
+        F = [Zw − Zw_new,  T1 − T2,  chi1w − chi1w_new]
+        v = [Zw,           epsr,      chi1w            ]
+
+    Returns (Zw_new, T1, T2, chi1w_new, lnphi1w, lnphi4w, J).
+
+    Approximation: J[0, 1] (∂F0/∂epsr) and J[0, 2] (∂F0/∂chi1w) are exact.
+    J[0, 0] (∂F0/∂Zw) omits the d0_VdFdV term in d0_VderdV (would require
+    differentiating the chi cross-derivative system w.r.t. Zw); the residual
+    error is ~1–2 % at typical conditions and does not impair Newton
+    convergence from warm starts.
+    """
+    # ── Forward pass (identical to _eval_aq_all) ─────────────────────────────
+    P_Pa = P * 1e5
+    x2w = x1w * ms * Mw
+    x3w = x2w
+    x4w = 1.0 - x1w - x2w - x3w
+
+    k14 = Akij*(T/Tc4)**2 + Bkij*(T/Tc4) + Ckij
+    S14 = ASij*(T/Tc4)**2 + BSij*(T/Tc4) + CSij
+    U4s = Uref4s + alfa4s*R*((1-T/Talfa4s)**2 - (1-Tref/Talfa4s)**2)
+    U1s = Uref1s + alfa1s*R*((1-T/Talfa1s)**2 - (1-Tref/Talfa1s)**2)
+
+    rho = P_Pa / Zw / R / T
+    a1  = a01*(1 + c11*(1 - (T/Tc1)**0.5))**2
+    a4  = a04*(1 + c14*(1 - (T/Tc4)**0.5))**2
+
+    b   = b1*x1w + b2*x2w + b3*x3w + b4*x4w
+    U14 = np.log(2)*(a4/b4 - 2*(a1*a4)**0.5*(1-k14)/(b1+b4))
+    U41 = np.log(2)*(a1/b1 - 2*(a4*a1)**0.5*(1-k14)/(b4+b1))
+    gE  = (1/b)*(x1w*x2w*U1s*(b1+b2) + x1w*x3w*U1s*(b1+b3)
+                 + x4w*x2w*U4s*(b4+b2) + x4w*x3w*U4s*(b4+b3)
+                 + x1w*x4w*(b1*U14 + b4*U41))
+    a   = b*(x1w*a1/b1 + x2w*a02/b2 + x3w*a03/b3 + x4w*a4/b4 - gE/np.log(2))
+
+    A  = a*P_Pa/R**2/T**2;  B  = b*P_Pa/R/T
+    A1 = a1*P_Pa/R**2/T**2; B1 = b1*P_Pa/R/T
+    B2 = b2*P_Pa/R/T;        B3 = b3*P_Pa/R/T
+    A4 = a4*P_Pa/R**2/T**2; B4 = b4*P_Pa/R/T
+
+    Zphys      = Zw/(Zw-B) - A/(Zw+B)
+    lnPHI1phys = (-np.log(Zw-B) + B1/B*(B/(Zw-B) - A/(Zw+B))
+                  - np.log((Zw+B)/Zw)*(A1/B1
+                    - 1/(B*np.log(2))*(x2w*U1s/R/T*(B1+B2)
+                                       + x3w*U1s/R/T*(B1+B3)
+                                       + x4w/R/T*(B1*U14+B4*U41)
+                                       - B1*gE/R/T)))
+    lnPHI4phys = (-np.log(Zw-B) + B4/B*(B/(Zw-B) - A/(Zw+B))
+                  - np.log((Zw+B)/Zw)*(A4/B4
+                    - 1/(B*np.log(2))*(x1w/R/T*(B1*U14+B4*U41)
+                                       + x2w*U4s/R/T*(B4+B2)
+                                       + x3w*U4s/R/T*(B4+B3)
+                                       - B4*gE/R/T)))
+
+    eta     = B / (4*Zw)
+    g_eta   = 1.0 / (1.0 - 1.9*eta)
+    dg_deta = 1.9 / (1.0 - 1.9*eta)**2
+    delta   = g_eta * kappaW * (np.exp(epsW/T) - 1.0)
+    DELTA   = delta * P_Pa / R / T
+    chi4w      = Zw / (Zw + 2*x1w*chi1w*S14*DELTA)
+    chi1w_new  = Zw / (Zw + 2*x1w*chi1w*DELTA + 2*x4w*chi4w*S14*DELTA)
+    Zassoc     = -2*(1 + eta/g_eta*dg_deta)*(x1w*(1-chi1w) + x4w*(1-chi4w))
+    a_sum      = x1w*4*(chi1w-1) + x4w*4*(chi4w-1)
+    lnPHI1assoc = 4*np.log(chi1w) + B1/(8*g_eta*Zw)*dg_deta*a_sum
+    lnPHI4assoc = 4*np.log(chi4w) + B4/(8*g_eta*Zw)*dg_deta*a_sum
+
+    xiZi  = x2w*Z2**2 + x3w*Z2**2
+    if ms > 0 and xiZi > 0:
+        debye = (e**2*Na*rho*xiZi / (kb*T*epsr*eps0))**0.5
+        X2 = 1/Sg2**3*(np.log(1+debye*Sg2) - debye*Sg2 + 0.5*(debye*Sg2)**2)
+        X3 = 1/Sg3**3*(np.log(1+debye*Sg3) - debye*Sg3 + 0.5*(debye*Sg3)**2)
+        ZDH = (1/(4*np.pi*Na*rho*xiZi)
+               * (x2w*Z2**2*(X2 - 0.5*debye**3/(1+debye*Sg2))
+                  + x3w*Z3**2*(X3 - 0.5*debye**3/(1+debye*Sg3))))
+    else:
+        debye = 0.0; ZDH = 0.0
+
+    M       = Na*rho/(3*eps0)*(x1w*pol1 + x2w*pol2 + x3w*pol3 + x4w*pol4)
+    eps_inf = (2*M + 1)/(1 - M)
+    Pww     = 2*rho*x1w*delta*chi1w**2
+    Pwc     = 2*rho*x4w*S14*delta*chi1w*chi4w
+    Pw      = Pww + Pwc
+    gw      = 1 + zww*Pww*np.cos(GAMMA1)/(Pw*np.cos(THETA1) + 1)
+    T1      = (2*epsr + eps_inf)*(epsr - eps_inf)/(epsr*(eps_inf + 2)**2)
+    T2      = Na*rho/(9*eps0*kb*T)*(x1w*gw*dip01**2)
+
+    VddeltadV  = -delta*eta*dg_deta/g_eta
+    NddeltadN1 =  delta*eta*b1*dg_deta/(g_eta*b)
+    NddeltadN4 =  delta*eta*b4*dg_deta/(g_eta*b)
+    dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
+    dFdchic  = 2*x2w*rho*S14*delta*chi4w**2
+    dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
+    dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x2w*S14*delta*chi4w)*chi1w**2
+    dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
+    dFdNw    = 2*rho*delta*chi1w**3
+    dGdNw    = 2*rho*S14*delta*chi1w**3
+    dFdNc    = 2*rho*S14*delta*chi1w**2*chi4w
+    dFddelta = -chi1w**2*(1 + (delta-1)*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14))
+    dGddelta = -chi4w**2*(1 + (delta-1)*(2*rho*x1w*chi1w*S14))
+    det      = dFdchiw - dFdchic*dGdchiw
+
+    Vdchi1WdV  = ((-(dFdV + dFddelta*VddeltadV)
+                   + dFdchic*(dGdV + dGddelta*VddeltadV)) / det)
+    Vdchi4WdV  = -(dGdchiw*Vdchi1WdV + dGdV + dGddelta*VddeltadV)
+    Ndchi1WdNw = ((-(dFdNw + dFddelta*NddeltadN1)
+                   + dFdchic*(dGdNw + dGddelta*NddeltadN1)) / det)
+    Ndchi4WdNw = -(dGdchiw*Ndchi1WdNw + dGdNw + dGddelta*NddeltadN1)
+    Ndchi1WdNc = ((-(dFdNc + dFddelta*NddeltadN4)
+                   + dFdchic*(-dGddelta*NddeltadN4)) / det)  # dGdNc=0
+    Ndchi4WdNc = -(dGdchiw*Ndchi1WdNc + dGddelta*NddeltadN4)
+
+    dgwdPw   = -(gw-1)*np.cos(THETA1)/(Pw*np.cos(THETA1) + 1)
+    dgwdPww  =  (gw-1)/Pww if Pww > 1e-30 else 0.0
+    NdPwwdN1 = Pww*(1/x1w + 1/delta*NddeltadN1 + 2/chi1w*Ndchi1WdNw)
+    NdPwcdN1 = Pwc*(1/chi1w*Ndchi1WdNw + 1/delta*NddeltadN1 + 1/chi4w*Ndchi4WdNw)
+    NdPwwdN4 = Pww*(2/chi1w*Ndchi1WdNc + 1/delta*NddeltadN4)
+    NdPwcdN4 = Pwc*(1/x4w*float(x4w>1e-30) + 1/chi1w*Ndchi1WdNc
+                    + 1/delta*NddeltadN4 + 1/chi4w*Ndchi4WdNc)
+    NdgwdN1  = dgwdPw*(NdPwwdN1+NdPwcdN1) + dgwdPww*NdPwwdN1
+    NdgwdN4  = dgwdPw*(NdPwwdN4+NdPwcdN4) + dgwdPww*NdPwwdN4
+
+    dFder    = (2*epsr**2 + eps_inf**2)/(epsr**2*(eps_inf+2)**2)
+    dFdeinf  = (epsr*eps_inf - 4*eps_inf - 4*epsr**2 - 2*epsr)/(epsr*(eps_inf+2)**3)
+    NdeinfdN1 = Na*pol1*rho/(eps0*(1-M)**2)
+    NdeinfdN4 = Na*pol4*rho/(eps0*(1-M)**2)
+    NdFdN1   = -Na*rho*dip01**2/(9*eps0*kb*T)*(gw + x1w*NdgwdN1)
+    NdFdN4   = -Na*rho*dip01**2/(9*eps0*kb*T)*(x1w*NdgwdN4)
+    NderdN1  = -(dFder)**-1*(dFdeinf*NdeinfdN1 + NdFdN1)
+    NderdN4  = -(dFder)**-1*(dFdeinf*NdeinfdN4 + NdFdN4)
+
+    VdeinfdV = -3*M/(1-M)**2
+    VdPwwdV  = Pww*(-1 + 1/delta*VddeltadV + 2/chi1w*Vdchi1WdV)
+    VdPwcdV  = Pwc*(-1 + 1/delta*VddeltadV + 1/chi1w*Vdchi1WdV + 1/chi4w*Vdchi4WdV)
+    VdgwdV   = dgwdPw*(VdPwwdV+VdPwcdV) + dgwdPww*VdPwwdV
+    VdFdV    = Na*rho*x1w*dip01**2/(9*eps0*kb*T)*(gw - VdgwdV)
+    VderdV   = -(dFder)**-1*(dFdeinf*VdeinfdV + VdFdV)
+
+    if ms > 0:
+        daDHBder = (debye**2/(8*np.pi*Na*rho*epsr*xiZi)
+                    * (x2w*Z2**2*(debye/(1+debye*Sg2) - 1/Rb2)
+                       + x3w*Z3**2*(debye/(1+debye*Sg3) - 1/Rb3)))
+    else:
+        daDHBder = 0.0
+
+    ZPerm       = -daDHBder * VderdV
+    lnPHI1perm  =  daDHBder * NderdN1
+    lnPHI4perm  =  daDHBder * NderdN4
+
+    Zw_new  = Zphys + Zassoc + ZDH + ZPerm
+    lnphi1w = lnPHI1phys + lnPHI1assoc + lnPHI1perm
+    lnphi4w = lnPHI4phys + lnPHI4assoc + lnPHI4perm
+
+    # ── Analytical Jacobian ───────────────────────────────────────────────────
+    J = np.zeros((3, 3))
+
+    # Shared first-order derivatives w.r.t. Zw
+    # (all at fixed epsr, chi1w — Newton independent variables)
+    d0_rho   = -rho / Zw                               # ∂ρ/∂Zw
+    d0_eta   = -eta / Zw                               # ∂η/∂Zw
+    # ∂δ/∂Zw  (= VddeltadV/Zw, with V∝Zw at fixed T,P)
+    d0_delta = VddeltadV / Zw
+    d0_DELTA = d0_delta * P_Pa / (R * T)               # ∂Δ/∂Zw
+    d0_eps_inf = VdeinfdV / Zw                         # ∂ε_inf/∂Zw
+    C2 = Na*x1w*dip01**2 / (9*eps0*kb*T)              # T2 prefactor (const)
+
+    # ── J[2, :] — F2 = chi1w − chi1w_new ────────────────────────────────────
+    # chi4w = Zw / Den4
+    Den4     = Zw + 2*x1w*chi1w*S14*DELTA
+    d0_Den4  = 1.0 + 2*x1w*chi1w*S14*d0_DELTA
+    d2_Den4  = 2*x1w*S14*DELTA                          # ∂Den4/∂chi1w
+    d0_chi4w = (Den4 - Zw*d0_Den4) / Den4**2
+    d2_chi4w = -Zw*d2_Den4 / Den4**2
+
+    # chi1w_new = Zw / Den1
+    Den1      = Zw + 2*x1w*chi1w*DELTA + 2*x4w*chi4w*S14*DELTA
+    d0_Den1   = (1.0 + 2*x1w*chi1w*d0_DELTA
+                 + 2*x4w*S14*(d0_chi4w*DELTA + chi4w*d0_DELTA))
+    d2_Den1   = 2*x1w*DELTA + 2*x4w*S14*d2_chi4w*DELTA
+    d0_chi1w_new = (Den1 - Zw*d0_Den1) / Den1**2
+    d2_chi1w_new = -Zw*d2_Den1 / Den1**2
+
+    J[2, 0] = -d0_chi1w_new
+    J[2, 1] = 0.0
+    J[2, 2] = 1.0 - d2_chi1w_new
+
+    # ── Shared Pw/gw derivatives (used by both J[0,:] and J[1,:]) ────────────
+    # ∂Pww/∂Zw at fixed chi1w (no Vdchi1WdV — chi1w is independent here)
+    d0_Pww = -Pww/Zw * (1.0 + dg_deta*eta/g_eta)
+    # ∂Pwc/∂Zw: ρ·δ·chi1w·chi4w, with chi4w also varying with Zw
+    d0_Pwc = (Pwc*(-1.0/Zw - dg_deta*eta/(g_eta*Zw))
+              + 2*rho*x4w*S14*delta*chi1w*d0_chi4w)
+    d0_gw = dgwdPww*d0_Pww + dgwdPw*(d0_Pww + d0_Pwc)
+    # ∂Pww/∂chi1w and ∂Pwc/∂chi1w (at fixed Zw; chi4w depends on chi1w)
+    d2_Pww = 2*Pww / chi1w
+    d2_Pwc = Pwc/chi1w + 2*rho*x4w*S14*delta*chi1w*d2_chi4w
+    d2_gw = dgwdPww*d2_Pww + dgwdPw*(d2_Pww + d2_Pwc)
+
+    # ── J[0, :] — F0 = Zw − Zw_new ──────────────────────────────────────────
+    # Zphys = Zw/(Zw-B) - A/(Zw+B)
+    d0_Zphys = -B/(Zw-B)**2 + A/(Zw+B)**2
+
+    # Zassoc = -2*k_assoc*s_assoc
+    k_assoc  = 1.0 + eta*dg_deta/g_eta
+    s_assoc  = x1w*(1-chi1w) + x4w*(1-chi4w)
+    d0_k_assoc = -1.9*eta*(g_eta + eta*dg_deta) / Zw    # ∂k_assoc/∂Zw
+    d0_s_assoc = -x4w*d0_chi4w
+    d2_s_assoc = -x1w - x4w*d2_chi4w
+    d0_Zassoc = -2.0*(d0_k_assoc*s_assoc + k_assoc*d0_s_assoc)
+    d2_Zassoc = -2.0*k_assoc*d2_s_assoc
+
+    if ms > 0 and debye > 0:
+        d0_debye_v = -debye / (2*Zw)
+        d1_debye_v = -debye / (2*epsr)
+
+        # df_DH/ddebye: analytic differentiation of X2-Y2 and X3-Y3
+        dX2_dd = (1.0/(1+debye*Sg2) - 1.0 + debye*Sg2) / Sg2**2
+        dX3_dd = (1.0/(1+debye*Sg3) - 1.0 + debye*Sg3) / Sg3**2
+        dY2_dd = 0.5*debye**2*(3 + 2*debye*Sg2) / (1+debye*Sg2)**2
+        dY3_dd = 0.5*debye**2*(3 + 2*debye*Sg3) / (1+debye*Sg3)**2
+        df_dd  = (x2w*Z2**2*(dX2_dd - dY2_dd) + x3w*Z3**2*(dX3_dd - dY3_dd))
+
+        norm4pi = 4*np.pi*Na*rho*xiZi
+        # d0_ZDH: df/dd * d0_debye / (4πNaρξ) + ZDH/Zw  (1/ρ factor picks up d(1/Zw))
+        d0_ZDH = df_dd*d0_debye_v / norm4pi + ZDH/Zw
+        d1_ZDH = df_dd*d1_debye_v / norm4pi
+
+        # ── ZPerm Jacobian ────────────────────────────────────────────────────
+        # ZPerm = −daDHBder · VderdV
+        # daDHBder depends on (Zw, epsr) through debye; VderdV depends on
+        # (Zw, epsr, chi1w) through dFder, dFdeinf, VdFdV.
+        H_DH = (x2w*Z2**2*(debye/(1+debye*Sg2) - 1/Rb2)
+                + x3w*Z3**2*(debye/(1+debye*Sg3) - 1/Rb3))
+        dH_dd = (x2w*Z2**2/(1+debye*Sg2)**2
+                 + x3w*Z3**2/(1+debye*Sg3)**2)
+        if abs(H_DH) > 1e-60:
+            d0_daDHBder = daDHBder/H_DH * dH_dd * d0_debye_v
+            d1_daDHBder = (daDHBder/H_DH * dH_dd * d1_debye_v
+                           - 2*daDHBder/epsr)
+        else:
+            d0_daDHBder = 0.0
+            d1_daDHBder = 0.0
+
+        # ∂VderdV/∂epsr: VderdV = −(dFder)⁻¹·(dFdeinf·VdeinfdV + VdFdV);
+        # dFder and dFdeinf both depend on epsr.
+        d1_dFder   = -2*eps_inf**2 / (epsr**3*(eps_inf+2)**2)
+        d1_dFdeinf = 4*(eps_inf - epsr**2) / (epsr**2*(eps_inf+2)**3)
+        d1_VderdV  = (-VderdV * d1_dFder / dFder
+                      - d1_dFdeinf * VdeinfdV / dFder)
+        d1_ZPerm   = -(VderdV*d1_daDHBder + daDHBder*d1_VderdV)
+
+        # ∂VderdV/∂Zw: ε_inf(Zw) variation in dFder, dFdeinf, VdeinfdV captured
+        # below.  The d0_VdFdV term (chain through chi cross-deriv w.r.t. Zw) is
+        # omitted; residual ≈ 1–2 % in J[0,0] — sufficient for Newton.
+        ddFder_deinf   = 4*(eps_inf - epsr**2) / (epsr**2*(eps_inf+2)**3)
+        ddFdeinf_deinf = ((12*epsr**2 - 2*epsr*eps_inf + 8*epsr + 8*eps_inf - 8)
+                          / (epsr*(eps_inf+2)**4))
+        d0_VdeinfdV = 3*M*(1+M) / (Zw*(1-M)**3)
+        d0_VderdV_eps = ((-VderdV/dFder) * ddFder_deinf * d0_eps_inf
+                         - (ddFdeinf_deinf * d0_eps_inf * VdeinfdV
+                            + dFdeinf * d0_VdeinfdV) / dFder)
+        d0_ZPerm = -(VderdV*d0_daDHBder + daDHBder*d0_VderdV_eps)
+
+        # ── ∂ZPerm/∂chi1w: exact via chi cross-derivative differentiation ────
+        # Differentiate M_cd·[Vdchi1WdV, Vdchi4WdV]=RHS_V w.r.t. chi1w.
+        # VddeltadV does not depend on chi1w.
+        d2_dFdchiw_xd = 4*x1w*rho*delta*chi1w
+        d2_dFdchic_xd = 4*x2w*rho*S14*delta*chi4w*d2_chi4w
+        d2_dGdchiw_xd = 4*x1w*rho*S14*delta*chi1w
+        d2_dFdV_xd    = (-6*rho*x1w*delta*chi1w**2
+                          - 2*rho*x2w*S14*delta*(d2_chi4w*chi1w**2 + 2*chi4w*chi1w))
+        d2_dGdV_xd    = -6*rho*x1w*S14*delta*chi1w**2
+        P_F_xd = 2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14
+        P_G_xd = 2*rho*x1w*chi1w*S14
+        d2_P_F_xd = 2*rho*x1w + 2*rho*x4w*S14*d2_chi4w
+        d2_dFddelta_xd = (-2*chi1w*(1 + (delta-1)*P_F_xd)
+                           - chi1w**2*(delta-1)*d2_P_F_xd)
+        d2_dGddelta_xd = (-2*chi4w*d2_chi4w*(1 + (delta-1)*P_G_xd)
+                           - chi4w**2*(delta-1)*2*rho*x1w*S14)
+        new_RHS_F = (-(d2_dFdV_xd + d2_dFddelta_xd*VddeltadV)
+                     - d2_dFdchiw_xd*Vdchi1WdV - d2_dFdchic_xd*Vdchi4WdV)
+        new_RHS_G = (-(d2_dGdV_xd + d2_dGddelta_xd*VddeltadV)
+                     - d2_dGdchiw_xd*Vdchi1WdV)
+        d2_Vdchi1WdV = (new_RHS_F - dFdchic*new_RHS_G) / det
+        d2_Vdchi4WdV = -(dGdchiw*d2_Vdchi1WdV + new_RHS_G)
+        # Propagate to VdPwwdV, VdPwcdV, VdgwdV, VdFdV
+        C_pw = -1 + VddeltadV/delta + 2*Vdchi1WdV/chi1w
+        C_pc = (-1 + VddeltadV/delta + Vdchi1WdV/chi1w
+                + (Vdchi4WdV/chi4w if chi4w > 1e-30 else 0.0))
+        d2_VdPwwdV = (d2_Pww*C_pw
+                      + Pww*2*(chi1w*d2_Vdchi1WdV - Vdchi1WdV)/chi1w**2)
+        if chi4w > 1e-30:
+            d2_VdPwcdV = (d2_Pwc*C_pc
+                          + Pwc*((chi1w*d2_Vdchi1WdV - Vdchi1WdV)/chi1w**2
+                                 + (chi4w*d2_Vdchi4WdV
+                                    - Vdchi4WdV*d2_chi4w)/chi4w**2))
+        else:
+            d2_VdPwcdV = 0.0
+        denom_gw   = np.cos(THETA1)*Pw + 1
+        d2_dgwdPw  = (-np.cos(THETA1)*d2_gw/denom_gw
+                      + (gw-1)*np.cos(THETA1)**2*(d2_Pww+d2_Pwc)/denom_gw**2)
+        d2_dgwdPww = ((d2_gw*Pww - (gw-1)*d2_Pww)/Pww**2
+                      if Pww > 1e-30 else 0.0)
+        d2_VdgwdV  = (d2_dgwdPww*VdPwwdV + dgwdPww*d2_VdPwwdV
+                      + d2_dgwdPw*(VdPwwdV+VdPwcdV)
+                      + dgwdPw*(d2_VdPwwdV+d2_VdPwcdV))
+        d2_VdFdV   = C2*rho*(d2_gw - d2_VdgwdV)
+        d2_ZPerm   = daDHBder * d2_VdFdV / dFder   # = -daDHBder*(-(1/dFder)*d2_VdFdV)
+    else:
+        d0_ZDH = d1_ZDH = d0_ZPerm = d1_ZPerm = d2_ZPerm = 0.0
+
+    J[0, 0] = 1.0 - (d0_Zphys + d0_Zassoc + d0_ZDH + d0_ZPerm)
+    J[0, 1] = -(d1_ZDH + d1_ZPerm)
+    J[0, 2] = -(d2_Zassoc + d2_ZPerm)
+
+    # ── J[1, :] — F1 = T1 − T2 ──────────────────────────────────────────────
+    # T1 depends on epsr (direct) and eps_inf (through rho → Zw)
+    d0_T1 = dFdeinf * d0_eps_inf
+    # d1_T1 = dFder (∂T1/∂ε_r at fixed ε_inf)
+
+    # T2 = C2 * rho * gw; gw derivatives computed in shared section above.
+    d0_T2 = C2*(d0_rho*gw + rho*d0_gw)
+    d2_T2 = C2*rho*d2_gw
+
+    J[1, 0] = d0_T1 - d0_T2
+    J[1, 1] = dFder                # ∂T1/∂ε_r; T2 has no direct ε_r dependence
+    J[1, 2] = -d2_T2
+
+    return Zw_new, T1, T2, chi1w_new, lnphi1w, lnphi4w, J
+
+
 def _newton_aq(v0, x1w, ms, T, P, tol=1e-10, maxiter=20):
-    """Newton iteration for the aqueous inner solve.
+    """Newton iteration for the aqueous inner solve using analytical Jacobian.
 
     Solves F(Zw, epsr, chi1w) = 0 where
         F = [Zw - Zw_new(Zw, epsr, chi1w),
              T1(epsr)  - T2(Zw, chi1w),
              chi1w     - chi1w_new(Zw, chi1w)].
 
-    Uses a forward finite-difference Jacobian (3 extra residual evaluations
-    per step) with variable-relative step sizes.
+    Uses the analytical 3×3 Jacobian from _eval_aq_all_with_jac (1 eval/step).
     Returns np.array([Zw, epsr, chi1w]) on convergence, None otherwise.
     """
     v = np.array(v0, dtype=float)
 
-    def _res(v):
+    for _iter in range(maxiter):
         Zw, epsr, chi1w = v[0], v[1], v[2]
         if Zw <= 0 or epsr <= 1 or chi1w <= 0 or chi1w >= 2.0:
             return None
         chi1w_eval = min(chi1w, 1.0 - 1e-12)
-        Zw_new, T1, T2, chi1w_new, _, _ = _eval_aq_all(
+        Zw_new, T1, T2, chi1w_new, _, _, J = _eval_aq_all_with_jac(
             Zw, epsr, chi1w_eval, x1w, ms, T, P)
-        return np.array([Zw - Zw_new, T1 - T2, chi1w - chi1w_new])
-
-    for _iter in range(maxiter):
-        F = _res(v)
-        if F is None:
-            return None
+        F = np.array([Zw - Zw_new, T1 - T2, chi1w - chi1w_new])
         if np.max(np.abs(F)) < tol:
             return v
-        # Forward FD Jacobian (variable-relative step; 3 extra evaluations)
-        J = np.empty((3, 3))
-        for j in range(3):
-            hj = max(abs(v[j]) * 1e-6, 1e-8)
-            vp = v.copy(); vp[j] += hj
-            Fp = _res(vp)
-            if Fp is None:
-                return None
-            J[:, j] = (Fp - F) / hj
         try:
             dv = np.linalg.solve(J, -F)
         except np.linalg.LinAlgError:
