@@ -180,48 +180,59 @@ def _parse_cpa2_result(res, z_co2):
 
 # ── eCPA path (ms > 0) ────────────────────────────────────────────────────────
 
-def _ecpa_flash_one(T, P, z_co2, ms, sol_prev, ms_aq_prev):
+def _ecpa_stability(T, P, z_co2, ms, co2_ref_x0, aq_ref_x0):
     """
-    Run eCPA flash (flash_co2_h2o_salt_ssi).
+    Run the full eCPA Michelsen stability test (6 trial guesses, accelerated
+    SSI, Newton ZChi) and return (is_two_phase, co2_ref_x0_new, aq_ref_x0_new).
 
-    Tries warm start first (if sol_prev is available), then cold start.
-    Returns (out_dict, sol_new, ms_aq_new, converged, error_type).
+    co2_ref_x0 / aq_ref_x0 warm-start the inner reference fsolve across P.
+    """
+    from ecpa.stability import ecpa_stability
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        res = ecpa_stability(
+            z_co2=float(z_co2), ms=float(ms), T=float(T), P=float(P),
+            params=_W_params,
+            co2_ref_x0=co2_ref_x0,
+            aq_ref_x0=aq_ref_x0,
+        )
+    return (not res["stable"]), res.get("co2_ref_x0"), res.get("aq_ref_x0")
+
+
+def _ecpa_flash_warm(T, P, z_co2, ms, sol_prev, ms_aq_prev):
+    """
+    Warm-started eCPA flash.  elv_maxfev=400 keeps failures fast (warm-started
+    convergence typically needs <100 ELV calls per SSI iteration; at most 400
+    avoids stalling when exiting the two-phase region at high P).
+    Returns (out_dict, sol_new, ms_aq_new) or raises on failure.
     """
     from ecpa.flash import flash_co2_h2o_salt_ssi
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        out = flash_co2_h2o_salt_ssi(
+            T=float(T), P_bar=float(P), z_co2=float(z_co2), m_tot=float(ms),
+            params=_W_params, maxiter_ms=30,
+            initial_sol=sol_prev, initial_ms_aq=ms_aq_prev,
+            elv_maxfev=400,
+        )
+    return out, out["sol"].copy(), float(out["ms_aq"])
 
-    kw_common = dict(T=float(T), P_bar=float(P), z_co2=float(z_co2),
-                     m_tot=float(ms), params=_W_params, maxiter_ms=30)
 
-    # ── Attempt 1: warm start ──────────────────────────────────────────────────
-    if sol_prev is not None:
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                out = flash_co2_h2o_salt_ssi(
-                    **kw_common,
-                    initial_sol=sol_prev,
-                    initial_ms_aq=ms_aq_prev,
-                )
-            return out, out["sol"].copy(), float(out["ms_aq"]), True, ""
-        except Exception:
-            pass  # fall through to cold start
-
-    # ── Attempt 2: cold start from CPA2 guess table ────────────────────────────
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            out = flash_co2_h2o_salt_ssi(
-                **kw_common,
-                guess_table_fn=_W_guess_fn,
-            )
-        return out, out["sol"].copy(), float(out["ms_aq"]), True, ""
-    except RuntimeError as exc:
-        err = str(exc)
-        if "did not converge" in err:
-            return None, None, None, False, "ssi_no_convergence"
-        return None, None, None, False, f"runtime:{err[:60]}"
-    except Exception as exc:
-        return None, None, None, False, f"error:{type(exc).__name__}"
+def _ecpa_flash_cold(T, P, z_co2, ms):
+    """
+    Cold-start eCPA flash (no stability pre-check — caller must have already
+    confirmed two-phase via ecpa_stability).
+    Returns (out_dict, sol_new, ms_aq_new) or raises on failure.
+    """
+    from ecpa.flash import flash_co2_h2o_salt_ssi
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        out = flash_co2_h2o_salt_ssi(
+            T=float(T), P_bar=float(P), z_co2=float(z_co2), m_tot=float(ms),
+            params=_W_params, maxiter_ms=30,
+            guess_table_fn=_W_guess_fn,
+        )
+    return out, out["sol"].copy(), float(out["ms_aq"])
 
 
 # ── Row worker ────────────────────────────────────────────────────────────────
@@ -236,134 +247,155 @@ def _scan_row_worker(task):
     """
     iT, iz, ims, T_val, z_val, ms_val, P_arr = task
 
-    # Import stability module for instrumentation (no-op if not available)
-    try:
-        from ecpa import stability as _stab
-        _has_stab = True
-    except ImportError:
-        _has_stab = False
+    from ecpa import stability as _stab
 
+    # Flash warm-start state (reset on genuine failure, kept across single-phase)
     sol_prev   = None
     ms_aq_prev = None
-    row_data   = []
+    # Stability inner-fsolve warm-start refs (carried across all P in the row)
+    co2_ref_x0 = None
+    aq_ref_x0  = None
+
+    row_data = []
 
     for iP, P_val in enumerate(P_arr):
         t0 = time.perf_counter()
+        _stab.reset_call_stats()
 
-        # Reset per-call instrumentation stats
-        if _has_stab:
-            _stab.reset_call_stats()
-
-        # ── Route by EoS ──────────────────────────────────────────────────────
+        # ── CPA2 path (ms = 0) ────────────────────────────────────────────────
         if ms_val == 0.0:
-            # CPA2 path — no warm-starting available
-            res     = _cpa2_flash_one(T_val, P_val, z_val)
+            res = _cpa2_flash_one(T_val, P_val, z_val)
             (is_2ph, sol10, Z_aq, Z_c, epsr_v, chi1w_v, chi1c_v,
              x1w_v, x4w_v, x1c_v, x4c_v, ms_aq_v, beta_v,
-             ecpa_metrics) = _parse_cpa2_result(res, z_val)
-
+             cpa_m) = _parse_cpa2_result(res, z_val)
             wall_ms = (time.perf_counter() - t0) * 1000.0
-
             rec = {
                 "iT": iT, "iP": iP, "iz": iz, "ims": ims,
                 "T": T_val, "P": P_val, "z": z_val, "ms_feed": ms_val,
                 "eos_type": "CPA",
-                "converged":    ecpa_metrics["converged"],
-                "is_two_phase": ecpa_metrics["is_two_phase"],
-                "error_type":   ecpa_metrics["error_type"],
-                # Solution fields
-                "sol":   sol10.tolist(),
-                "Z_aq":  Z_aq, "Z_c":   Z_c,
-                "epsr":  epsr_v,
+                "converged": cpa_m["converged"], "is_two_phase": is_2ph,
+                "error_type": cpa_m["error_type"],
+                "sol": sol10.tolist(),
+                "Z_aq": Z_aq, "Z_c": Z_c, "epsr": epsr_v,
                 "chi1w": chi1w_v, "chi1c": chi1c_v,
-                "x1w":   x1w_v, "x4w":   x4w_v,
-                "x1c":   x1c_v, "x4c":   x4c_v,
+                "x1w": x1w_v, "x4w": x4w_v, "x1c": x1c_v, "x4c": x4c_v,
                 "ms_aq": ms_aq_v, "beta": beta_v,
-                # CPA-specific metrics
-                "n_ssi_iters":       ecpa_metrics["n_cpa_ssi_iters"],
-                "n_elv_nfev":        0,   # N/A for CPA2
-                "n_cpa_ssi_iters":   ecpa_metrics["n_cpa_ssi_iters"],
-                "n_cpa_newton_iters": ecpa_metrics["n_cpa_newton_iters"],
-                # eCPA inner-loop metrics (N/A for CPA2)
-                "n_lnphi_aq":        0,
-                "n_lnphi_c":         0,
-                "n_newton_aq":       0,
-                "n_newton_aq_ok":    0,
-                "n_newton_aq_iters": 0,
-                "n_fsolve_aq":       0,
-                "n_fsolve_aq_nfev":  0,
-                "n_fsolve_c":        0,
-                "n_fsolve_c_nfev":   0,
+                "n_ssi_iters": cpa_m["n_cpa_ssi_iters"], "n_elv_nfev": 0,
+                "n_cpa_ssi_iters": cpa_m["n_cpa_ssi_iters"],
+                "n_cpa_newton_iters": cpa_m["n_cpa_newton_iters"],
+                "n_lnphi_aq": 0, "n_lnphi_c": 0,
+                "n_newton_aq": 0, "n_newton_aq_ok": 0, "n_newton_aq_iters": 0,
+                "n_fsolve_aq": 0, "n_fsolve_aq_nfev": 0,
+                "n_fsolve_c": 0, "n_fsolve_c_nfev": 0,
                 "wall_time_ms": wall_ms,
             }
-        else:
-            # eCPA path
-            out, sol_new, ms_aq_new, conv, err_type = _ecpa_flash_one(
-                T_val, P_val, z_val, ms_val, sol_prev, ms_aq_prev)
+            row_data.append(rec)
+            continue
 
-            # Collect inner-loop stats from thread-local
-            istats = _stab.get_call_stats() if _has_stab else {}
+        # ── eCPA path (ms > 0) ────────────────────────────────────────────────
+        # Strategy:
+        #   1. If warm start available: try flash directly (fast in two-phase
+        #      region; fails quickly at ≤400 ELV calls if exiting region).
+        #   2. If no warm start OR warm start failed: run full ecpa_stability
+        #      (6 trial guesses, accelerated SSI, Newton ZChi).
+        #      - Stable  → single-phase, record and continue.
+        #      - Unstable→ two-phase, run cold-start flash.
 
-            wall_ms = (time.perf_counter() - t0) * 1000.0
+        out      = None
+        is_2ph   = False
+        err_type = ""
+        n_ssi = n_elv = 0
 
-            if conv and out is not None:
-                sol10   = out["sol"]
-                Z_aq    = float(sol10[0]);  Z_c  = float(sol10[3])
-                x1w_v   = float(sol10[1]);  epsr_v = float(sol10[2])
-                x1c_v   = float(sol10[4]);  chi1w_v = float(sol10[5])
-                chi1c_v = float(sol10[6])
-                x2w_v   = x1w_v * ms_aq_new * 0.018015
-                x4w_v   = 1.0 - x1w_v - 2.0 * x2w_v
-                x4c_v   = 1.0 - x1c_v
-                beta_v  = float(out["beta"])
-                ms_aq_v = float(out["ms_aq"])
-                n_ssi   = int(out.get("n_iter_ms", 0))
-                n_elv   = int(out.get("n_elv_nfev", 0))
-                is_2ph  = True
+        # Attempt 1: warm-started flash (skip stability, already in region)
+        if sol_prev is not None:
+            try:
+                out, sol_new, ms_aq_new = _ecpa_flash_warm(
+                    T_val, P_val, z_val, ms_val, sol_prev, ms_aq_prev)
+                is_2ph = True
                 sol_prev   = sol_new
                 ms_aq_prev = ms_aq_new
+                n_ssi = int(out.get("n_iter_ms", 0))
+                n_elv = int(out.get("n_elv_nfev", 0))
+            except Exception:
+                out = None   # fall through to stability check
+
+        # Attempt 2: ecpa_stability → cold-start flash
+        if out is None:
+            try:
+                two_phase_flag, co2_ref_x0, aq_ref_x0 = _ecpa_stability(
+                    T_val, P_val, z_val, ms_val, co2_ref_x0, aq_ref_x0)
+            except Exception:
+                two_phase_flag = True   # stability failed; try flash anyway
+
+            if not two_phase_flag:
+                # Confirmed single-phase — record and continue.
+                # Keep sol_prev unchanged for possible re-entry into two-phase.
+                err_type = "single_phase"
             else:
-                sol10   = np.full(SOL_DIM, np.nan)
-                Z_aq = Z_c = epsr_v = chi1w_v = chi1c_v = np.nan
-                x1w_v = x4w_v = x1c_v = x4c_v = ms_aq_v = beta_v = np.nan
-                n_ssi = 0; n_elv = 0
-                is_2ph = False
-                sol_prev   = None   # reset warm start after failure
-                ms_aq_prev = None
+                # Confirmed (or suspected) two-phase — cold-start flash.
+                try:
+                    out, sol_new, ms_aq_new = _ecpa_flash_cold(
+                        T_val, P_val, z_val, ms_val)
+                    is_2ph = True
+                    sol_prev   = sol_new
+                    ms_aq_prev = ms_aq_new
+                    n_ssi = int(out.get("n_iter_ms", 0))
+                    n_elv = int(out.get("n_elv_nfev", 0))
+                except RuntimeError as exc:
+                    err_type = ("ssi_no_convergence"
+                                if "did not converge" in str(exc)
+                                else f"runtime:{str(exc)[:60]}")
+                    sol_prev = None; ms_aq_prev = None
+                except Exception as exc:
+                    err_type = f"error:{type(exc).__name__}"
+                    sol_prev = None; ms_aq_prev = None
 
-            rec = {
-                "iT": iT, "iP": iP, "iz": iz, "ims": ims,
-                "T": T_val, "P": P_val, "z": z_val, "ms_feed": ms_val,
-                "eos_type": "eCPA",
-                "converged":    conv,
-                "is_two_phase": is_2ph,
-                "error_type":   err_type,
-                # Solution fields
-                "sol":   sol10.tolist() if hasattr(sol10, "tolist") else list(sol10),
-                "Z_aq":  Z_aq, "Z_c":   Z_c,
-                "epsr":  epsr_v,
-                "chi1w": chi1w_v, "chi1c": chi1c_v,
-                "x1w":   x1w_v, "x4w":   x4w_v,
-                "x1c":   x1c_v, "x4c":   x4c_v,
-                "ms_aq": ms_aq_v, "beta": beta_v,
-                # eCPA flash metrics
-                "n_ssi_iters":       n_ssi,
-                "n_elv_nfev":        n_elv,
-                "n_cpa_ssi_iters":   0,   # N/A for eCPA
-                "n_cpa_newton_iters": 0,
-                # eCPA stability inner-loop metrics (from thread-local)
-                "n_lnphi_aq":        istats.get("n_lnphi_aq",        0),
-                "n_lnphi_c":         istats.get("n_lnphi_c",         0),
-                "n_newton_aq":       istats.get("n_newton_aq",       0),
-                "n_newton_aq_ok":    istats.get("n_newton_aq_ok",    0),
-                "n_newton_aq_iters": istats.get("n_newton_aq_iters", 0),
-                "n_fsolve_aq":       istats.get("n_fsolve_aq",       0),
-                "n_fsolve_aq_nfev":  istats.get("n_fsolve_aq_nfev",  0),
-                "n_fsolve_c":        istats.get("n_fsolve_c",        0),
-                "n_fsolve_c_nfev":   istats.get("n_fsolve_c_nfev",   0),
-                "wall_time_ms": wall_ms,
-            }
+        # Collect instrumentation stats
+        istats = _stab.get_call_stats()
+        wall_ms = (time.perf_counter() - t0) * 1000.0
 
+        if out is not None and is_2ph:
+            sol10   = out["sol"]
+            ms_aq_new_v = float(out["ms_aq"])
+            Z_aq    = float(sol10[0]); Z_c     = float(sol10[3])
+            x1w_v   = float(sol10[1]); epsr_v  = float(sol10[2])
+            x1c_v   = float(sol10[4]); chi1w_v = float(sol10[5])
+            chi1c_v = float(sol10[6])
+            x2w_v   = x1w_v * ms_aq_new_v * 0.018015
+            x4w_v   = 1.0 - x1w_v - 2.0 * x2w_v
+            x4c_v   = 1.0 - x1c_v
+            beta_v  = float(out["beta"])
+            conv    = True
+        else:
+            sol10   = np.full(SOL_DIM, np.nan)
+            Z_aq = Z_c = epsr_v = chi1w_v = chi1c_v = np.nan
+            x1w_v = x4w_v = x1c_v = x4c_v = beta_v = np.nan
+            ms_aq_new_v = np.nan
+            conv = (err_type == "single_phase")   # single-phase IS a resolved result
+
+        rec = {
+            "iT": iT, "iP": iP, "iz": iz, "ims": ims,
+            "T": T_val, "P": P_val, "z": z_val, "ms_feed": ms_val,
+            "eos_type": "eCPA",
+            "converged": conv, "is_two_phase": is_2ph, "error_type": err_type,
+            "sol": sol10.tolist() if hasattr(sol10, "tolist") else list(sol10),
+            "Z_aq": Z_aq, "Z_c": Z_c, "epsr": epsr_v,
+            "chi1w": chi1w_v, "chi1c": chi1c_v,
+            "x1w": x1w_v, "x4w": x4w_v, "x1c": x1c_v, "x4c": x4c_v,
+            "ms_aq": ms_aq_new_v, "beta": beta_v,
+            "n_ssi_iters": n_ssi, "n_elv_nfev": n_elv,
+            "n_cpa_ssi_iters": 0, "n_cpa_newton_iters": 0,
+            "n_lnphi_aq":        istats.get("n_lnphi_aq",        0),
+            "n_lnphi_c":         istats.get("n_lnphi_c",         0),
+            "n_newton_aq":       istats.get("n_newton_aq",       0),
+            "n_newton_aq_ok":    istats.get("n_newton_aq_ok",    0),
+            "n_newton_aq_iters": istats.get("n_newton_aq_iters", 0),
+            "n_fsolve_aq":       istats.get("n_fsolve_aq",       0),
+            "n_fsolve_aq_nfev":  istats.get("n_fsolve_aq_nfev",  0),
+            "n_fsolve_c":        istats.get("n_fsolve_c",        0),
+            "n_fsolve_c_nfev":   istats.get("n_fsolve_c_nfev",   0),
+            "wall_time_ms": wall_ms,
+        }
         row_data.append(rec)
 
     return iT, iz, ims, row_data
