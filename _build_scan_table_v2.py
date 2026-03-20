@@ -180,23 +180,22 @@ def _parse_cpa2_result(res, z_co2):
 
 # ── eCPA path (ms > 0) ────────────────────────────────────────────────────────
 
-def _ecpa_flash_warm(T, P, z_co2, ms, sol_prev, ms_aq_prev):
+def _ecpa_flash_warm(T, P, z_co2, ms, K_prev, sol_aq_prev, sol_c_prev):
     """
-    Warm-started eCPA flash.  elv_maxfev=400 keeps failures fast (warm-started
-    convergence typically needs <100 ELV calls per SSI iteration; at most 400
-    avoids stalling when exiting the two-phase region at high P).
-    Returns (out_dict, sol_new, ms_aq_new) or raises on failure.
+    Warm-started K-value flash.  Passes K-values and inner warm-starts from
+    the previous converged point.  Raises RuntimeError on failure.
+    Returns (out_dict, K_new, sol_aq_new, sol_c_new).
     """
-    from ecpa.flash import flash_co2_h2o_salt_ssi
+    from ecpa.flash import flash_co2_h2o_salt_kv
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        out = flash_co2_h2o_salt_ssi(
+        out = flash_co2_h2o_salt_kv(
             T=float(T), P_bar=float(P), z_co2=float(z_co2), m_tot=float(ms),
-            params=_W_params, maxiter_ms=30,
-            initial_sol=sol_prev, initial_ms_aq=ms_aq_prev,
-            elv_maxfev=400,
+            K_init=K_prev,
+            sol_aq_x0=sol_aq_prev, sol_c_x0=sol_c_prev,
+            params=_W_params, maxiter=80,
         )
-    return out, out["sol"].copy(), float(out["ms_aq"])
+    return out, out["K_vals"], out["sol_aq_x0"], out["sol_c_x0"]
 
 
 def _ecpa_stability_flash(T, P, z_co2, ms, co2_ref_x0, aq_ref_x0):
@@ -236,8 +235,10 @@ def _scan_row_worker(task):
     from ecpa import stability as _stab
 
     # Flash warm-start state (reset on genuine failure, kept across single-phase)
-    sol_prev   = None
-    ms_aq_prev = None
+    # K-value warm-start state (K-value flash; reset on genuine failure)
+    K_prev      = None   # (K1, K4) from previous converged point
+    sol_aq_prev = None   # [Zw, epsr, chi1w]
+    sol_c_prev  = None   # [Zc, chi1c]
     # Stability inner-fsolve warm-start refs (carried across all P in the row)
     co2_ref_x0 = None
     aq_ref_x0  = None
@@ -280,26 +281,25 @@ def _scan_row_worker(task):
 
         # ── eCPA path (ms > 0) ────────────────────────────────────────────────
         # Strategy:
-        #   1. If warm start available: try flash directly (fast in two-phase
-        #      region; fails quickly at ≤400 ELV calls if exiting region).
-        #   2. If no warm start OR warm start failed: run full ecpa_stability
-        #      (6 trial guesses, accelerated SSI, Newton ZChi).
-        #      - Stable  → single-phase, record and continue.
-        #      - Unstable→ two-phase, run cold-start flash.
+        #   1. If warm start available: K-value flash from previous K_vals
+        #      (fast in two-phase region; fails fast outside it).
+        #   2. If no warm start OR warm start failed: hierarchical stability +
+        #      flash (stability K-init → Wilson K fallback).
 
         out      = None
         is_2ph   = False
         err_type = ""
         n_ssi = n_elv = 0
 
-        # Attempt 1: warm-started flash (skip stability, already in region)
-        if sol_prev is not None:
+        # Attempt 1: warm-started K-value flash
+        if K_prev is not None:
             try:
-                out, sol_new, ms_aq_new = _ecpa_flash_warm(
-                    T_val, P_val, z_val, ms_val, sol_prev, ms_aq_prev)
-                is_2ph = True
-                sol_prev   = sol_new
-                ms_aq_prev = ms_aq_new
+                out, K_new, sol_aq_new, sol_c_new = _ecpa_flash_warm(
+                    T_val, P_val, z_val, ms_val, K_prev, sol_aq_prev, sol_c_prev)
+                is_2ph      = True
+                K_prev      = K_new
+                sol_aq_prev = sol_aq_new
+                sol_c_prev  = sol_c_new
                 n_ssi = int(out.get("n_iter_ms", 0))
                 n_elv = int(out.get("n_elv_nfev", 0))
             except Exception:
@@ -316,22 +316,23 @@ def _scan_row_worker(task):
 
                 if sf.get("phase") == "single_phase":
                     err_type = "single_phase"
-                    # Keep sol_prev for possible re-entry into two-phase region.
+                    # Keep K_prev for possible re-entry into two-phase region.
                 else:
-                    out = sf
-                    is_2ph = True
-                    sol_prev   = np.asarray(out["sol"]).copy()
-                    ms_aq_prev = float(out["ms_aq"])
+                    out         = sf
+                    is_2ph      = True
+                    K_prev      = sf["K_vals"]
+                    sol_aq_prev = sf["sol_aq_x0"]
+                    sol_c_prev  = sf["sol_c_x0"]
                     n_ssi = int(out.get("n_iter_ms", 0))
                     n_elv = int(out.get("n_elv_nfev", 0))
             except RuntimeError as exc:
                 err_type = ("ssi_no_convergence"
                             if "did not converge" in str(exc)
                             else f"runtime:{str(exc)[:60]}")
-                sol_prev = None; ms_aq_prev = None
+                K_prev = None; sol_aq_prev = None; sol_c_prev = None
             except Exception as exc:
                 err_type = f"error:{type(exc).__name__}"
-                sol_prev = None; ms_aq_prev = None
+                K_prev = None; sol_aq_prev = None; sol_c_prev = None
 
         # Collect instrumentation stats
         istats = _stab.get_call_stats()
