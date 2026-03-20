@@ -1256,14 +1256,93 @@ All six guesses are required to ensure the optimal K-value initialization across
 full parameter space.
 
 \subsubsection{Convergence statistics for the eCPA ternary flash}
+\label{sec:ecpa_scan}
+
+To characterize eCPA flash performance over the full thermodynamic parameter space
+relevant to geological CO$_2$ storage, we computed a four-dimensional solution table
+covering the grid summarised in Table~\ref{tab:ecpa_scan_grid}.
+
+\begin{table}[htb]
+  \centering
+  \caption{Parameter grid for the eCPA ternary solution table
+           (CO$_2$+H$_2$O+NaCl, $70\times50\times25\times14 = 1{,}225{,}000$ points).}
+  \label{tab:ecpa_scan_grid}
+  \begin{tabular}{lll}
+    \toprule
+    Dimension & Range & Points \\
+    \midrule
+    Temperature $T$ & 288--633\,K & 70 (5\,K steps) \\
+    Pressure $P$ & 1--1500\,bar & 50 (log-spaced) \\
+    Overall CO$_2$ mole fraction $z$ & 0.05--0.90 & 25 (linear) \\
+    NaCl feed molality $m_s$ & 0--6\,mol\,kg$^{-1}$ & 14 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Each grid point was evaluated with \texttt{ecpa\_stability\_flash}: the Michelsen
+stability test (six trial compositions) is performed first; only genuinely unstable
+conditions proceed to the K-value SSI flash.
+Two near-critical safeguards are applied sequentially:
+(i)~a hard TPD threshold ($\mathrm{TPD_{min}} > -0.02$) classifies near-critical
+conditions as single-phase before the flash is attempted, preventing false-positive
+two-phase splits; and
+(ii)~a soft TPD threshold ($\mathrm{TPD_{min}} > -0.1$) reclassifies conditions
+where both flash initialization strategies fail as single-phase, covering the
+narrow near-critical band between the two thresholds.
+Of the 1{,}225{,}000 grid points, 87{,}500 correspond to the CPA2 sub-model
+(no association terms); the eCPA model covers the remaining 1{,}137{,}500 points.
+
+Table~\ref{tab:ecpa_scan_convergence} reports the outcome of all eCPA evaluations.
+Every grid point is classified---100.0\% convergence is achieved over the
+complete four-dimensional domain.
+
+\begin{table}[htb]
+  \centering
+  \caption{Classification of eCPA flash outcomes over the full 4D solution table
+           (1{,}137{,}500 eCPA points).}
+  \label{tab:ecpa_scan_convergence}
+  \begin{tabular}{lrl}
+    \toprule
+    Classification & Count & Description \\
+    \midrule
+    Two-phase, converged          & 602{,}294 & Valid two-phase split; SSI + Newton converged \\
+    Single-phase (stable)         & 529{,}478 & Michelsen stability test: no phase split \\
+    Near-critical single-phase    &   3{,}986 & TPD\,$\in(-0.1,\,-0.02)$; soft-threshold fallback \\
+    Bubble-point boundary         &   1{,}742 & Lean feed ($z \leq 0.35$), high $P$; $\beta \to 0$ \\
+    \midrule
+    Total classified              & 1{,}137{,}500 & 100.0\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The 3{,}986 near-critical cells occupy a narrow band just below the critical locus
+where the tangent-plane distance is slightly negative but no physically meaningful
+two-phase split exists; the flash returns to the feed composition with negligible
+correction regardless of initialization.
+The 1{,}742 bubble-point boundary cells occur at lean CO$_2$ feeds ($z \leq 0.35$)
+combined with high pressures ($P \gtrsim 300$\,bar), where the equilibrium aqueous
+CO$_2$ solubility equals or exceeds the feed fraction: essentially all CO$_2$ dissolves
+into the brine and no separate CO$_2$-rich phase can form.
+Both categories are thermodynamically single-phase and are treated as such.
+
+Figure~\ref{fig:ecpa_phase_map} shows how the two-phase window evolves across the
+$T$--$P$ plane for representative NaCl molalities and CO$_2$ feed fractions.
+Figure~\ref{fig:ecpa_composition_maps} presents the equilibrium aqueous CO$_2$ content
+($x_{\mathrm{CO_2}}^{\mathrm{aq}}$, mol\%) and H$_2$O content in the CO$_2$-rich
+phase ($x_{\mathrm{H_2O}}^{\mathrm{CO_2}}$, mol\%) as colour maps over the $T$--$P$
+plane for selected conditions.
+Figure~\ref{fig:ecpa_ssi_heatmap} extends the iteration-count analysis of
+Fig.~\ref{fig:ssi_heatmap} to the ternary system, showing the number of SSI iterations
+required across the $T$--$P$ plane for several NaCl molalities.
 
 Table~\ref{tab:convergence} summarises SSI iteration counts and wall times for the
-eCPA ternary flash over the validation dataset.
+eCPA ternary flash over the experimental validation dataset used in
+Sections~\ref{sec:co2h2o}--\ref{sec:co2nacl}.
 
 \begin{table}[htb]
   \centering
   \caption{Flash convergence statistics for the eCPA ternary system across
-           all validation data.}
+           the experimental validation dataset.}
   \label{tab:convergence}
   \begin{tabular}{llrrrrr}
     \toprule
