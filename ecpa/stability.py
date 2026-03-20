@@ -51,6 +51,7 @@ Aqueous phase: scipy.fsolve on 3 variables (Zw, epsr, chi1w).
 """
 
 import multiprocessing as mp
+import threading
 import warnings
 from concurrent.futures import ProcessPoolExecutor
 
@@ -60,6 +61,43 @@ from scipy.optimize import fsolve
 from .constants import *   # noqa: F401,F403  — same pattern as elv.py
 from .flash import flash_co2_h2o_salt_ssi
 from .scan import _cpu_count
+
+
+# ── Per-thread call statistics (opt-in instrumentation) ───────────────────────
+# Call reset_call_stats() before a flash/stability call and get_call_stats()
+# after to collect metrics without affecting any other thread.
+
+_tls = threading.local()
+
+
+def reset_call_stats():
+    """Reset per-thread call statistics.  Call before each flash for instrumentation."""
+    s = _tls
+    s.n_lnphi_aq        = 0
+    s.n_lnphi_c         = 0
+    s.n_newton_aq       = 0   # times Newton was attempted
+    s.n_newton_aq_ok    = 0   # times Newton converged
+    s.n_newton_aq_iters = 0   # total Newton iterations (success + failure)
+    s.n_fsolve_aq       = 0   # times fsolve path taken (aq)
+    s.n_fsolve_aq_nfev  = 0   # total fsolve function evals (aq, all starts)
+    s.n_fsolve_c        = 0   # times fsolve path taken (CO₂-rich)
+    s.n_fsolve_c_nfev   = 0   # total fsolve function evals (CO₂-rich, all starts)
+
+
+def get_call_stats() -> dict:
+    """Return current per-thread call statistics as a plain dict."""
+    s = _tls
+    return {
+        "n_lnphi_aq":        getattr(s, "n_lnphi_aq",        0),
+        "n_lnphi_c":         getattr(s, "n_lnphi_c",         0),
+        "n_newton_aq":       getattr(s, "n_newton_aq",       0),
+        "n_newton_aq_ok":    getattr(s, "n_newton_aq_ok",    0),
+        "n_newton_aq_iters": getattr(s, "n_newton_aq_iters", 0),
+        "n_fsolve_aq":       getattr(s, "n_fsolve_aq",       0),
+        "n_fsolve_aq_nfev":  getattr(s, "n_fsolve_aq_nfev",  0),
+        "n_fsolve_c":        getattr(s, "n_fsolve_c",        0),
+        "n_fsolve_c_nfev":   getattr(s, "n_fsolve_c_nfev",   0),
+    }
 
 
 # ── params-override context (mirrors ELV mechanism) ────────────────────────────
@@ -198,12 +236,16 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     # found first but the gas root is the stable state, and using the liquid root
     # for the stability reference while the trial uses the gas root produces a
     # spurious tpd < 0 (root-mixing artefact).
+    _s = _tls
+    _s.n_lnphi_c = getattr(_s, "n_lnphi_c", 0) + 1
+    _nfev_c = 0
     valid_roots = []
     for x0_try in cold_starts:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             sol, info, ier, _ = fsolve(
                 _eval_c_residual, x0_try, args=(x1c, T, P), full_output=True)
+        _nfev_c += info["nfev"]
         Zc_t, chi1c_t = float(sol[0]), float(sol[1])
         if ier != 1 or Zc_t <= 0 or not (0 < chi1c_t < 2.0):
             continue
@@ -212,6 +254,9 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
                         for Zc_p, _ in valid_roots)
         if not duplicate:
             valid_roots.append((Zc_t, chi1c_t))
+
+    _s.n_fsolve_c     = getattr(_s, "n_fsolve_c",     0) + 1
+    _s.n_fsolve_c_nfev = getattr(_s, "n_fsolve_c_nfev", 0) + _nfev_c
 
     if not valid_roots:
         # All cold starts failed — retry cold if we were warm-started
@@ -761,21 +806,27 @@ def _newton_aq(v0, x1w, ms, T, P, tol=1e-10, maxiter=20):
     Uses the analytical 3×3 Jacobian from _eval_aq_all_with_jac (1 eval/step).
     Returns np.array([Zw, epsr, chi1w]) on convergence, None otherwise.
     """
+    _s = _tls
+    _s.n_newton_aq = getattr(_s, "n_newton_aq", 0) + 1
     v = np.array(v0, dtype=float)
 
     for _iter in range(maxiter):
         Zw, epsr, chi1w = v[0], v[1], v[2]
         if Zw <= 0 or epsr <= 1 or chi1w <= 0 or chi1w >= 2.0:
+            _s.n_newton_aq_iters = getattr(_s, "n_newton_aq_iters", 0) + _iter
             return None
         chi1w_eval = min(chi1w, 1.0 - 1e-12)
         Zw_new, T1, T2, chi1w_new, _, _, J = _eval_aq_all_with_jac(
             Zw, epsr, chi1w_eval, x1w, ms, T, P)
         F = np.array([Zw - Zw_new, T1 - T2, chi1w - chi1w_new])
         if np.max(np.abs(F)) < tol:
+            _s.n_newton_aq_ok    = getattr(_s, "n_newton_aq_ok",    0) + 1
+            _s.n_newton_aq_iters = getattr(_s, "n_newton_aq_iters", 0) + _iter + 1
             return v
         try:
             dv = np.linalg.solve(J, -F)
         except np.linalg.LinAlgError:
+            _s.n_newton_aq_iters = getattr(_s, "n_newton_aq_iters", 0) + _iter + 1
             return None
         # Backtracking line search to stay in physical domain
         alpha = 1.0
@@ -785,8 +836,10 @@ def _newton_aq(v0, x1w, ms, T, P, tol=1e-10, maxiter=20):
                 break
             alpha *= 0.5
         else:
+            _s.n_newton_aq_iters = getattr(_s, "n_newton_aq_iters", 0) + _iter + 1
             return None
         v = vt
+    _s.n_newton_aq_iters = getattr(_s, "n_newton_aq_iters", 0) + maxiter
     return None  # maxiter reached without convergence
 
 
@@ -799,6 +852,8 @@ def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
 
     Returns (lnphi_H2O, lnphi_CO2, sol_array) where sol_array = [Zw, epsr, chi1w].
     """
+    _s = _tls
+    _s.n_lnphi_aq = getattr(_s, "n_lnphi_aq", 0) + 1
     x1w = float(x1w)
 
     x2w = x1w * ms * Mw
@@ -840,14 +895,19 @@ def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
         return [Zw - Zw_new, T1 - T2, chi1w - chi1w_new]
 
     best_sol = None
+    _nfev_aq = 0
     for start in starts:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             sol, info, ier, _ = fsolve(residual, start, full_output=True)
+        _nfev_aq += info["nfev"]
         Zw_s, epsr_s, chi1w_s = float(sol[0]), float(sol[1]), float(sol[2])
         if ier == 1 and Zw_s > 0 and epsr_s > 1 and 0 < chi1w_s < 2.0:
             best_sol = sol
             break   # aqueous EOS has one physical root; first success is fine
+
+    _s.n_fsolve_aq     = getattr(_s, "n_fsolve_aq",     0) + 1
+    _s.n_fsolve_aq_nfev = getattr(_s, "n_fsolve_aq_nfev", 0) + _nfev_aq
 
     if best_sol is None:
         if x0 is not None:

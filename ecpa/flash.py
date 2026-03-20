@@ -428,7 +428,11 @@ def flash_co2_h2o_salt_ssi(
 
     x1c_retry_mults = [1.0, 2.0, 0.5, 5.0, 0.1, 10.0, 0.02]
 
+    # Track total ELV function evaluations across all SSI iterations and retries.
+    _total_elv_nfev = 0
+
     def _solve_elv(ms_aq, guess):
+        nonlocal _total_elv_nfev
         best_sol, best_rn, best_ok = guess.copy(), np.inf, False
         # Clip x1w so x4w = 1 - x1w - 2*x1w*ms*Mw > 0 (physical feasibility).
         x1w_max = 0.9999 / (1.0 + 2.0 * float(ms_aq) * Mw) if ms_aq > 0 else 1.0
@@ -442,6 +446,7 @@ def flash_co2_h2o_salt_ssi(
                 fprime=ELV_jac if USE_COMPLEX_JAC else None,
                 full_output=True, xtol=elv_xtol, maxfev=elv_maxfev,
             )
+            _total_elv_nfev += info["nfev"]
             sol = np.asarray(sol, dtype=np.float64)
             res = np.asarray(ELV(sol, T, P_bar * 1e5, ms_aq, params), dtype=np.float64)
             rn  = float(np.linalg.norm(res))
@@ -559,7 +564,8 @@ def flash_co2_h2o_salt_ssi(
         "x_c":  dict(x1c=x1c, x4c=x4c),
         "Z_aq": float(sol[0]), "Z_c": float(sol[3]),
         "sol":  np.asarray(sol, dtype=np.float64),
-        "n_iter_ms": it + 1,
+        "n_iter_ms":   it + 1,
+        "n_elv_nfev":  _total_elv_nfev,
     }
 
 
