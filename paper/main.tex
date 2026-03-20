@@ -358,6 +358,32 @@ In the fast-flash algorithm described in Section~\ref{sec:fast_flash}, the stabi
 bypassed for conditions pre-classified as two-phase by the solution table, reducing this
 overhead to zero for the vast majority of reservoir simulation cells.
 
+\paragraph{EoS root consistency in the stability reference.}
+The reference $d_i = \ln z_i + \ln\hat{\phi}_i(\mathbf{z})$ and all trial-phase
+evaluations use the same CPA EoS, but a cubic-plus-association equation can admit
+two real compressibility roots at subcritical conditions.
+If the reference solver converges to a different root than the trial-phase solver,
+the resulting TPD comparison is between fugacities belonging to physically distinct
+solution branches, and the sign of TPD carries no thermodynamic meaning.
+This root-mixing artefact arises at pressures below the saturation pressure of water,
+$P < P_{\rm sat}(\mathrm{H}_2\mathrm{O},T)$: an H$_2$O-rich feed composition
+(large $z_{\mathrm{H}_2\mathrm{O}}$) admits both a liquid-like root ($Z \ll 1$)
+and a gas-like root ($Z \approx 1$).
+The original solver returned the \emph{first} valid root found, which for H$_2$O-rich
+compositions at low pressure was the liquid root, while CO$_2$-rich trial iterates
+at small $x_{1c}$ converged to the gas root, producing spuriously large negative TPD values.
+The corrected solver collects \emph{all} distinct valid roots from the available cold
+starts and returns the one that minimises the residual Gibbs energy
+$G^{\rm res}/RT = \sum_i x_i\ln\hat{\phi}_i$.
+This is a purely thermodynamic criterion: the minimum-$G$ root is the
+thermodynamically stable single-phase state at any $(T,P,\mathbf{x})$, independent
+of initial guess ordering or any pressure threshold.
+In the parameter-space scan (Section~\ref{sec:convergence}), the correction eliminates
+nine false-positive two-phase predictions at $T = 463$--$493$\,K, $P = 10$\,bar
+(below $P_{\rm sat}$ for those temperatures), all of which were previously
+unresolvable by the flash algorithm because no genuine two-phase equilibrium
+exists at those conditions according to the EoS.
+
 \subsection{Successive-substitution isothermal flash}
 \label{sec:ssi}
 
@@ -516,6 +542,87 @@ This factor-of-3 per-iteration cost must be weighed against the additional physi
 captured by CPA: accurate partitioning of a self- and cross-associating system
 over a wide temperature and pressure range, and (in the full eCPA model)
 correct salt activity without empirical brine corrections.
+
+\subsection{K-value flash for the eCPA ternary system}
+\label{sec:kv_flash}
+
+In the full eCPA ternary (CO$_2$ + H$_2$O + NaCl), the equilibrium NaCl molality
+in the aqueous phase $m_s^{\rm aq}$ is an additional unknown that couples to the
+flash equations through the aqueous-phase fugacity coefficients.
+The approach described above retains an outer successive-substitution loop over
+$m_s^{\rm aq}$ with an inner ELV solve at each step.
+We show here that NaCl non-volatility permits $m_s^{\rm aq}$ to be
+\emph{eliminated analytically} at every K-value iteration, reducing the flash
+to a single-level problem in $(K_1, K_4)$ with no outer loop.
+
+\paragraph{Analytical elimination of $m_s^{\rm aq}$.}
+NaCl is non-volatile so all salt remains in the aqueous phase.
+Given $K_1 \equiv x_{1c}/x_{1w}$ and $K_4 \equiv x_{4c}/x_{4w}$, the compositions
+of both phases are fixed once $x_{1w}$ is known.
+Substituting $x_{2w} = x_{3w} = x_{1w}\,m_s^{\rm aq}\,M_w$ into the aqueous
+normalisation $\sum_i x_i^{\rm aq} = 1$ and combining with the molar balances
+for H$_2$O and CO$_2$ yields a single scalar equation in $x_{1w}$:
+\begin{equation}
+  x_{1w}
+  + \frac{2\,n_{\rm NaCl}}{N_{\rm aq}(x_{1w})}
+  + \frac{1 - K_1\,x_{1w}}{K_4} = 1,
+  \label{eq:x1w_kv}
+\end{equation}
+where the moles of aqueous phase as a function of $x_{1w}$ is
+\begin{equation}
+  N_{\rm aq}(x_{1w}) =
+    \frac{K_4\,(n_{\mathrm{H}_2\mathrm{O}} - K_1\,x_{1w})}
+         {(1 - K_1\,x_{1w})\,x_{1w}\,(K_4 - K_1)},
+  \label{eq:Naq_kv}
+\end{equation}
+and $n_{\mathrm{H}_2\mathrm{O}}$, $n_{\mathrm{CO}_2}$, $n_{\rm NaCl}$ are the
+feed amounts per mole of volatile feed.
+Equation~\eqref{eq:x1w_kv} is monotone in $x_{1w}$ over the physical domain and is
+solved by Brent's method at each iteration.
+Once $x_{1w}$ is known, all compositions and the molality follow analytically:
+\begin{equation}
+  m_s^{\rm aq} = \frac{n_{\rm NaCl}}{N_{\rm aq}\,x_{1w}\,M_w}.
+  \label{eq:msaq_kv}
+\end{equation}
+
+\paragraph{K-value iteration and acceleration.}
+With compositions fully determined by the current $(K_1, K_4)$, the fugacity
+residual is a 2-vector
+\begin{equation}
+  g_i^{(k)} =
+    \ln\hat{\phi}_i^{\rm aq}\!\bigl(x_{1w}^{(k)}, m_s^{{\rm aq},(k)}\bigr)
+    - \ln\hat{\phi}_i^{c}\!\bigl(x_{1c}^{(k)}\bigr),
+    \quad i \in \{\mathrm{H}_2\mathrm{O},\,\mathrm{CO}_2\},
+  \label{eq:g_kv}
+\end{equation}
+and the K-value update follows Eq.~\eqref{eq:ssi} with the Jex acceleration
+(Eq.~\eqref{eq:accel_m}).
+The inner EoS solves for $(Z_w, \varepsilon_r, \chi_w)$ and $(Z_c, \chi_{1c})$
+are warm-started between iterations so the per-step cost is identical to that of
+a conventional SSI step.
+Convergence is declared when $\|\mathbf{g}^{(k)}\| < 10^{-8}$.
+
+\paragraph{Cold-start multi-start strategy.}
+Without a solution table the K-values must be initialised from fixed seeds.
+Four candidate pairs $(K_1, K_4)$ are tried in sequence:
+$(0.005,\,30)$, $(0.05,\,5)$, $(0.3,\,2)$, $(0.01,\,15)$,
+covering deep-reservoir, near-critical, and moderate-pressure regimes,
+respectively.
+The first pair to converge is returned; in practice the first seed suffices at
+the vast majority of conditions.
+
+\paragraph{Benchmark.}
+On a cold-start grid ($T = 313$--$493$\,K, $P = 10$--$800$\,bar, six CO$_2$ feed
+fractions, three NaCl molalities; 1{,}065 two-phase points after stability screening)
+the K-value SSI achieves \textbf{100\%} convergence at a median flash cost of
+8.8\,ms per point.
+The alternative ms$_{\rm aq}$-SSI approach---which retains an outer SSI loop over
+molality seeded from a binary ELV table---converges on 96.5\% of points at 22\,ms
+per point.
+The 2.5$\times$ speed advantage and improved convergence both arise from eliminating
+the molality outer loop: the K-value SSI solves the same fugacity-equality conditions
+in a single-level iteration, reducing the mean outer iteration count from $\sim$11
+(ms$_{\rm aq}$-SSI) to $\sim$8 (K-value SSI).
 
 \subsection{Phase envelope}
 \label{sec:envelope}
