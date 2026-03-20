@@ -232,7 +232,7 @@ def _pred_to_unit(qty: str, x_aq: dict, x_c: dict) -> float:
 
 def _predict_one(row, guess_table_fn, params):
     """Run flash for one experimental row; return result dict."""
-    from .flash import flash_co2_h2o_salt_ssi
+    from .stability import ecpa_stability_flash
 
     T    = float(row["T_K"])
     P    = float(row["P_bar"])
@@ -262,12 +262,12 @@ def _predict_one(row, guess_table_fn, params):
 
     for z in candidates:
         try:
-            out = flash_co2_h2o_salt_ssi(
-                T=T, P_bar=P, z_co2=z, m_tot=ms,
-                guess_table_fn=guess_table_fn,
+            out = ecpa_stability_flash(
+                z_co2=z, ms=ms, T=T, P=P,
                 params=params,
-                maxiter_ms=40,
             )
+            if out.get("phase") in ("single_phase",):
+                raise ValueError(f"single_phase at z={z:.4f}")
         except Exception as e:
             last_err = str(e)
             continue
