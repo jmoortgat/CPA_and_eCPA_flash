@@ -348,12 +348,12 @@ def _make_figures(smooth_data, results_df, exp_df, T_list,
 
         panels = [
             (ax0, 'ecpa_xc_W', 'cpa_xc_W', 'exp_xc_W',
-             r'$x_{\mathrm{CO_2}}$ (aqueous)'),
+             r'$x_{\mathrm{CO_2}}$ (aqueous)', 'upper left'),
             (ax1, 'ecpa_yw_C', 'cpa_yw_C', 'exp_yw_C',
-             r'$y_{\mathrm{H_2O}}$ (CO$_2$-rich)'),
+             r'$y_{\mathrm{H_2O}}$ (CO$_2$-rich)', 'upper right'),
         ]
 
-        for ax, ecpa_col, cpa_col, exp_col, ylabel in panels:
+        for ax, ecpa_col, cpa_col, exp_col, ylabel, legend_loc in panels:
             curves = {ms_v: _interp_curve(df, T_K, ecpa_col)
                       for ms_v, df in smooth_data.items()}
 
@@ -402,9 +402,8 @@ def _make_figures(smooth_data, results_df, exp_df, T_list,
             ax.set_xscale('log'); ax.set_yscale('log')
             ax.set_xlabel('P [bar]', fontsize=10)
             ax.set_ylabel(ylabel, fontsize=10)
-            ax.set_title(f'T = {T_K:.0f} K', fontsize=11)
             ax.grid(True, which='both', alpha=0.25)
-            ax.legend(fontsize=7, loc='upper left')
+            ax.legend(fontsize=7, loc=legend_loc)
 
         sm = plt.cm.ScalarMappable(cmap=CMAP, norm=CNORM)
         sm.set_array([])
