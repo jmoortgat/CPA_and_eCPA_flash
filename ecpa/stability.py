@@ -330,9 +330,9 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
                    + A/B*(B1/B - 2*(x1c*A1 + x4c*A14)/A)*np.log(1 + B/Zc))
         lp4phys = (-np.log(Zc-B) + B4/B*(B/(Zc-B) - A/(Zc+B))
                    + A/B*(B4/B - 2*(x1c*A14 + x4c*A4)/A)*np.log(1 + B/Zc))
-        assoc   = B1/(8*g_eta*Zc)*dg_deta*(x1c*4*(chi1c-1) + x4c*4*(chi4c-1))
-        return (lp1phys + 4*np.log(chi1c) + assoc,
-                lp4phys + 4*np.log(chi4c) + assoc)
+        assoc_c = 1.0/(8*g_eta*Zc)*dg_deta*(x1c*4*(chi1c-1) + x4c*4*(chi4c-1))
+        return (lp1phys + 4*np.log(chi1c) + B1*assoc_c,
+                lp4phys + 4*np.log(chi4c) + B4*assoc_c)
 
     # Use warm-start if provided; otherwise start from the liquid-like root
     # (covolume estimate Z ≈ b·P/RT).  The liquid root is the physically correct
