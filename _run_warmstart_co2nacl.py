@@ -22,6 +22,7 @@ if __name__ == '__main__':
     import os
     import numpy as np
     import pandas as pd
+    from pathlib import Path
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -202,10 +203,18 @@ if __name__ == '__main__':
               f"bias={bias:+.1f}%  SSI_median={iters_med:.1f}")
 
     # ── VLE figures ────────────────────────────────────────────────────────────
+    from _run_smooth_co2h2o_robust import _ms_tag, MS_RIBBON
+    smooth_data = {}
+    for ms in MS_RIBBON:
+        cache = Path(f'results/ws2_smooth_co2h2o_ms{_ms_tag(ms)}.parquet')
+        if cache.exists():
+            smooth_data[ms] = pd.read_parquet(cache)
+
     plot_nacl_T_figures(
         res_df,
         fig_dir='figures/co2nacl_ws',
         T_max=730.0,
+        smooth_data=smooth_data if smooth_data else None,
     )
     print("\nSaved per-temperature figures → figures/co2nacl_ws/")
 

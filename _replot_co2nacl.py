@@ -13,18 +13,33 @@ if __name__ == '__main__':
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
+    import numpy as np
     import pandas as pd
+    from pathlib import Path
     from ecpa.validate_nacl import plot_nacl_T_figures, plot_error_heatmap
+    from _run_smooth_co2h2o_robust import _ms_tag, MS_RIBBON
 
     results = pd.read_parquet('results/validation_co2nacl.parquet')
     print(f"Loaded {len(results)} rows  ({(results.status=='ok').sum()} ok)")
 
-    saved = plot_nacl_T_figures(
-        results,
-        fig_dir='figures/co2nacl',
-        T_max=523.0,
-        ms_max=7.0,
-    )
+    # Load smooth-curve parquets for rainbow ribbon background
+    smooth_data = {}
+    for ms in MS_RIBBON:
+        cache = Path(f'results/ws2_smooth_co2h2o_ms{_ms_tag(ms)}.parquet')
+        if cache.exists():
+            smooth_data[ms] = pd.read_parquet(cache)
+    print(f"Loaded smooth_data for {len(smooth_data)} ms values: {list(smooth_data)}")
+
+    for fig_dir, T_max in [('figures/co2nacl_ws', 730.0),
+                            ('figures/co2nacl',    523.0)]:
+        saved = plot_nacl_T_figures(
+            results,
+            fig_dir=fig_dir,
+            T_max=T_max,
+            ms_max=7.0,
+            smooth_data=smooth_data if smooth_data else None,
+        )
+        print(f"Saved {len(saved)} figures → {fig_dir}/")
 
     print("Regenerating heatmap …")
     plot_error_heatmap(
