@@ -419,6 +419,16 @@ def flash_nn_guess(
     K1 = math.exp(lK1)
     K4 = math.exp(lK4)
 
+    # ── Validity check on predicted K-values ──────────────────────────────────
+    # If both K < 1 there is no valid β in (0,1) for the Rachford-Rice equation
+    # (both components prefer the aqueous phase — physically impossible for a
+    # CO2-rich second phase to exist).  Return None so the flash solver falls
+    # back to its own initialisation rather than receiving a degenerate guess.
+    # This situation arises mainly for CPA (ms=0) predictions where the model
+    # has seen fewer training examples.
+    if K1 < 1.0 and K4 < 1.0:
+        return None
+
     # β from analytical 2-comp Rachford-Rice (fast, closed-form for 2 species)
     z_h2o = 1.0 - z_co2
     denom = (K1 - 1.0) * (K4 - 1.0)
