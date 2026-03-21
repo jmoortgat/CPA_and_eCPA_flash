@@ -655,7 +655,7 @@ def _build_ms_styles(ms_vals_sorted):
 
 
 def plot_nacl_T_figures(results_df, fig_dir='figures/co2nacl',
-                        T_max=523.0, ms_max=7.0):
+                        T_max=523.0, ms_max=7.0, smooth_data=None):
     """
     Generate one figure per temperature for the CO2-NaCl validation.
 
@@ -709,6 +709,66 @@ def plot_nacl_T_figures(results_df, fig_dir='figures/co2nacl',
         panel = 0
         legend_ms_vals = []  # ms values present in this figure (for legend)
 
+        # ── Pre-compute smooth ribbon curves (if smooth_data provided) ─────────
+        _ribbon_curves = {}   # (qty, ms_val) -> y array on P_FINE
+        if smooth_data is not None:
+            import matplotlib.colors as mcolors
+            _P_FINE  = np.logspace(0.0, np.log10(1500.0), 3000)
+            _logPf   = np.log10(_P_FINE)
+            _CMAP    = plt.cm.rainbow
+            _CNORM   = mcolors.Normalize(vmin=0.0, vmax=6.0)
+            _SLOPE_MAX = 4.0
+
+            def _get_ribbon(ms_v, qty_r):
+                df_sm = smooth_data[ms_v]
+                sub_sm = (df_sm[np.abs(df_sm['T_K'] - T) < 0.5
+                               ].query('ecpa_converged')
+                           .sort_values('P_bar'))
+                if len(sub_sm) < 2:
+                    return np.full(len(_P_FINE), np.nan)
+                P_sm = sub_sm['P_bar'].values
+                if qty_r == 'mc':
+                    xc = sub_sm['ecpa_xc_W'].values
+                    ok = np.isfinite(xc) & (xc > 0) & (xc < 1)
+                    if ok.sum() < 2:
+                        return np.full(len(_P_FINE), np.nan)
+                    y_sm  = xc[ok] / ((1.0 - xc[ok]) * Mw)
+                    lP    = np.log10(P_sm[ok])
+                    lY    = np.log10(y_sm)
+                    # trim steep near-boundary onset
+                    start = 0
+                    if len(lP) > 2:
+                        sl = np.abs(np.diff(lY) /
+                                    np.clip(np.diff(lP), 1e-9, None))
+                        while start < len(sl) and sl[start] > _SLOPE_MAX:
+                            start += 1
+                    lP = lP[start:]; lY = lY[start:]
+                    if len(lP) < 2:
+                        return np.full(len(_P_FINE), np.nan)
+                    w = (_logPf >= lP.min()) & (_logPf <= lP.max())
+                    out = np.full(len(_P_FINE), np.nan)
+                    if w.sum() >= 2:
+                        out[w] = 10.0 ** np.interp(_logPf[w], lP, lY)
+                    return out
+                elif qty_r == 'xc_C':
+                    yw  = sub_sm['ecpa_yw_C'].values
+                    y_sm = 1.0 - yw                          # y_CO2 = 1 - y_H2O
+                    ok = np.isfinite(y_sm) & (y_sm > 0)
+                    if ok.sum() < 2:
+                        return np.full(len(_P_FINE), np.nan)
+                    lP = np.log10(P_sm[ok]); Y = y_sm[ok]
+                    w  = (_logPf >= lP.min()) & (_logPf <= lP.max())
+                    out = np.full(len(_P_FINE), np.nan)
+                    if w.sum() >= 2:
+                        out[w] = np.interp(_logPf[w], lP, Y)  # linear y
+                    return out
+                return np.full(len(_P_FINE), np.nan)
+
+            _sorted_sm = sorted(smooth_data.keys())
+            for _qty_r in ('mc', 'xc_C'):
+                for ms_v in _sorted_sm:
+                    _ribbon_curves[(_qty_r, ms_v)] = _get_ribbon(ms_v, _qty_r)
+
         for qty, ylabel, yscale in [
             ('mc',   r'$m_{\mathrm{CO_2}}$ [mol kg$^{-1}$]',               'log'),
             ('xc_C', r'$y_{\mathrm{CO_2}}$ (CO$_2$-rich phase)',            'linear'),
@@ -716,6 +776,30 @@ def plot_nacl_T_figures(results_df, fig_dir='figures/co2nacl',
             if not (sub_T['qty'] == qty).any():
                 continue
             ax = axes[0][panel]
+
+            # ── Rainbow ribbon background ─────────────────────────────────────
+            if smooth_data is not None and _ribbon_curves:
+                _sorted_sm = sorted(smooth_data.keys())
+                for _i in range(len(_sorted_sm) - 1):
+                    ms_lo, ms_hi = _sorted_sm[_i], _sorted_sm[_i + 1]
+                    y_lo = _ribbon_curves[(qty, ms_lo)]
+                    y_hi = _ribbon_curves[(qty, ms_hi)]
+                    _valid = np.isfinite(y_lo) & np.isfinite(y_hi)
+                    if _valid.sum() < 2:
+                        continue
+                    _y1 = np.where(_valid, np.maximum(y_lo, y_hi), np.nan)
+                    _y2 = np.where(_valid, np.minimum(y_lo, y_hi), np.nan)
+                    ax.fill_between(_P_FINE, _y1, _y2, where=_valid,
+                                    color=_CMAP(_CNORM(0.5*(ms_lo + ms_hi))),
+                                    alpha=0.35, linewidth=0, zorder=1)
+                for ms_v in _sorted_sm:
+                    y = _ribbon_curves[(qty, ms_v)]
+                    _v = np.isfinite(y)
+                    if _v.sum() > 1:
+                        ax.plot(_P_FINE[_v], y[_v], '-',
+                                color=_CMAP(_CNORM(ms_v if ms_v > 0.01 else 0.0)),
+                                lw=0.6, alpha=0.55, zorder=1)
+
             sub_q = sub_T[sub_T['qty'] == qty].sort_values(['ms', 'P_bar'])
 
             for ms_i in sorted(sub_q['ms'].unique()):
