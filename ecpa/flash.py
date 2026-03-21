@@ -874,6 +874,7 @@ def flash_co2_h2o_salt_kv(
     K_init=None,
     sol_aq_x0=None,
     sol_c_x0=None,
+    warm_start=None,
     params=None,
     maxiter=80,
     tol=1e-8,
@@ -908,6 +909,14 @@ def flash_co2_h2o_salt_kv(
         Warm-start for the aqueous phase inner solve.
     sol_c_x0 : array-like [Zc, chi1c] or None
         Warm-start for the CO₂-rich phase inner solve.
+    warm_start : callable or None
+        Optional warm-start provider with signature
+        ``warm_start(T, P_bar, z_co2, m_tot) -> WarmStartGuess | None``.
+        If provided and ``K_init`` is None, it is called first to obtain
+        K_init, sol_aq_x0, and sol_c_x0.  On failure (returns None or raises)
+        the solver falls back to its own cold-start candidates.
+        Typical providers: ``ScanTableWarmStart``, ``NNWarmStart``
+        (from ``ecpa.warmstart``).
     tol : float
         Convergence tolerance on ‖lnK_new − lnK‖ (= fugacity residual).
     accelerated : bool
@@ -932,6 +941,20 @@ def flash_co2_h2o_salt_kv(
     if m_tot <= 0.0:
         raise ValueError("m_tot must be > 0.")
 
+    # ── Warm-start provider ───────────────────────────────────────────────────
+    # Apply if K_init not already supplied explicitly.
+    if warm_start is not None and K_init is None:
+        try:
+            guess = warm_start(T, P_bar, z_co2, m_tot)
+            if guess is not None:
+                K_init    = guess.K_init
+                if sol_aq_x0 is None:
+                    sol_aq_x0 = guess.sol_aq_x0
+                if sol_c_x0 is None:
+                    sol_c_x0  = guess.sol_c_x0
+        except Exception:
+            pass   # fall through to cold-start candidates below
+
     # Feed (basis: n_H2O + n_CO2 = 1)
     n_h2o  = 1.0 - z_co2
     n_co2  = z_co2
@@ -940,19 +963,24 @@ def flash_co2_h2o_salt_kv(
     saved = _apply_params(params)
     try:
         # ── Build list of (K1, K4) starting points to try ────────────────────
+        # When a warm-start K_init is available, try it first; if it fails,
+        # fall through to the standard cold-start candidates so robustness is
+        # unchanged relative to calling without a warm-start.
         if K_init is not None:
-            # Explicit start: single attempt only.
-            cold_starts = [(float(K_init[0]), float(K_init[1]))]
+            cold_starts = [(float(K_init[0]), float(K_init[1]))] + list(_KV_COLD_STARTS)
         else:
-            # Cold start: try each candidate in _KV_COLD_STARTS in order.
             cold_starts = list(_KV_COLD_STARTS)
 
-        for _cs_K1, _cs_K4 in cold_starts:
+        for i_cs, (_cs_K1, _cs_K4) in enumerate(cold_starts):
+            # Only pass Newton-state warm-start on the first (warm-start) attempt;
+            # cold-start candidates should initialise their own inner solves.
+            _sol_aq = sol_aq_x0 if i_cs == 0 else None
+            _sol_c  = sol_c_x0  if i_cs == 0 else None
             try:
                 return _flash_kv_single(
                     T, P_bar, z_co2, m_tot, n_h2o, n_co2, n_salt,
                     K1=_cs_K1, K4=_cs_K4,
-                    sol_aq_x0=sol_aq_x0, sol_c_x0=sol_c_x0,
+                    sol_aq_x0=_sol_aq, sol_c_x0=_sol_c,
                     maxiter=maxiter, tol=tol, accelerated=accelerated,
                     verbose=verbose,
                     _lnphi_aq_inner=_lnphi_aq_inner,
@@ -963,7 +991,7 @@ def flash_co2_h2o_salt_kv(
 
         raise RuntimeError(
             f"K-value SSI did not converge with any of {len(cold_starts)} "
-            f"cold starts (T={T:.1f}K P={P_bar:.2f}bar "
+            f"starts (T={T:.1f}K P={P_bar:.2f}bar "
             f"z={z_co2:.3f} ms={m_tot:.3f}).")
 
     finally:
