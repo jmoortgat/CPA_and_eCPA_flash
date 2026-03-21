@@ -339,7 +339,9 @@ class FlashNNGuess:
         ckpt  = torch.load(path, map_location=device, weights_only=False)
         model = PhysicsFlashNet(**ckpt["arch"])
         model.load_state_dict(ckpt["state_dict"])
-        stats = FlashNNStats(**ckpt["stats"])
+        raw_stats = ckpt["stats"]
+        stats = raw_stats if isinstance(raw_stats, FlashNNStats) \
+                else FlashNNStats(**raw_stats)
         return cls(model, stats, device)
 
     def predict_raw(
@@ -406,7 +408,7 @@ def flash_nn_guess(
         ``beta``        : float — predicted CO2-rich phase fraction
         ``x_aq``        : dict {x1w, x4w} — aqueous phase compositions
         ``x_c``         : dict {x1c, x4c} — CO2-rich phase compositions
-        ``sol_aq_x0``   : ndarray (3,) — [Z_aq, chi1w, epsr] for Newton warm-start
+        ``sol_aq_x0``   : ndarray (3,) — [Z_aq, ε_r, χ₁w] for Newton warm-start
         ``sol_c_x0``    : ndarray (2,) — [Z_c, chi1c] for Newton warm-start
         ``p_two_phase`` : float — predicted two-phase probability
     or None if predicted single-phase.
@@ -454,7 +456,8 @@ def flash_nn_guess(
     ns = nn.stats
     ns_decoded = decode_newton_state(nw_raw, ns)
 
-    sol_aq_x0 = np.array([ns_decoded["Z_aq"], ns_decoded["chi1w"], ns_decoded["epsr"]])
+    # flash_co2_h2o_salt_kv expects sol_aq_x0 = [Z_aq, ε_r, χ₁w]
+    sol_aq_x0 = np.array([ns_decoded["Z_aq"], ns_decoded["epsr"], ns_decoded["chi1w"]])
     sol_c_x0  = np.array([ns_decoded["Z_c"],  ns_decoded["chi1c"]])
 
     return {

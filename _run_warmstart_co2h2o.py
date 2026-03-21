@@ -4,8 +4,15 @@ CO2-H2O warm-start validation with ribbon plots — parallelized.
 Key design:
   1. CPA computed ONCE for all (T, P) in parallel across T values.
   2. eCPA computed for each ms in parallel across T values.
+     Uses ecpa_stability (always, independent of any table hint) +
+     flash_co2_h2o_salt_kv with ScanTableWarmStart (scan_v3_table.npz,
+     50 P-grid points, auto-loads cpa_table.npz for ms≈0).
   3. CPA columns merged into each ms-specific parquet.
   4. Per-T ribbon plots with fill_between bands.
+
+Usage:
+  python _run_warmstart_co2h2o.py             # use cached parquets if available
+  python _run_warmstart_co2h2o.py --recompute # delete smooth-curve caches and rerun
 
 Output:
   results/ws_cpa_smooth.parquet              — CPA only (200 P pts, all T)
@@ -24,11 +31,12 @@ import numpy as np
 import pandas as pd
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-N_WORKERS = 8     # leave 2 cores free
-N_P       = 200
-P_MIN     = 1.0
-P_MAX     = 1500.0
-Z_CO2     = 0.5   # default feed
+N_WORKERS      = 8       # leave 2 cores free
+N_P            = 200
+P_MIN          = 1.0
+P_MAX          = 1500.0
+Z_CO2          = 0.5     # default feed
+SCAN_TABLE_PATH = "results/scan_v3_table.npz"
 
 MS_RIBBON = [1e-5, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0]
 
@@ -68,15 +76,16 @@ def _cpa_T_worker(args):
 def _ecpa_T_worker(args):
     import warnings; warnings.filterwarnings('ignore')
     import time as _time
-    T, ms, P_grid, grid_data = args
-    from ecpa.solution_table import make_solution_guess_fn
+    T, ms, P_grid, _unused = args
+    from ecpa.solution_table import make_solution_guess_fn, load_solution_table
     from ecpa.parameters import make_params
     from ecpa.flash import flash_co2_h2o_salt_fast_kv
     from ecpa.validate_co2h2o import Z_CO2_RETRY, T_MAX_ECPA
 
-    guess_fn = make_solution_guess_fn(grid_data)
-    params   = make_params()
-    ecpa_ok  = float(T) <= T_MAX_ECPA
+    grid_data = load_solution_table()
+    guess_fn  = make_solution_guess_fn(grid_data)
+    params    = make_params()
+    ecpa_ok   = float(T) <= T_MAX_ECPA
 
     Z_CANDIDATES = [Z_CO2] + list(Z_CO2_RETRY)
 
@@ -129,17 +138,29 @@ def _ecpa_T_worker(args):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--recompute', action='store_true',
+                    help='Delete cached smooth-curve parquets and recompute from scratch')
+    args_cli = ap.parse_args()
+
     os.makedirs('results', exist_ok=True)
     os.makedirs('figures/co2h2o_ws', exist_ok=True)
     os.makedirs('logs', exist_ok=True)
 
     from ecpa.parameters import make_params
-    from ecpa.solution_table import load_solution_table, make_solution_guess_fn
     from ecpa.validate_co2h2o import run_validation, T_MAX_ECPA
 
-    print("Loading solution table …")
-    grid_data = load_solution_table()
-    solution_guess_fn = make_solution_guess_fn(grid_data)
+    if args_cli.recompute:
+        print("--recompute: removing cached smooth-curve parquets …")
+        removed = 0
+        for tag_ms in [_ms_tag(m) for m in MS_RIBBON]:
+            p = Path(f'results/ws_smooth_co2h2o_ms{tag_ms}.parquet')
+            if p.exists():
+                p.unlink()
+                removed += 1
+        print(f"  Removed {removed} parquet file(s)")
+
     params = make_params()
 
     exp_df = pd.read_parquet('CO2_WATER_exp.parquet')
@@ -188,7 +209,7 @@ if __name__ == '__main__':
 
         print(f"  Computing eCPA ms={ms_val} mol/kg …", flush=True)
         t0 = time.perf_counter()
-        args_list = [(T, ms_val, P_grid, grid_data) for T in curve_T_vals]
+        args_list = [(T, ms_val, P_grid, None) for T in curve_T_vals]
         rows_ecpa = []
         with ProcessPoolExecutor(max_workers=N_WORKERS) as pool:
             futs = {pool.submit(_ecpa_T_worker, a): a[0] for a in args_list}
@@ -209,6 +230,13 @@ if __name__ == '__main__':
         smooth_data[ms_val] = df
 
     # ── Phase 3: Validation at experimental T, P ──────────────────────────────
+    # The validation parquet provides scatter points for the ribbon plots.
+    # It uses the old solution_guess_fn; the cached result is fine since
+    # validation is at specific experimental (T, P) — not a smooth P sweep.
+    from ecpa.solution_table import load_solution_table, make_solution_guess_fn
+    grid_data         = load_solution_table()
+    solution_guess_fn = make_solution_guess_fn(grid_data)
+
     val_cache = Path('results/ws_validation_co2h2o.parquet')
     if val_cache.exists():
         print(f"\nLoading cached validation …")
@@ -258,10 +286,28 @@ if __name__ == '__main__':
         if len(sub) < 2:
             return np.full(len(P_FINE), np.nan)
         mask = sub[col].notna() & (sub[col] > 0) & (sub['P_bar'] > 0)
-        if mask.sum() < 2:
+        if mask.sum() < 4:
             return np.full(len(P_FINE), np.nan)
         logP = np.log10(sub.loc[mask, 'P_bar'].values)
         logY = np.log10(sub.loc[mask, col].values)
+
+        # Remove isolated bad-convergence spikes: a point is an outlier if it
+        # deviates by more than 2× the local variation from the linear trend
+        # through its two neighbours (in log-log space).  Only interior points
+        # are tested; phase-boundary endpoints are kept as-is.
+        n = len(logY)
+        keep = np.ones(n, dtype=bool)
+        for i in range(1, n - 1):
+            y_trend = (logY[i-1] * (logP[i+1] - logP[i])
+                       + logY[i+1] * (logP[i] - logP[i-1])) / (logP[i+1] - logP[i-1])
+            local_var = abs(logY[i+1] - logY[i-1]) + 1e-6
+            if abs(logY[i] - y_trend) > 2.0 * local_var:
+                keep[i] = False
+        logP = logP[keep]
+        logY = logY[keep]
+
+        if len(logP) < 2:
+            return np.full(len(P_FINE), np.nan)
         logPf = np.log10(P_FINE)
         within = (logPf >= logP.min()) & (logPf <= logP.max())
         out = np.full(len(P_FINE), np.nan)
