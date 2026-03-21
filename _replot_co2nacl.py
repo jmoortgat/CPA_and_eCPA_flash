@@ -19,7 +19,8 @@ if __name__ == '__main__':
     from ecpa.validate_nacl import plot_nacl_T_figures, plot_error_heatmap
     from _run_smooth_co2h2o_robust import _ms_tag, MS_RIBBON
 
-    results = pd.read_parquet('results/validation_co2nacl.parquet')
+    # Use K-value SSI results (post B1/B4 bug fix, 708 points)
+    results = pd.read_parquet('results/ws_validation_co2nacl.parquet')
     print(f"Loaded {len(results)} rows  ({(results.status=='ok').sum()} ok)")
 
     # Load smooth-curve parquets for rainbow ribbon background
