@@ -322,7 +322,7 @@ def _make_figures(smooth_data, results_df, exp_df, T_list,
 
     sorted_ms = sorted(smooth_data.keys())
 
-    def _interp_curve(df, T_K, col):
+    def _interp_curve(df, T_K, col, _SLOPE_MAX=4.0):
         sub  = df[np.abs(df['T_K'] - T_K) < 0.5].sort_values('P_bar')
         if len(sub) < 2:
             return np.full(len(P_FINE), np.nan)
@@ -331,6 +331,19 @@ def _make_figures(smooth_data, results_df, exp_df, T_list,
             return np.full(len(P_FINE), np.nan)
         logP  = np.log10(sub.loc[mask, 'P_bar'].values)
         logY  = np.log10(sub.loc[mask, col].values)
+        # Trim steep near-boundary onset from the left: near P_sat(H2O,T),
+        # xc_W ∝ (P−P_sat) so the log-log slope diverges as P/(P−P_sat).
+        # Drop leading points until the slope to the next point is < _SLOPE_MAX,
+        # so the plotted curve starts where the grid can represent it faithfully.
+        start = 0
+        if len(logP) > 2:
+            slopes = np.abs(np.diff(logY) / np.clip(np.diff(logP), 1e-9, None))
+            while start < len(slopes) and slopes[start] > _SLOPE_MAX:
+                start += 1
+        logP = logP[start:]
+        logY = logY[start:]
+        if len(logP) < 2:
+            return np.full(len(P_FINE), np.nan)
         logPf = np.log10(P_FINE)
         within = (logPf >= logP.min()) & (logPf <= logP.max())
         out    = np.full(len(P_FINE), np.nan)
