@@ -872,7 +872,7 @@ in the model.
 Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
 (AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
 the freezing point where eCPA is not specifically parameterized.
-Figure~\ref{fig:co2nacl_heatmap} provides a comprehensive view of the error distribution
+Fig.~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
 across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
 ($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
 systematically at the boundaries of the validated range.
@@ -926,17 +926,6 @@ systematically at the boundaries of the validated range.
            Open symbols: experimental data; lines: eCPA.
            Colors and markers distinguish NaCl molalities (see legend).}
   \label{fig:co2nacl_2panel}
-\end{figure}
-
-\begin{figure}[h!]
-  \centering
-  \includegraphics[width=0.85\textwidth]{../figures/validation_heatmap_extended.png}
-  \caption{Heatmap of absolute relative error (AARE, \%) for the CO$_2$ + NaCl
-           validation dataset ($T = 5$--$350\,^\circ$C), showing all individual NaCl
-           molalities present in the experimental data.
-           Color scale is diverging at 5\%: green $\leq 5\%$, red $\geq 10\%$.
-           Empty cells indicate no experimental data at that $(T, m_s)$ combination.}
-  \label{fig:co2nacl_heatmap}
 \end{figure}
 
 \subsection{Flash results as a function of feed composition}
@@ -2130,6 +2119,17 @@ every figure and table in this paper.
            At $T \geq 400\,^\circ$C, eCPA predicts single-phase (fully miscible) behavior
            for all available experimental pressures (300--900\,bar).}
   \label{fig:co2nacl_highT_SI}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../figures/validation_heatmap_extended.png}
+  \caption{Heatmap of absolute relative error (AARE, \%) for the CO$_2$ + NaCl
+           validation dataset ($T = 5$--$350\,^\circ$C), showing all individual NaCl
+           molalities present in the experimental data.
+           Color scale is diverging at 5\%: green $\leq 5\%$, red $\geq 10\%$.
+           Empty cells indicate no experimental data at that $(T, m_s)$ combination.}
+  \label{fig:co2nacl_heatmap}
 \end{figure}
 
 \begin{figure}[htb]
