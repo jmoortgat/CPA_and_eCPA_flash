@@ -162,8 +162,13 @@ def _eval_c_residual(vars_, x1c, T, P):
     delta   = g_eta * kappaW * (np.exp(epsW/T) - 1.0)
     DELTA   = delta * P_Pa / R / T
 
-    chi4c     = Zc / (Zc + 2*x1c*chi1c*S14*DELTA)
-    chi1c_new = Zc / (Zc + 2*x1c*chi1c*DELTA + 2*x4c*chi4c*S14*DELTA)
+    # S14 < 0 at T < ~293 K: anti-association makes chi1c denominator go negative.
+    # Mirror CPA2.py's fallback: treat cross-association as zero when S14 < 0.
+    # chi_CO2 → 1 (unassociated), chi_H2O from H2O self-association only.
+    S14_eff = max(S14, 0.0)
+
+    chi4c     = Zc / (Zc + 2*x1c*chi1c*S14_eff*DELTA)
+    chi1c_new = Zc / (Zc + 2*x1c*chi1c*DELTA + 2*x4c*chi4c*S14_eff*DELTA)
 
     Zphys  = Zc/(Zc-B) - A/(Zc+B)
     Zassoc = -2*(1 + eta/g_eta*dg_deta)*(x1c*(1-chi1c) + x4c*(1-chi4c))
@@ -207,20 +212,23 @@ def _eval_c_all_with_jac(Zc, chi1c, x1c, T, P):
     dDELTA_dZc = (P_Pa / (R*T)) * E * dg_deta * deta_dZc   # = E*(P/RT)*1.9*g^2*deta_dZc
     dH_dZc     = 1.9 * deta_dZc * g_eta * H_pack
 
+    # S14 < 0 at T < ~293 K: clamp to zero to avoid chi divergence (see CPA2.py).
+    S14_eff = max(S14, 0.0)
+
     # ── chi4c and its derivatives ─────────────────────────────────────────────
-    D4           = Zc + 2.0*x1c*chi1c*S14*DELTA
+    D4           = Zc + 2.0*x1c*chi1c*S14_eff*DELTA
     chi4c        = Zc / D4
-    dchi4c_dZc   = 2.0*x1c*chi1c*S14*(DELTA - Zc*dDELTA_dZc) / D4**2
-    dchi4c_dc1c  = -Zc * 2.0*x1c*S14*DELTA / D4**2
+    dchi4c_dZc   = 2.0*x1c*chi1c*S14_eff*(DELTA - Zc*dDELTA_dZc) / D4**2
+    dchi4c_dc1c  = -Zc * 2.0*x1c*S14_eff*DELTA / D4**2
 
     # ── chi1c_new and its derivatives ─────────────────────────────────────────
-    D1              = Zc + 2.0*x1c*chi1c*DELTA + 2.0*x4c*chi4c*S14*DELTA
+    D1              = Zc + 2.0*x1c*chi1c*DELTA + 2.0*x4c*chi4c*S14_eff*DELTA
     chi1c_new       = Zc / D1
     dD1_dZc         = (1.0
                        + 2.0*x1c*chi1c*dDELTA_dZc
-                       + 2.0*x4c*S14*(chi4c*dDELTA_dZc + DELTA*dchi4c_dZc))
+                       + 2.0*x4c*S14_eff*(chi4c*dDELTA_dZc + DELTA*dchi4c_dZc))
     dchi1c_new_dZc  = (D1 - Zc*dD1_dZc) / D1**2
-    dD1_dc1c        = 2.0*x1c*DELTA + 2.0*x4c*S14*DELTA*dchi4c_dc1c
+    dD1_dc1c        = 2.0*x1c*DELTA + 2.0*x4c*S14_eff*DELTA*dchi4c_dc1c
     dchi1c_new_dc1c = -Zc * dD1_dc1c / D1**2
 
     # ── Zc_new and its derivatives ────────────────────────────────────────────
@@ -317,6 +325,10 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     A4  = a4*P_Pa/R**2/T**2; B4 = b4*P_Pa/R/T
     A14 = a14*P_Pa/R**2/T**2
 
+    # Effective S14: clamp negative values to zero (T < ~293 K anti-association
+    # makes chi denominators diverge; CPA2.py uses the same fallback to S14=0).
+    S14_eff = max(ASij*(T/Tc4)**2 + BSij*(T/Tc4) + CSij, 0.0)
+
     def _lnphi_from_zc_chi(Zc, chi1c):
         """Compute (lnphi1, lnphi4) from a converged (Zc, chi1c)."""
         eta     = B / (4*Zc)
@@ -324,7 +336,7 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
         dg_deta = 1.9 / (1.0 - 1.9*eta)**2
         delta   = g_eta * kappaW * (np.exp(epsW/T) - 1.0)
         DELTA   = delta * P_Pa / R / T
-        chi4c   = Zc / (Zc + 2*x1c*chi1c*S14*DELTA)
+        chi4c   = Zc / (Zc + 2*x1c*chi1c*S14_eff*DELTA)
 
         lp1phys = (-np.log(Zc-B) + B1/B*(B/(Zc-B) - A/(Zc+B))
                    + A/B*(B1/B - 2*(x1c*A1 + x4c*A14)/A)*np.log(1 + B/Zc))
