@@ -80,9 +80,10 @@ if __name__ == '__main__':
         if np.isnan(P_sat_est) or P_sat_est <= 0:
             P_sat_est = P_fc * 0.96   # crude fallback
 
-        # Fine grid from just below P_sat to 1.25×P_sat
-        P_lo  = max(P_sat_est * 0.97, 0.5)
-        P_hi  = P_sat_est * 1.25
+        # Fine grid strictly ABOVE P_fc so all new points are confirmed two-phase.
+        # The steep onset zone runs from P_fc to about P_fc * 1.25.
+        P_lo  = P_fc * 1.001
+        P_hi  = P_fc * 1.30
         P_new = np.logspace(np.log10(P_lo), np.log10(P_hi), N_FINE)
 
         # Drop P values already present in the parquet (within 0.05 bar)
