@@ -1011,36 +1011,12 @@ NaCl molality updated self-consistently from the aqueous-phase amount.
 \subsection{Aqueous-phase density}
 \label{sec:density}
 
-Aqueous-phase densities $\rho_W$ for CO$_2$-saturated water ($m_s = 0$) were compiled from
-two experimental sources: \citet{King1992} (37 points, $T = 15$--$25\,^\circ$C) and
-\citet{Nighswander1989} ($T = 80$--$200\,^\circ$C), for a total of 37 points at $T = 15$--$200\,^\circ$C.
-In the two-phase region, phase compositions are independent of the overall CO$_2$ mole fraction,
-so a fixed value $z_{\text{CO}_2} = 0.3$ was used for all flash calls; the eCPA density was
-computed by directly solving the equilibrium equations at each $(T, P)$ using a Newton solver
-(avoiding interpolation artefacts near the CO$_2$ critical region).
-
-Without any volume shift (Péneloux $c_i = 0$ for H$_2$O and CO$_2$), both CPA and eCPA predict aqueous density
-with \textbf{0.76\%} AARE and a systematic positive bias of the same magnitude, consistent with the
-known tendency of SRK-based models to underpredict liquid molar volumes.
-This sub-1\% accuracy without any volume correction for water is a notable strength of the CPA
-equation of state, and we therefore do not apply a Péneloux shift for H$_2$O in this work.
-The only volume shift used is $c_s = -53.5$\,cm$^3$\,mol$^{-1}$ for NaCl, following \citet{Coelho2025}.
-
-Figure~\ref{fig:density} compares experimental densities with eCPA predictions;
-CPA gives essentially identical results at $m_s = 0$ because the electrostatic terms vanish
-in the absence of ions.
-
-\begin{figure}[h!]
-  \centering
-  \includegraphics[width=0.55\textwidth]{../figures/density/parity_ecpa.png}
-  \caption{Aqueous-phase density of CO$_2$-saturated water ($m_s = 0$), without volume
-           shift for H$_2$O.  Points colored by temperature; shaded bands show $\pm$1\%
-           and $\pm$2\% deviations. CPA results (not shown) are indistinguishable from
-           eCPA at $m_s = 0$.
-           Experimental data from \citet{King1992} and \citet{Nighswander1989}
-           (37 points, $T = 15$--$200\,^\circ$C).}
-  \label{fig:density}
-\end{figure}
+We verified that the eCPA flash preserves the aqueous-phase density accuracy reported by
+\citet{Coelho2025}: without any volume shift for H$_2$O, both CPA and eCPA predict
+CO$_2$-saturated aqueous densities with \textbf{0.76\%} AARE over 37 experimental points
+($T = 15$--$200\,^\circ$C$) from \citet{King1992} and \citet{Nighswander1989}.
+We therefore do not apply a Péneloux volume shift for H$_2$O; details and the parity plot
+are given in the Supplemental Information (Fig.~\ref{fig:density}).
 
 
 %% ============================================================
@@ -2130,6 +2106,20 @@ to machine precision).
            Color scale is diverging at 5\%: green $\leq 5\%$, red $\geq 10\%$.
            Empty cells indicate no experimental data at that $(T, m_s)$ combination.}
   \label{fig:co2nacl_heatmap}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.55\textwidth]{../figures/density/parity_ecpa.png}
+  \caption{Aqueous-phase density of CO$_2$-saturated water ($m_s = 0$), without volume
+           shift for H$_2$O.  Points colored by temperature; shaded bands show $\pm$1\%
+           and $\pm$2\% deviations. CPA results (not shown) are indistinguishable from
+           eCPA at $m_s = 0$.
+           Experimental data from \citet{King1992} and \citet{Nighswander1989}
+           (37 points, $T = 15$--$200\,^\circ$C).
+           The 0.76\% AARE without any Péneloux volume correction for H$_2$O reflects
+           a known strength of the CPA equation of state for liquid water.}
+  \label{fig:density}
 \end{figure}
 
 \begin{figure}[htb]
