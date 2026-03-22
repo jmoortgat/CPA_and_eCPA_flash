@@ -1,0 +1,78 @@
+Scan v4 — z-free 3-D solution table
+Grid: 361T × 100P × 14ms = 505,400 points (z-free; z_rep=0.5)
+T = 273–633 K (361 pts, 1 K steps)
+P = 1.0–2000 bar (100 pts, log-spaced)
+ms = [0.0e+00 1.0e-05 1.0e-01 2.5e-01 5.0e-01 7.5e-01 1.0e+00 1.5e+00 2.0e+00
+ 2.5e+00 3.0e+00 4.0e+00 5.0e+00 6.0e+00]
+
+Launching 8 workers for 5,054 row-tasks …
+    101/5054 rows  (2.0%)  elapsed 28s  ETA 1353s
+    202/5054 rows  (4.0%)  elapsed 53s  ETA 1276s
+    303/5054 rows  (6.0%)  elapsed 80s  ETA 1256s
+    404/5054 rows  (8.0%)  elapsed 189s  ETA 2171s
+    505/5054 rows  (10.0%)  elapsed 229s  ETA 2067s
+    606/5054 rows  (12.0%)  elapsed 259s  ETA 1900s
+    707/5054 rows  (14.0%)  elapsed 288s  ETA 1768s
+    808/5054 rows  (16.0%)  elapsed 316s  ETA 1662s
+    909/5054 rows  (18.0%)  elapsed 345s  ETA 1573s
+   1010/5054 rows  (20.0%)  elapsed 371s  ETA 1484s
+   1111/5054 rows  (22.0%)  elapsed 397s  ETA 1409s
+   1212/5054 rows  (24.0%)  elapsed 425s  ETA 1348s
+   1313/5054 rows  (26.0%)  elapsed 453s  ETA 1291s
+   1414/5054 rows  (28.0%)  elapsed 482s  ETA 1242s
+   1515/5054 rows  (30.0%)  elapsed 514s  ETA 1200s
+   1616/5054 rows  (32.0%)  elapsed 545s  ETA 1159s
+   1717/5054 rows  (34.0%)  elapsed 575s  ETA 1118s
+   1818/5054 rows  (36.0%)  elapsed 604s  ETA 1075s
+   1919/5054 rows  (38.0%)  elapsed 633s  ETA 1035s
+   2020/5054 rows  (40.0%)  elapsed 662s  ETA 994s
+   2121/5054 rows  (42.0%)  elapsed 691s  ETA 955s
+   2222/5054 rows  (44.0%)  elapsed 720s  ETA 917s
+   2323/5054 rows  (46.0%)  elapsed 749s  ETA 880s
+   2424/5054 rows  (48.0%)  elapsed 778s  ETA 844s
+   2525/5054 rows  (50.0%)  elapsed 808s  ETA 809s
+   2626/5054 rows  (52.0%)  elapsed 837s  ETA 774s
+   2727/5054 rows  (54.0%)  elapsed 866s  ETA 739s
+   2828/5054 rows  (56.0%)  elapsed 894s  ETA 704s
+   2929/5054 rows  (58.0%)  elapsed 923s  ETA 670s
+   3030/5054 rows  (60.0%)  elapsed 952s  ETA 636s
+   3131/5054 rows  (62.0%)  elapsed 983s  ETA 604s
+   3232/5054 rows  (63.9%)  elapsed 1020s  ETA 575s
+   3333/5054 rows  (65.9%)  elapsed 1061s  ETA 548s
+   3434/5054 rows  (67.9%)  elapsed 1099s  ETA 518s
+   3535/5054 rows  (69.9%)  elapsed 1137s  ETA 488s
+   3636/5054 rows  (71.9%)  elapsed 1177s  ETA 459s
+   3737/5054 rows  (73.9%)  elapsed 1215s  ETA 428s
+   3838/5054 rows  (75.9%)  elapsed 1245s  ETA 394s
+   3939/5054 rows  (77.9%)  elapsed 1275s  ETA 361s
+   4040/5054 rows  (79.9%)  elapsed 1304s  ETA 327s
+   4141/5054 rows  (81.9%)  elapsed 1331s  ETA 294s
+   4242/5054 rows  (83.9%)  elapsed 1358s  ETA 260s
+   4343/5054 rows  (85.9%)  elapsed 1385s  ETA 227s
+   4444/5054 rows  (87.9%)  elapsed 1413s  ETA 194s
+   4545/5054 rows  (89.9%)  elapsed 1444s  ETA 162s
+   4646/5054 rows  (91.9%)  elapsed 1478s  ETA 130s
+   4747/5054 rows  (93.9%)  elapsed 1512s  ETA 98s
+   4848/5054 rows  (95.9%)  elapsed 1549s  ETA 66s
+   4949/5054 rows  (97.9%)  elapsed 1590s  ETA 34s
+   5050/5054 rows  (99.9%)  elapsed 1632s  ETA 1s
+   5054/5054 rows  (100.0%)  elapsed 1637s  ETA 0s
+
+Scan finished in 1637.1 s  (27.3 min)
+Two-phase: 289,062 / 505,400 (57.2%)
+  ms=0:  56.1% two-phase
+  ms=1e-05:  57.1% two-phase
+  ms=0.1:  57.0% two-phase
+  ms=0.25:  57.0% two-phase
+  ms=0.5:  57.0% two-phase
+  ms=0.75:  57.0% two-phase
+  ms=1:  57.0% two-phase
+  ms=1.5:  56.9% two-phase
+  ms=2:  56.9% two-phase
+  ms=2.5:  57.0% two-phase
+  ms=3:  57.2% two-phase
+  ms=4:  57.6% two-phase
+  ms=5:  58.1% two-phase
+  ms=6:  58.9% two-phase
+Saved → results/scan_v4_table.npz  (23.2 MB)
+Saved → results/scan_v4_metrics.parquet  (505,400 rows)
