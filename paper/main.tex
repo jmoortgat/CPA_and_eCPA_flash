@@ -991,20 +991,20 @@ NaCl molality updated self-consistently from the aqueous-phase amount.
   \includegraphics[width=\textwidth]{../figures/flash_vs_z.png}
   \caption{eCPA flash results as a function of overall CO$_2$ feed mole fraction $z$
            at $P = 200$\,bar, feed molality $m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$
-           NaCl, and four temperatures ($77$, $127$, $177$, $227\,^\circ$C).
-           (a) CO$_2$-rich phase fraction $\beta$; the two-phase window narrows at
-           higher temperature.
+           NaCl, and ten isotherms from $27$ to $252\,^\circ$C (violet to red).
+           (a) CO$_2$-rich phase fraction $\beta$; the two-phase window narrows
+           progressively at higher temperature.
            (b) Ratio of equilibrium aqueous NaCl molality to feed molality,
            $m_s^\mathrm{aq}/m_\mathrm{feed}$; NaCl concentrates in the aqueous phase
-           as H$_2$O partitions to the CO$_2$-rich phase, reaching a factor of 2.2
-           at $T = 227\,^\circ$C.
+           as H$_2$O partitions to the CO$_2$-rich phase, reaching a factor of ${\sim}8$
+           at $T = 252\,^\circ$C and $z \approx 0.98$.
            (c) CO$_2$ molality $m_c$ in the aqueous phase; the salting-out effect
            driven by the elevated $m_s^\mathrm{aq}$ reduces CO$_2$ solubility
            with increasing $z$.
-           (d) H$_2$O mole fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$; substantial
-           water content at high temperatures (up to 23\,mol\% at $227\,^\circ$C) and its
-           variation with $z$ highlight the need for full flash rather than
-           a fixed-salinity VLE lookup.}
+           (d) H$_2$O mole fraction $y_{\mathrm{H_2O}}$ in the CO$_2$-rich phase;
+           substantial water content at high temperatures (up to ${\sim}30$\,mol\%
+           at $252\,^\circ$C) and its strong variation with $z$ highlight the need
+           for full flash rather than a fixed-salinity VLE lookup.}
   \label{fig:flash_vs_z}
 \end{figure}
 
@@ -1761,8 +1761,35 @@ The authors thank \ldots
 
 \newpage
 
+
+
+
+%% ============================================================
+\section*{Data and Code Availability}
+
+All source code implementing the CPA and eCPA equations of state,
+the phase stability and flash algorithms, the solution table construction,
+and the reservoir simulator described in this work is freely available at
+\url{https://github.com/XXX/ecpa-flash} ($^\ast$upon acceptance of paper).
+The repository includes the precomputed four-dimensional solution table,
+all experimental VLE data used for validation, and scripts to reproduce
+every figure and table in this paper.
+
+%% ============================================================
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+
+%% ============================================================
+%% SUPPLEMENTAL FIGURES
 %% ============================================================
 \appendix
+
+\setcounter{section}{0}
+\setcounter{figure}{0}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
 \section{Appendix: EoS Parameters}
 \label{sec:params}
 
@@ -2007,33 +2034,6 @@ Comparison with centered finite differences confirms this approximation
 incurs a 1--2\,\% error in $H_{00}$ at typical conditions, which does not
 impair Newton convergence from warm starts (the other eight entries are exact
 to machine precision).
-
-
-%% ============================================================
-\section*{Data and Code Availability}
-
-All source code implementing the CPA and eCPA equations of state,
-the phase stability and flash algorithms, the solution table construction,
-and the reservoir simulator described in this work is freely available at
-\url{https://github.com/XXX/ecpa-flash} ($^\ast$upon acceptance of paper).
-The repository includes the precomputed four-dimensional solution table,
-all experimental VLE data used for validation, and scripts to reproduce
-every figure and table in this paper.
-
-%% ============================================================
-\bibliographystyle{elsarticle-harv}
-\bibliography{refs}
-
-
-%% ============================================================
-%% SUPPLEMENTAL FIGURES
-%% ============================================================
-\appendix
-
-\setcounter{section}{0}
-\setcounter{figure}{0}
-\renewcommand{\thesection}{S\arabic{section}}
-\renewcommand{\thefigure}{S\arabic{figure}}
 
 \section*{Appendix: Additional Validation Figures}
 \label{sec:si}
