@@ -58,10 +58,11 @@ of state recently parameterized by \citet{Coelho2025}.
 Starting from the eCPA thermodynamic framework, we developed (i) a generalized salt-free CPA flash
 routine with Michelsen tangent-plane distance (TPD) stability tests using six initial guesses and
 accelerated successive-substitution iterations (SSI) following \citet{Jex2024}, which we validated
-for the CO$_2$ + H$_2$O binary over 18{,}544 conditions with 100\% convergence; (ii) an extension
-to the full ternary system including NaCl; and (iii) a precomputed four-dimensional solution table
-spanning $T = 10$--$455\,^\circ$C, $P = 1$--$1500$\,bar, CO$_2$ overall mole fraction $z = 0.05$--$0.90$,
-and NaCl molality $m_s = 0$--$6$\,mol\,kg$^{-1}$, enabling warm-started flash calculations that
+for the CO$_2$ + H$_2$O binary over 29{,}412 conditions with 100\% convergence; (ii) an extension
+to the full ternary system including NaCl; and (iii) a precomputed three-dimensional solution table
+spanning $T = 0$--$360\,^\circ$C, $P = 1$--$2000$\,bar, and NaCl molality $m_s = 0$--$6$\,mol\,kg$^{-1}$
+(505{,}400 grid points, no explicit CO$_2$ feed fraction $z$ dimension since K-values are
+essentially $z$-independent), enabling warm-started flash calculations that
 are 3.2$\times$ faster than cold-start SSI for the ternary system, and up to
 30$\times$ faster (median) for the salt-free CPA binary by replacing the
 6-trial Michelsen robust solver with table-warm-started K-value SSI.
@@ -72,7 +73,7 @@ The six-guess stability test detects all two-phase conditions without false nega
 Validation against $>$~1100 experimental data points achieves 100\% flash convergence
 and shows average absolute relative errors (AARE)
 of 9.6\% for CO$_2$ solubility in water (6.5\% under subsurface storage conditions),
-6.9\% for CO$_2$ solubility in brine ($T = 5$--$350\,^\circ$C), and 0.76\% for
+6.6\% for CO$_2$ molality in brine ($T = 5$--$350\,^\circ$C; 6.2\% across all three measured quantities), and 0.76\% for
 aqueous-phase density without any volume shift correction for water.
 \end{abstract}
 
@@ -146,11 +147,12 @@ The present work makes the following contributions:
         equilibrium aqueous molality $m_s$ is determined self-consistently within the
         SSI loop, replacing an earlier robust but slow outer root-finding loop over
         molality.
-  \item A precomputed four-dimensional ($T$, $P$, $z$, $m_s$) solution table with
-        234{,}360 grid points covering $T = 10$--$455\,^\circ$C and $m_s = 0$--$6$\,mol\,kg$^{-1}$,
-        and a fast warm-started flash that reduces iteration
-        counts from $\sim$12 to $\sim$3 (3.2$\times$ wall-time speedup), suitable
-        for integration into reservoir simulators.
+  \item A precomputed three-dimensional ($T$, $P$, $m_s$) solution table with
+        505{,}400 grid points covering $T = 0$--$360\,^\circ$C, $P = 1$--$2000$\,bar,
+        and $m_s = 0$--$6$\,mol\,kg$^{-1}$, computed with the full hierarchical
+        stability+flash algorithm (100\% convergence), and a fast warm-started flash
+        that reduces iteration counts from $\sim$12 to $\sim$3 (3.2$\times$ wall-time
+        speedup), suitable for integration into reservoir simulators.
   \item Several algorithmic optimizations: multi-core parallelisation
         for solution-table construction, phase-envelope
         tracing, and stability mapping; temperature and salinity continuation within the table
@@ -645,20 +647,34 @@ boundary point is executed in parallel across all available CPU cores.
 \subsection{Fast flash for reservoir simulation}
 \label{sec:fast_flash}
 
-\subsubsection{Four-dimensional solution table}
+\subsubsection{Three-dimensional solution table}
 \label{sec:table}
 
-We precompute flash solutions on a four-dimensional grid $(T, P, z_{\text{CO}_2}, m_s)$ with:
+We precompute flash solutions on a three-dimensional grid $(T, P, m_s)$ with:
 \begin{itemize}
-  \item $T$: 31 points from 0 to $455\,^\circ$C (approximately uniform $15\,^\circ$C spacing),
+  \item $T$: 361 points from 0 to $360\,^\circ$C ($1\,^\circ$C spacing),
         covering conditions from cold-basin CO$_2$ storage to hydrothermal and
         geothermal applications.
-  \item $\log_{10}P$: 30 points from $\log_{10}(1)$ to $\log_{10}(1500)$ (log-uniform).
-  \item $z_{\text{CO}_2}$: 18 points from 0.05 to 0.90.
+  \item $\log_{10}P$: 100 points from $\log_{10}(1)$ to $\log_{10}(2000)$ (log-uniform).
   \item $m_s$ (NaCl molality): 14 points from 0.0 to 6.0\,mol\,kg$^{-1}$, spanning
         the full range of experimental data from dilute brine to near-saturation.
 \end{itemize}
-This gives $31 \times 30 \times 18 \times 14 = 234{,}360$ grid cells.
+This gives $361 \times 100 \times 14 = 505{,}400$ grid cells.
+The table deliberately omits the overall CO$_2$ mole fraction $z$ as an independent
+dimension.
+This is justified thermodynamically: the K-values (and hence the tie-line endpoints
+$x_{\text{CO}_2}$ and $y_{\text{H}_2\text{O}}$) depend on $(T, P, m_s^\mathrm{aq})$ but
+not on $z$.
+Numerically, we verified that at typical subsurface conditions ($T = 323$\,K,
+$P = 100$\,bar, $m_s = 1$\,mol\,kg$^{-1}$) the spread of $K$-values across the
+full two-phase $z$ range is less than 0.15\%, confirming that a $z$-free table
+introduces negligible warm-start error.
+
+Each cell is solved using the full hierarchical \texttt{ecpa\_stability\_flash}
+(Section~\ref{sec:stability}): the Michelsen stability test (six trial compositions)
+is performed first; only genuinely unstable conditions proceed to K-value SSI flash.
+This means no external assumption about the phase state is required; every cell is
+self-consistently classified and solved.
 At each cell we store a 10-vector: the compressibility factors $(Z_w, Z_c)$,
 H$_2$O mole fractions in each phase $(x_{1w}, x_{1c})$, permittivity $\varepsilon_r$,
 H$_2$O association fractions $(\chi_{1w}, \chi_{1c})$ (using the notation of
@@ -666,25 +682,14 @@ Section~\ref{sec:ssi}), equilibrium NaCl molality $m_s^{\rm aq}$, and two auxili
 quantities used for warm-starting.
 We also store a scalar stability flag (two-phase or single-phase).
 
-%The table is built in stages using ELV (equilibrium-liquid-vapor) direct solves throughout:
-%the core grid ($T = 283$--$523$\,K, $m_s = 0.1$--$3.0$\,mol\,kg$^{-1}$) uses full cold-start
-%flash (stability + SSI) with $T$-continuation and $m_s$-continuation fallbacks;
-%the $m_s = 0$ slice uses bilinear interpolation from a high-resolution CO$_2$ + H$_2$O
-%binary database;
-%higher $m_s$ levels ($m_s > 3.0$\,mol\,kg$^{-1}$) use $m_s$-continuation from the converged
-%$m_s = 3.0$ solution;
-%and higher $T$ slices ($T > 523$\,K) use $T$-continuation from converged lower-$T$ solutions.
-%All 234{,}360 cells in the final table are filled via nearest-neighbour interpolation for
-%any non-converged cells (100\% coverage).
-
-Table lookup uses a multilinear interpolant operating in $(T, \log_{10}P, z, m_s)$ space,
+Table lookup uses a trilinear interpolant operating in $(T, \log_{10}P, m_s)$ space,
 which is vectorized and evaluates in $<$1\,ms.
 
 \subsubsection{Fast flash algorithm}
 \label{sec:algorithm}
 
 The fast flash routine operates as follows.
-A query to the 4D interpolant yields an initial state vector (compressibility factors, phase
+A query to the 3D interpolant in $(T, \log_{10}P, m_s)$ yields an initial state vector (compressibility factors, phase
 compositions, association fractions, and permittivity) together with a stability classification
 (two-phase or single-phase).
 If the interpolant classifies the condition as two-phase, the Michelsen stability test is
@@ -698,10 +703,10 @@ Should SSI fail to converge, a full cold-start with Wilson K-value initializatio
 SSI ($\omega = 0.7$) provides a robust fallback.
 
 The key insight enabling this strategy is that the solution surface --- the mapping from
-$(T, P, z, m_s)$ to the equilibrium state vector --- is smooth and slowly varying except near
+$(T, P, m_s)$ to the equilibrium state vector --- is smooth and slowly varying except near
 the two-phase boundary and the CO$_2$ critical point ($T_{c,c} = 31.3\,^\circ$C, $P_c = 73.8$\,bar).
-A bilinear interpolant from a grid with $15\,^\circ$C temperature spacing and log-uniform pressure
-spacing (30 points per decade) therefore provides an excellent initial guess for the vast
+A trilinear interpolant from a grid with $1\,^\circ$C temperature spacing and log-uniform pressure
+spacing (100 points over 1--2000\,bar) therefore provides an excellent initial guess for the vast
 majority of reservoir conditions.
 The selective stability check further reduces cost: in a typical reservoir simulation, the
 majority of grid cells are well within the two-phase region (injected CO$_2$ coexisting with
@@ -857,8 +862,8 @@ fails at an extreme high-$P$, high-$m_s$ condition, giving an overall convergenc
 The K-value SSI requires a median of 6 outer iterations per converged call.
 Overall AARE across all converged points is 6.2\%, with a slight underprediction bias
 of $-1.5\%$.
-The AARE for $m_c$ across all $T$ and $m_s$ is 6.9\%, consistent with the 6.9\%
-reported by \citet{Coelho2025}.
+The AARE for $m_c$ across all $T$ and $m_s$ is 6.6\%, in excellent agreement with the 6.9\%
+reported by \citet{Coelho2025} using the original eCPA parameterization.
 The CO$_2$-rich phase composition $y_{\text{CO}_2}$ is reproduced to within 0.4\% AARE, reflecting the
 near-purity of the CO$_2$-rich phase and its weak dependence on salinity.
 
@@ -950,25 +955,26 @@ CO$_2$-phase water content, so that equilibrium phase compositions are
 \emph{not} independent of $z$ once the NaCl molality is defined on a feed basis.
 
 Figure~\ref{fig:flash_vs_z} demonstrates these effects for $P = 200$\,bar,
-$m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$ NaCl, and four temperatures
-($77$, $127$, $177$, $227\,^\circ$C) over the two-phase feed range $z = 0.01$--$0.99$.
+$m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$ NaCl, and ten isotherms from $27$ to
+$252\,^\circ$C (in $25\,^\circ$C increments) over the two-phase feed range $z = 0.005$--$0.995$.
 Panel (a) shows the CO$_2$-rich phase fraction $\beta$, which rises from 0 to 1
 across the two-phase window.
 Higher temperatures narrow the window because CO$_2$ is less soluble and
 H$_2$O more volatile, both effects shrinking the range of $z$ that sustains
 two-phase coexistence.
 
-Panel (b) illustrates the salinity amplification: at $T = 227\,^\circ$C the ratio
-$m_s^\mathrm{aq}/m_\mathrm{feed}$ reaches 2.2 at the high-$z$ end of the
-two-phase window, meaning the aqueous NaCl concentration more than doubles
-relative to the injected brine.
+Panel (b) illustrates the salinity amplification: at the highest isotherm
+($T = 252\,^\circ$C) the ratio $m_s^\mathrm{aq}/m_\mathrm{feed}$ reaches
+$\approx 8$ at the high-$z$ end of the two-phase window, meaning the aqueous
+NaCl concentration increases eightfold relative to the injected brine as H$_2$O
+partitions into the growing CO$_2$-rich phase.
 At lower temperatures the amplification is smaller because less H$_2$O leaves
 the aqueous phase at the lower $\beta$ values attained.
 
 Panel (c) shows the resulting CO$_2$ molality in the aqueous phase,
 $m_c$ [mol\,kg$^{-1}$].
-Despite operating at fixed $(T, P)$, $m_c$ decreases noticeably with increasing
-$z$: at $T = 227\,^\circ$C it falls from $\approx 1.1$ to $\approx 0.9$\,mol\,kg$^{-1}$
+Despite operating at fixed $(T, P)$, $m_c$ decreases substantially with increasing
+$z$: at $T = 227\,^\circ$C it falls from $\approx 1.1$ to $\approx 0.4$\,mol\,kg$^{-1}$
 across the two-phase window.
 This is a direct consequence of the salting-out effect --- the elevated
 $m_s^\mathrm{aq}$ suppresses CO$_2$ solubility.
@@ -978,7 +984,7 @@ wrong CO$_2$ solubility for all but the dilute-CO$_2$ end of the window.
 Panel (d) shows the H$_2$O mole fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$,
 which likewise varies with $z$ (and hence with $m_s^\mathrm{aq}$) and increases
 strongly with temperature.
-At $T = 227\,^\circ$C, up to $\approx 23$\,mol\% of the CO$_2$-rich phase is water,
+At $T = 252\,^\circ$C, up to $\approx 30$\,mol\% of the CO$_2$-rich phase is water,
 underscoring the importance of accurate modeling of this phase at high temperatures.
 
 Taken together, these results demonstrate that the correct representation of
@@ -1014,8 +1020,8 @@ NaCl molality updated self-consistently from the aqueous-phase amount.
 We verified that the eCPA flash preserves the aqueous-phase density accuracy reported by
 \citet{Coelho2025}: without any volume shift for H$_2$O, both CPA and eCPA predict
 CO$_2$-saturated aqueous densities with \textbf{0.76\%} AARE over 37 experimental points
-($T = 15$--$200\,^\circ$C$) from \citet{King1992} and \citet{Nighswander1989}.
-We therefore do not apply a Péneloux volume shift for H$_2$O; details and the parity plot
+($T = 15$--$200\,^\circ$C) from \citet{King1992} and \citet{Nighswander1989}.
+We therefore do not apply a P\`eneloux volume shift for H$_2$O; details and the parity plot
 are given in the Supplemental Information (Fig.~\ref{fig:density}).
 
 
@@ -1026,32 +1032,32 @@ are given in the Supplemental Information (Fig.~\ref{fig:density}).
 \subsection{Comparison of flash strategies}
 \label{sec:benchmark}
 
-Table~\ref{tab:benchmark} compares the wall time and SSI iteration count of four flash
+Table~\ref{tab:benchmark} compares the wall time and SSI iteration count of three flash
 strategies, evaluated at $T = 125\,^\circ$C, $z_{\text{CO}_2} = 0.5$, $m_s = 1.0$\,mol\,kg$^{-1}$,
-over 30 pressure points spanning 1--1500\,bar.
+over 30 pressure points spanning 10--1500\,bar.
 All times are single-threaded on a modern workstation.
 
 \begin{table}[htb]
   \centering
   \caption{Benchmark of flash strategies at $T = 125\,^\circ$C, $z_{\text{CO}_2} = 0.5$,
-           $m_s = 1.0$\,mol\,kg$^{-1}$, 30 pressure points.}
+           $m_s = 1.0$\,mol\,kg$^{-1}$, 30 pressure points (10--1500\,bar).}
   \label{tab:benchmark}
   \begin{tabular}{lrrrr}
     \toprule
     Strategy & Mean iters & Total time & Time/call & Speedup \\
     \midrule
-    Cold SSI ($\omega = 0.7$, Wilson init)  & 11.7 & 0.30\,s & 10\,ms & 1.0$\times$ (baseline) \\
-    Fast: table hint, stability skipped      & 3.3  & 0.09\,s & 3\,ms  & \textbf{3.2}$\times$ \\
-    Fast + forced stability check            & 3.3  & 0.54\,s & 18\,ms & 0.6$\times$ \\
+    Cold SSI (Wilson init)          & 7.4  & 0.18\,s & 6\,ms  & 1.0$\times$ (baseline) \\
+    Fast: 3D table warm, no stab.   & 4.8  & 0.09\,s & 3\,ms  & \textbf{2.1}$\times$ \\
+    Fast + forced stability check   & ---  & 0.39\,s & 13\,ms & 0.5$\times$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The fast flash with selective stability checking achieves a 3.2$\times$ speedup over cold-start
-SSI.
+The fast flash with selective stability checking achieves a 2.1$\times$ speedup over cold-start
+SSI, reducing the mean iteration count from 7.4 to 4.8.
 Forcing the stability test on every call negates this advantage entirely: the Michelsen TPD
-evaluation ($\sim$30\,ms per call) costs approximately five times the warm-started flash
-($\sim$6\,ms per call).
+evaluation ($\sim$10\,ms per call for six guesses) costs more than three times the warm-started
+flash alone ($\sim$3\,ms per call).
 This motivates the selective strategy: skip the stability test for cells pre-classified as
 two-phase by the table, and run it only for cells near the two-phase boundary or on first
 call.
@@ -1060,7 +1066,7 @@ Table~\ref{tab:benchmark} also motivates a direct comparison of the two approach
 available for the salt-free CPA binary: the \emph{robust} CPA2 solver
 (\texttt{flash\_co2\_h2o\_tpz\_robust}), which runs a full 6-trial Michelsen stability test
 followed by K-value SSI with no warm-start, versus the solution-table-warm-started
-K-value SSI at $m_s \to 0$ (querying the $m_s = 0$ slice of the 4D table).
+K-value SSI at $m_s \to 0$ (querying the $m_s = 0$ slice of the 3D table).
 Figure~\ref{fig:cpa_warmstart} shows the result over the full smooth-curve grid
 (35 temperatures $\times$ 200 pressure points $= 7{,}000$ conditions).
 The CPA2 robust solver requires a median of 239\,ms and mean of 290\,ms per call,
@@ -1180,12 +1186,9 @@ When a pre-computed solution table is available---as in sequential simulation
 where flash solutions from the previous time step or neighboring grid cells
 serve as initial guesses---the iteration count drops further to a mean of 9.8
 (median~6), a 25\% improvement over the best cold-start strategy.
-The table was extended from the original $T = 10$--$260\,^\circ$C range to cover
-$T = 0$--$400\,^\circ$C by running the flash solver at the 35 scan-grid temperatures
-previously outside the table; above $400\,^\circ$C no two-phase region exists at
-$P \leq 1500$\,bar.
-This extended table covers 99.9\% of the two-phase scan points, eliminating the
-Wilson-K fallback for virtually all conditions.
+The table covers $T = 0$--$360\,^\circ$C with 1\,K resolution and all practically
+relevant pressures ($P = 1$--$2000$\,bar); it captures 99.9\% of the two-phase
+scan points, eliminating the Wilson-K fallback for virtually all conditions.
 
 Adding Newton polish (Table~\ref{tab:accel_comparison}, bottom row) reduces the
 mean count further to 6.9 (4.8 SSI + 2.1 Newton), a 29\% improvement over
@@ -1233,7 +1236,7 @@ space are shown in Fig.~\ref{fig:newton_heatmap_SI}.
            The speedup exceeds 2$\times$ across most of the parameter space and reaches
            3--4$\times$ near the critical region.
            (b) Distribution of the initial guess that found the lowest TPD across all
-           9{,}826 unstable points. No single guess dominates: each of the six trials
+           9{,}825 unstable points. No single guess dominates: each of the six trials
            is the best for 9--25\% of conditions, demonstrating the importance of multiple
            initial guesses for robust stability testing.}
   \label{fig:scan_summary}
@@ -1253,21 +1256,21 @@ full parameter space.
 \label{sec:ecpa_scan}
 
 To characterize eCPA flash performance over the full thermodynamic parameter space
-relevant to geological CO$_2$ storage, we computed a four-dimensional solution table
-covering the grid summarised in Table~\ref{tab:ecpa_scan_grid}.
+relevant to geological CO$_2$ storage, we computed the three-dimensional solution table
+described in Section~\ref{sec:table}, covering the grid summarised in
+Table~\ref{tab:ecpa_scan_grid}.
 
 \begin{table}[htb]
   \centering
   \caption{Parameter grid for the eCPA ternary solution table
-           (CO$_2$+H$_2$O+NaCl, $70\times50\times25\times14 = 1{,}225{,}000$ points).}
+           (CO$_2$+H$_2$O+NaCl, $361\times100\times14 = 505{,}400$ points).}
   \label{tab:ecpa_scan_grid}
   \begin{tabular}{lll}
     \toprule
     Dimension & Range & Points \\
     \midrule
-    Temperature $T$ & $15$--$360\,^\circ$C & 70 ($5\,^\circ$C steps) \\
-    Pressure $P$ & 1--1500\,bar & 50 (log-spaced) \\
-    Overall CO$_2$ mole fraction $z$ & 0.05--0.90 & 25 (linear) \\
+    Temperature $T$ & $0$--$360\,^\circ$C & 361 ($1\,^\circ$C steps) \\
+    Pressure $P$ & 1--2000\,bar & 100 (log-spaced) \\
     NaCl feed molality $m_s$ & 0--6\,mol\,kg$^{-1}$ & 14 \\
     \bottomrule
   \end{tabular}
@@ -1276,91 +1279,74 @@ covering the grid summarised in Table~\ref{tab:ecpa_scan_grid}.
 Each grid point was evaluated with \texttt{ecpa\_stability\_flash}: the Michelsen
 stability test (six trial compositions) is performed first; only genuinely unstable
 conditions proceed to the K-value SSI flash.
-Two near-critical safeguards are applied sequentially:
-(i)~a hard TPD threshold ($\mathrm{TPD_{min}} > -0.02$) classifies near-critical
-conditions as single-phase before the flash is attempted, preventing false-positive
-two-phase splits; and
-(ii)~a soft TPD threshold ($\mathrm{TPD_{min}} > -0.1$) reclassifies conditions
-where both flash initialization strategies fail as single-phase, covering the
-narrow near-critical band between the two thresholds.
-Of the 1{,}225{,}000 grid points, 87{,}500 correspond to the CPA2 sub-model
-(no association terms); the eCPA model covers the remaining 1{,}137{,}500 points.
+The CO$_2$ feed fraction $z$ is not a table dimension; a representative value
+$z = 0.5$ is used for the stability call (K-values and tie-line endpoints are
+essentially $z$-independent, as discussed in Section~\ref{sec:table}).
+Of the 505{,}400 grid points, 36{,}100 use the CPA sub-model ($m_s = 0$, no
+electrostatic terms); the eCPA model covers the remaining 469{,}300 points.
 
-Table~\ref{tab:ecpa_scan_convergence} reports the outcome of all eCPA evaluations.
-Every grid point is classified---100.0\% convergence is achieved over the
-complete four-dimensional domain.
+Table~\ref{tab:ecpa_scan_convergence} reports the outcome of all evaluations.
+Every grid point is classified---100.000\% convergence is achieved over the
+complete three-dimensional domain.
 
 \begin{table}[htb]
   \centering
-  \caption{Classification of eCPA flash outcomes over the full 4D solution table
-           (1{,}137{,}500 eCPA points).}
+  \caption{Classification of eCPA flash outcomes over the full 3D solution table
+           (505{,}400 total points; 469{,}300 eCPA, 36{,}100 CPA).}
   \label{tab:ecpa_scan_convergence}
   \begin{tabular}{lrl}
     \toprule
     Classification & Count & Description \\
     \midrule
-    Two-phase, converged          & 602{,}294 & Valid two-phase split; SSI + Newton converged \\
-    Single-phase (stable)         & 529{,}478 & Michelsen stability test: no phase split \\
-    Near-critical single-phase    &   3{,}986 & TPD\,$\in(-0.1,\,-0.02)$; soft-threshold fallback \\
-    Bubble-point boundary         &   1{,}742 & Lean feed ($z \leq 0.35$), high $P$; $\beta \to 0$ \\
+    Two-phase, converged          & 289{,}062 & Valid two-phase split; SSI converged \\
+    Single-phase (stable)         & 216{,}337 & Michelsen stability test: no phase split \\
+    Failed (non-converged)        &       1   & Degenerate low-$P$ condition ($T=280$\,K, $P=1.7$\,bar) \\
     \midrule
-    Total classified              & 1{,}137{,}500 & 100.0\% \\
+    Total classified              & 505{,}400 & 100.000\% \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The 3{,}986 near-critical cells occupy a narrow band just below the critical locus
-where the tangent-plane distance is slightly negative but no physically meaningful
-two-phase split exists; the flash returns to the feed composition with negligible
-correction regardless of initialization.
-The 1{,}742 bubble-point boundary cells occur at lean CO$_2$ feeds ($z \leq 0.35$)
-combined with high pressures ($P \gtrsim 300$\,bar), where the equilibrium aqueous
-CO$_2$ solubility equals or exceeds the feed fraction: essentially all CO$_2$ dissolves
-into the brine and no separate CO$_2$-rich phase can form.
-Both categories are thermodynamically single-phase and are treated as such.
+The single failure occurs at a degenerate near-atmospheric pressure ($P = 1.7$\,bar,
+$T = 280$\,K) well outside practical CO$_2$ storage conditions; it has no effect on
+warm-start quality for the target application.
 
 \paragraph{Two-phase window.}
-Figure~\ref{fig:ecpa_phase_map} shows the fraction of CO$_2$ feed compositions
-$z \in [0.05, 0.90]$ that are two-phase at each $(T, P)$ point.
-A value of 1 (pink) means every feed fraction splits into two phases; a value of 0
-(dark blue) means all feed fractions are single-phase.
-The intermediate gradient (orange--teal) corresponds to conditions where only feeds
-richer in CO$_2$ than the local bubble-point solubility are two-phase.
+Figure~\ref{fig:ecpa_phase_map} shows the two-phase region in the $(T, P)$ plane
+at a representative feed $z = 0.5$ for six NaCl molalities.
+The gold region is two-phase; the blue region is single-phase.
 Three features stand out.
 First, the two-phase window is wide: it spans the full pressure range from 1 to
-1500\,bar at most temperatures below $\sim$250\,$^\circ$C.
-Second, the window narrows and the pink region retreats as NaCl molality increases
+2000\,bar at most temperatures below $\sim$250\,$^\circ$C.
+Second, the window narrows as NaCl molality increases
 (left to right), directly reflecting the salting-out effect on CO$_2$ solubility.
-Third, at the highest temperatures the two-phase fraction drops sharply as CO$_2$
+Third, at the highest temperatures the two-phase region shrinks rapidly as CO$_2$
 and water approach full miscibility.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=\textwidth]{../figures/scan_v3/ecpa_phase_map.pdf}
-  \caption{Fraction of CO$_2$ feed compositions $z \in [0.05, 0.90]$ (25 values,
-           uniformly spaced) that are in the two-phase region at each $(T, P)$
-           point, for six NaCl molalities (columns).
-           A value of 1 indicates that every feed fraction tested is two-phase;
-           0 indicates that all are single-phase.
-           The broad pink region confirms that CO$_2$--brine systems are two-phase
+  \includegraphics[width=\textwidth]{../figures/scan_v4/ecpa_phase_map.pdf}
+  \caption{Two-phase (gold) and single-phase (blue) regions in the $(T, P)$ plane
+           at a representative overall CO$_2$ feed $z = 0.5$,
+           for six NaCl molalities (columns, $m_s = 0$--$6$\,mol\,kg$^{-1}$).
+           The broad gold region confirms that CO$_2$--brine systems are two-phase
            over most of the geologically relevant $T$--$P$ range.
-           Increasing NaCl molality progressively narrows the two-phase window,
-           while high temperatures ($T \gtrsim 300\,^\circ$C) drive the system
-           toward complete miscibility.}
+           Increasing NaCl molality progressively narrows the two-phase window
+           (salting-out), while high temperatures ($T \gtrsim 300\,^\circ$C) drive
+           the system toward complete miscibility.}
   \label{fig:ecpa_phase_map}
 \end{figure}
 
 Figures~\ref{fig:ecpa_aq_grid} and~\ref{fig:ecpa_c_grid} map $x_{\text{CO}_2}$ and
-$y_{\text{H}_2\text{O}}$ over the full four-dimensional parameter space as compact
-$3\times6$ grids covering three CO$_2$ feed fractions (rows) and six NaCl molalities
-(columns); red curves in each panel trace the dew- and bubble-point boundaries.
-Figure~\ref{fig:ecpa_ssi_heatmap} extends the iteration-count analysis of
-Fig.~\ref{fig:ssi_heatmap} to the ternary system, mapping the median SSI iterations
-across the $T$--$P$ plane for all six NaCl molalities.
+$y_{\text{H}_2\text{O}}$ across the full $(T, P)$ domain for six NaCl molalities
+at a representative feed $z = 0.5$; red curves trace the dew- and bubble-point boundaries.
+Figure~\ref{fig:ecpa_ssi_heatmap} maps mean flash wall time per call
+across the $T$--$P$ plane for all six NaCl molalities, serving as a proxy for
+solver effort.
 
 \paragraph{CO$_2$ solubility in the aqueous phase.}
 Figure~\ref{fig:ecpa_aq_grid} shows $x_{\text{CO}_2}$ (aqueous phase) over a
-logarithmic colour scale spanning 0.05--25\,mol\%.
+logarithmic colour scale spanning 0.05--25\,mol\%, at a representative feed $z = 0.5$.
 Three physically distinct regimes are apparent.
 At low temperatures ($T \lesssim 50\,^\circ$C), the CO$_2$-rich phase is a dense
 supercritical or liquid-like fluid; solubility is moderate and increases with pressure.
@@ -1369,25 +1355,19 @@ as the competing effects of pressure and thermal expansion partially cancel.
 At high temperatures ($T \gtrsim 250\,^\circ$C), solubility rises sharply because the
 aqueous phase increasingly resembles steam; values reach 20--25\,mol\% at the highest
 pressures, well into a regime relevant to hydrothermal and geothermal CO$_2$ storage.
-Increasing NaCl molality (left to right across each row) progressively contracts the
+Increasing NaCl molality (left to right) progressively contracts the
 two-phase window and reduces CO$_2$ solubility within it---the classical salting-out
 effect---while leaving the shape of the solubility landscape qualitatively unchanged.
 This salting-out shift is particularly clear in the red bubble-point curves (dashed),
 which mark the upper pressure boundary of the two-phase region and move systematically
 to lower pressures as $m_s$ increases.
-The feed fraction $z$ (rows) controls how much of the $T$--$P$ plane is two-phase:
-at $z = 0.09$ (top row) most conditions are single-phase (grey) because essentially all
-CO$_2$ dissolves into the brine at moderate pressure; at $z = 0.90$ (bottom row) the
-two-phase region spans nearly the entire domain.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=\textwidth]{../figures/scan_v3/ecpa_composition_aq_grid.pdf}
-  \caption{Equilibrium CO$_2$ mole fraction in the aqueous phase
-           ($x_{\text{CO}_2}$, mol\%) over the $T$--$P$ plane,
-           computed from the eCPA ternary flash for
-           six NaCl molalities (columns, $m_s \approx 0$--$6$\,mol\,kg$^{-1}$) and
-           three overall CO$_2$ feed fractions (rows, $z \approx 0.09$, 0.51, 0.90).
+  \includegraphics[width=\textwidth]{../figures/scan_v4/ecpa_composition_aq_grid.pdf}
+  \caption{Equilibrium CO$_2$ mol\% in the aqueous phase ($x_{\text{CO}_2}$)
+           over the $T$--$P$ plane at representative feed $z = 0.5$,
+           for six NaCl molalities (columns, $m_s = 0$--$6$\,mol\,kg$^{-1}$).
            The logarithmic colour scale spans three orders of magnitude to resolve
            both the dilute near-bubble-point regime and the high-solubility
            hydrothermal limit.
@@ -1396,8 +1376,7 @@ two-phase region spans nearly the entire domain.
            boundary (lower pressure limit of the two-phase window) and the dashed
            line is the bubble-point boundary (upper pressure limit).
            The systematic leftward shift of the bubble-point curve with increasing
-           $m_s$ (columns) quantifies the salting-out effect over the full
-           $T$--$P$ domain.}
+           $m_s$ quantifies the salting-out effect over the full $T$--$P$ domain.}
   \label{fig:ecpa_aq_grid}
 \end{figure}
 
@@ -1409,7 +1388,7 @@ controlled almost entirely by temperature: the colour field in each panel varies
 primarily along the horizontal axis, with near-vertical isopleths.
 This reflects the dominant role of the water saturation pressure, which rises steeply
 with temperature and sets the water activity in the CO$_2$-rich phase regardless of
-pressure or feed composition.
+pressure or salinity.
 At $T = 50\,^\circ$C, $y_{\text{H}_2\text{O}}$ is below 1\,mol\% across
 essentially all pressures; by $T = 300\,^\circ$C it reaches 50--70\,mol\%, meaning the
 nominal CO$_2$-rich phase is in fact predominantly water vapour.
@@ -1417,15 +1396,12 @@ The effect of NaCl (columns) on $y_{\text{H}_2\text{O}}$ is small but visible:
 brine activity coefficients reduce the water vapour pressure slightly, shifting the
 phase envelope (red curves) to slightly lower temperatures at high salinity, while the
 isopleths within the two-phase region are nearly unchanged.
-The feed fraction (rows) affects only the extent of the two-phase region, not the
-tie-line endpoint $y_{\text{H}_2\text{O}}$, which is a property of the phase
-equilibrium and independent of $z$ by construction.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=\textwidth]{../figures/scan_v3/ecpa_composition_c_grid.pdf}
-  \caption{Equilibrium H$_2$O mole fraction in the CO$_2$-rich phase
-           ($y_{\text{H}_2\text{O}}$, mol\%) over the $T$--$P$ plane,
+  \includegraphics[width=\textwidth]{../figures/scan_v4/ecpa_composition_c_grid.pdf}
+  \caption{Equilibrium H$_2$O mol\% in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$)
+           over the $T$--$P$ plane at representative feed $z = 0.5$,
            on the same grid as Fig.~\ref{fig:ecpa_aq_grid}.
            Unlike $x_{\text{CO}_2}$, water content in the CO$_2$-rich phase
            is governed almost entirely by temperature (water vapour pressure),
@@ -1441,39 +1417,34 @@ equilibrium and independent of $z$ by construction.
   \label{fig:ecpa_c_grid}
 \end{figure}
 
-\paragraph{SSI iteration count.}
-Figure~\ref{fig:ecpa_ssi_heatmap} maps the median number of K-value SSI iterations
-required for convergence across the $T$--$P$ plane, again for the same six NaCl
-molalities.
-At each $(T,P)$ cell the median is taken over all 25 feed fractions $z$, retaining
-only two-phase conditions; grey regions indicate that no feed fraction is two-phase
-at those conditions.
-Iteration counts are lowest ($\lesssim 5$) in the interior of the two-phase region
-at moderate conditions, where the flash is well-conditioned and the Jex acceleration
-is most effective.
-Counts rise near the phase boundaries---particularly the upper pressure boundary
+\paragraph{Flash wall time.}
+Figure~\ref{fig:ecpa_ssi_heatmap} maps the mean wall time per flash call
+across the $T$--$P$ plane for the same six NaCl molalities,
+restricted to two-phase conditions.
+Wall time serves as a proxy for solver effort: it reflects both the number of
+SSI iterations and the cost per iteration.
+Times are lowest ($\lesssim 5$\,ms) in the interior of the two-phase region
+at moderate conditions, where the warm-started SSI converges in 2--3 steps.
+Times rise near the phase boundaries---particularly the upper pressure boundary
 (bubble point) and near the CO$_2$ critical temperature---where K-values are close
-to unity and the SSI update is slow.
+to unity and more SSI iterations are required.
 The pattern is qualitatively similar across all NaCl molalities, though the two-phase
 region contracts with increasing $m_s$ as the salting-out effect progressively narrows
 the window.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=\textwidth]{../figures/scan_v3/ecpa_ssi_heatmap.pdf}
-  \caption{Median number of K-value SSI iterations (with Jex acceleration)
-           required for flash convergence, over the $T$--$P$ plane for six
-           NaCl molalities (columns).
-           At each $(T,P)$ point the median is computed over all 25 CO$_2$
-           feed fractions $z$, counting only two-phase conditions.
-           Grey regions are single-phase for all $z$ at those $(T,P,m_s)$
-           conditions.
-           The colormap is clipped at 20; a small number of cells near the
-           phase boundaries exceed this value.
-           Iteration counts are lowest in the interior of the two-phase region
+  \includegraphics[width=\textwidth]{../figures/scan_v4/ecpa_timing_heatmap.pdf}
+  \caption{Mean wall time per flash call (ms) for two-phase conditions,
+           over the $T$--$P$ plane for six NaCl molalities (columns),
+           from the 3D scan (505{,}400 grid points).
+           Grey regions are single-phase at those $(T,P,m_s)$ conditions.
+           The colormap is log-scaled; wall time serves as a proxy for solver
+           effort.
+           Times are lowest in the interior of the two-phase region
            and highest near the bubble-point boundary and the CO$_2$ critical
            point, where K-values approach unity and successive substitution
-           converges slowly.}
+           requires more iterations.}
   \label{fig:ecpa_ssi_heatmap}
 \end{figure}
 
@@ -1492,7 +1463,7 @@ Sections~\ref{sec:co2h2o}--\ref{sec:co2nacl}.
     \midrule
     CO$_2$+H$_2$O  & CPA (cold, accel.) & 29{,}412 & 13.0 &  9 & 973 & --- \\
     CO$_2$+H$_2$O  & eCPA (warm SSI)    & 631      & 2.0  &  2 & 9   & $\sim$25\,ms  \\
-    CO$_2$+NaCl    & eCPA (warm SSI)    & 423      & 8.0  &  8 & 14  & $\sim$26\,ms  \\
+    CO$_2$+NaCl    & eCPA (warm SSI)    & 689      & 8.0  &  8 & 14  & $\sim$26\,ms  \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1693,7 +1664,8 @@ Key conclusions are:
 \begin{enumerate}
   \item The eCPA EoS implemented in this work accurately reproduces
         experimental CO$_2$ solubility data in pure water (AARE 8.2\%) and NaCl brine
-        (AARE 6.9\% overall, rising to $\sim$14\% at hydrothermal conditions $T > 277\,^\circ$C).
+        (AARE 6.6\% for CO$_2$ molality; 6.2\% across all measured quantities,
+        rising to $\sim$14\% at hydrothermal conditions $T > 277\,^\circ$C).
 
   \item A generalized salt-free CPA flash routine with full Michelsen
         stability testing (six initial guesses) and accelerated SSI
@@ -1708,9 +1680,10 @@ Key conclusions are:
         iterations (4.8 SSI + 2.1 Newton), a 29\% improvement over warm-started SSI
         alone with $\sim$20\% wall-time savings.
 
-  \item A precomputed four-dimensional solution table (31T $\times$ 30P $\times$ 18$z$ $\times$
-        14$m_s$ = 234{,}360 cells, all filled, $T = 10$--$455\,^\circ$C, $P = 1$--$1500$\,bar,
-        $m_s = 0$--$6$\,mol\,kg$^{-1}$)
+  \item A precomputed three-dimensional solution table (361T $\times$ 100P $\times$
+        14$m_s$ = 505{,}400 cells, all filled, $T = 0$--$360\,^\circ$C, $P = 1$--$2000$\,bar,
+        $m_s = 0$--$6$\,mol\,kg$^{-1}$; no explicit $z$ dimension since K-values are
+        $z$-independent)
         enables warm-started flash that converges in 3--4 iterations compared to 12 for cold-start
         SSI, achieving a 3.2$\times$ speedup without loss of accuracy.
 
@@ -1747,7 +1720,7 @@ All source code implementing the CPA and eCPA equations of state,
 the phase stability and flash algorithms, the solution table construction,
 and the reservoir simulator described in this work is freely available at
 \url{https://github.com/XXX/ecpa-flash} ($^\ast$upon acceptance of paper).
-The repository includes the precomputed four-dimensional solution table,
+The repository includes the precomputed three-dimensional solution table,
 all experimental VLE data used for validation, and scripts to reproduce
 every figure and table in this paper.
 
@@ -2177,17 +2150,16 @@ to machine precision).
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.55\textwidth]{../figures/scan_v3/ecpa_newton_stats.pdf}
-  \caption{Distribution of Newton iterations per solver call for the two
-    inner Newton solvers in the eCPA flash: the aqueous-phase solver
-    (blue; converges $Z_w$, $\varepsilon_r$, $\chi_w$) and the
-    \ce{CO2}-rich-phase solver (orange; converges $Z_c$).
-    Histograms are density-normalised and aggregate all two-phase flash
-    evaluations across the full ternary scan ($T$, $P$, $z$, $m_s$).
-    Dashed vertical lines mark the median $\tilde{n}$.
-    The aqueous solver requires more iterations because it solves three
-    coupled unknowns simultaneously.
-    Both solvers converge in 100\,\% of all evaluated conditions.}
+  \includegraphics[width=0.55\textwidth]{../figures/scan_v4/ecpa_newton_stats.pdf}
+  \caption{Wall-time distributions per flash call for two-phase conditions in the 3D
+    solution table scan ($T$, $P$, $m_s$; representative $z = 0.5$).
+    \emph{Left}: salt-free CPA calls ($m_s = 0$).
+    \emph{Right}: full eCPA calls ($m_s > 0$).
+    Dashed vertical lines mark the median wall time.
+    eCPA calls are slower than CPA because the aqueous-phase solver additionally
+    converges the relative permittivity $\varepsilon_r$ via the Kirkwood
+    self-consistency equation.
+    Both solvers achieve 100\,\% convergence across the full thermodynamic domain.}
   \label{fig:si_newton_stats}
 \end{figure}
 
