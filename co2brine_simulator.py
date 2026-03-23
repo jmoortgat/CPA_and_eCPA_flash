@@ -113,8 +113,16 @@ z_initial = 5e-4
 # 4.  PRESSURE SOLVERS
 # =============================================================================
 
-def TPFA(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
-    """Two-point flux approximation pressure solver."""
+def TPFA(Lx, Ly, Lz, Nx, Ny, Nz, Q, K, bhp_wells=None):
+    """
+    Two-point flux approximation pressure solver.
+
+    bhp_wells : list of (cell_idx_flat, WI_eff [m³/(Pa·s)], P_BHP [Pa]) or None.
+                WI_eff = WI_geom * lam_t_cell (caller computes total well transmissibility).
+                Q should contain only fixed-rate sources (injectors); BHP producers
+                are handled via bhp_wells.
+    Returns P [Pa], Vx, Vy, Vz, Q_bhp (actual BHP production rates, shape N).
+    """
     dx_, dy_, dz_ = Lx/Nx, Ly/Ny, Lz/Nz
     N_ = Nx * Ny * Nz
     iK  = 1.0 / K
@@ -135,11 +143,21 @@ def TPFA(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
     z2 = TZ[:, :, 1: ].reshape(N_, order='F')
 
     md    = x1+x2+y1+y2+z1+z2
-    md[0] += np.sum(K[:, 0, 0, 0])
+    q_rhs = Q.ravel().copy()
+
+    # BHP production wells: modify diagonal and RHS
+    # (BHP wells already pin the absolute pressure level; no extra reference needed)
+    if bhp_wells:
+        for (k, WI_eff, P_bhp_Pa) in bhp_wells:
+            md[k]    += WI_eff
+            q_rhs[k] += WI_eff * P_bhp_Pa
+    else:
+        md[0] += np.sum(K[:, 0, 0, 0])   # weak pressure reference at cell 0
+
     A = sp.diags([-z2[:-Nx*Ny], -y2[:-Nx], -x2[:-1], md,
                   -x1[1:], -y1[Nx:], -z1[Nx*Ny:]],
                  [-Nx*Ny, -Nx, -1, 0, 1, Nx, Nx*Ny])
-    P_ = spla.spsolve(A, Q.ravel()).reshape(Nx, Ny, Nz, order='F')
+    P_ = spla.spsolve(A, q_rhs).reshape(Nx, Ny, Nz, order='F')
 
     Vx = np.zeros((Nx+1, Ny, Nz))
     Vy = np.zeros((Nx, Ny+1, Nz))
@@ -147,7 +165,15 @@ def TPFA(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
     Vx[1:Nx, :, :]  = (P_[:-1, :, :] - P_[1:, :, :])  * TX[1:Nx, :, :]
     Vy[:, 1:Ny, :]  = (P_[:, :-1, :] - P_[:, 1:, :])  * TY[:, 1:Ny, :]
     Vz[:, :, 1:Nz]  = (P_[:, :, :-1] - P_[:, :, 1:])  * TZ[:, :, 1:Nz]
-    return P_, Vx, Vy, Vz
+
+    # Compute actual BHP production rates
+    Q_bhp = np.zeros(N_)
+    if bhp_wells:
+        P_flat = P_.ravel(order='F')
+        for (k, WI_eff, P_bhp_Pa) in bhp_wells:
+            Q_bhp[k] = -WI_eff * (P_flat[k] - P_bhp_Pa)
+
+    return P_, Vx, Vy, Vz, Q_bhp
 
 
 def _GenB(Nx, Ny, Nz, Lx, Ly, Lz, K):
@@ -242,15 +268,14 @@ def _GenC(Nx, Ny, Nz):
     return sp.csr_matrix((vals, (rows, cols)), shape=(N_, E))
 
 
-def MFE(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
+def MFE(Lx, Ly, Lz, Nx, Ny, Nz, Q, K, bhp_wells=None):
     """
     Mixed finite element (RT₀) pressure solver.
 
-    Solves [B, Cᵀ; −C, 0][v; p] = [0; q] with a pressure pin at cell 0.
+    Solves [B, Cᵀ; −C, pin][v; p] = [0; q+q_BHP] with a pressure pin at cell 0.
 
-    Returns P (Nx,Ny,Nz), Vx (Nx+1,Ny,Nz), Vy (Nx,Ny+1,Nz), Vz (Nx,Ny,Nz+1).
-    Interior face velocities are stored at faces 1..Nx−1 (etc.); boundary faces
-    remain zero (no-flow boundary).
+    bhp_wells : list of (cell_idx_flat, WI_eff [m³/(Pa·s)], P_BHP [Pa]) or None.
+    Returns P [Pa], Vx, Vy, Vz, Q_bhp (actual BHP production rates, shape N).
     """
     N_  = Nx * Ny * Nz
     Ex  = (Nx-1)*Ny*Nz
@@ -264,10 +289,19 @@ def MFE(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
     B = _GenB(Nx, Ny, Nz, Lx, Ly, Lz, K)
     C = _GenC(Nx, Ny, Nz)
 
-    # Pressure reference: add 1 to A[E, E] (first pressure DOF)
-    pin = sp.csr_matrix(([1.0], ([0], [0])), shape=(N_, N_))
-    A   = sp.bmat([[B, C.T], [-C, pin]], format='csc')
+    # Pressure block: pressure reference pin at cell 0 (weak, ≈ 1 m³/(Pa·s)),
+    # OR BHP well diagonal terms — BHP wells already fix the pressure scale, so
+    # the pin at cell 0 is only added when there are no BHP wells.
+    pin_data: list = [];  pin_rows: list = [];  pin_cols: list = []
+    if bhp_wells:
+        for (k, WI_eff, P_bhp_Pa) in bhp_wells:
+            pin_data.append(WI_eff);  pin_rows.append(k);  pin_cols.append(k)
+            rhs[E + k] += WI_eff * P_bhp_Pa
+    else:
+        pin_data = [1.0];  pin_rows = [0];  pin_cols = [0]
+    pin = sp.csr_matrix((pin_data, (pin_rows, pin_cols)), shape=(N_, N_))
 
+    A = sp.bmat([[B, C.T], [-C, pin]], format='csc')
     x = spla.spsolve(A, rhs)
 
     v  = x[:E]
@@ -281,7 +315,14 @@ def MFE(Lx, Ly, Lz, Nx, Ny, Nz, Q, K):
     if Ez > 0:
         Vz[:, :, 1:Nz] = v[Ex+Ey:].reshape(Nx, Ny, Nz-1, order='F')
 
-    return P_, Vx, Vy, Vz
+    # Compute actual BHP production rates
+    Q_bhp = np.zeros(N_)
+    if bhp_wells:
+        P_flat = P_.ravel(order='F')
+        for (k, WI_eff, P_bhp_Pa) in bhp_wells:
+            Q_bhp[k] = -WI_eff * (P_flat[k] - P_bhp_Pa)
+
+    return P_, Vx, Vy, Vz, Q_bhp
 
 
 # =============================================================================
@@ -534,27 +575,47 @@ def dissolved_co2_molality(x4w: np.ndarray, ms_aq: np.ndarray) -> np.ndarray:
 # =============================================================================
 # 10.  PLOTTING
 # =============================================================================
-def plot_snapshot(z: np.ndarray, fr: dict, T: float, P: float,
+def plot_snapshot(z: np.ndarray, fr: dict, T: float, P_ref: float,
                   step: int, t_yr: float,
+                  Nx_: int, Ny_: int, Lx_: float, Ly_: float,
+                  inj_ij: tuple, prod_ijs: list,
+                  P_field: np.ndarray | None = None,
                   outdir: str = 'figures/simulator') -> str:
     os.makedirs(outdir, exist_ok=True)
+    dx_ = Lx_ / Nx_;  dy_ = Ly_ / Ny_
 
-    S_g   = beta_to_Sg(fr, T, P).reshape(Nx, Ny, order='F')
-    mc    = dissolved_co2_molality(fr['x4w'], fr['ms_aq']).reshape(Nx, Ny, order='F')
-    ms_aq = fr['ms_aq'].reshape(Nx, Ny, order='F')
-    z2d   = z.reshape(Nx, Ny, order='F')
+    S_g   = beta_to_Sg(fr, T, P_ref).reshape(Nx_, Ny_, order='F')
+    mc    = dissolved_co2_molality(fr['x4w'], fr['ms_aq']).reshape(Nx_, Ny_, order='F')
+    ms_aq = fr['ms_aq'].reshape(Nx_, Ny_, order='F')
+    z2d   = z.reshape(Nx_, Ny_, order='F')
 
-    XX = np.linspace(dx/2, Lx - dx/2, Nx)
-    YY = np.linspace(dy/2, Ly - dy/2, Ny)
+    XX = np.linspace(dx_/2, Lx_ - dx_/2, Nx_)
+    YY = np.linspace(dy_/2, Ly_ - dy_/2, Ny_)
 
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7))
-    panels = [
-        (z2d,   r'Overall CO$_2$ mol fraction $z$',                        'viridis', None),
-        (S_g,   r'CO$_2$-rich saturation $S_g$',                           'plasma',  (0, 1)),
-        (mc,    r'Dissolved CO$_2$ $m_c$ [mol kg$^{-1}$]',                 'Blues',   None),
-        (ms_aq, r'Equilibrium brine $m_s^\mathrm{aq}$ [mol kg$^{-1}$]',    'Oranges', None),
-    ]
-    for ax, (data, title, cmap, vlim) in zip(axes.flat, panels):
+    if P_field is not None:
+        ncols, nrows = 3, 2
+        figsize = (12, 7)
+        panels = [
+            (z2d,                           r'Overall CO$_2$ mol fraction $z$',              'viridis', None),
+            (S_g,                           r'CO$_2$-rich saturation $S_g$',                 'plasma',  (0, 1)),
+            (P_field.reshape(Nx_,Ny_,order='F')/1e5,
+                                            r'Pressure [bar]',                               'RdYlGn', None),
+            (mc,                            r'Dissolved CO$_2$ $m_c$ [mol kg$^{-1}$]',       'Blues',   None),
+            (ms_aq,                         r'Brine $m_s^\mathrm{aq}$ [mol kg$^{-1}$]',      'Oranges', None),
+        ]
+        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+        ax_list = axes.flat
+    else:
+        panels = [
+            (z2d,   r'Overall CO$_2$ mol fraction $z$',                     'viridis', None),
+            (S_g,   r'CO$_2$-rich saturation $S_g$',                        'plasma',  (0, 1)),
+            (mc,    r'Dissolved CO$_2$ $m_c$ [mol kg$^{-1}$]',              'Blues',   None),
+            (ms_aq, r'Brine $m_s^\mathrm{aq}$ [mol kg$^{-1}$]',            'Oranges', None),
+        ]
+        fig, axes = plt.subplots(2, 2, figsize=(9, 7))
+        ax_list = axes.flat
+
+    for ax, (data, title, cmap, vlim) in zip(ax_list, panels):
         kw = dict(vmin=vlim[0], vmax=vlim[1]) if vlim else {}
         im = ax.pcolormesh(XX, YY, data.T, cmap=cmap, shading='auto', **kw)
         ax.set_title(title, fontsize=9)
@@ -563,15 +624,21 @@ def plot_snapshot(z: np.ndarray, fr: dict, T: float, P: float,
         ax.tick_params(labelsize=7)
         plt.colorbar(im, ax=ax, pad=0.02)
 
-    xc, yc = XX[inj_i], YY[inj_j]
-    for ax in axes.flat:
+    inj_i_, inj_j_ = inj_ij
+    xc, yc = XX[inj_i_], YY[inj_j_]
+    for ax in ax_list:
         ax.plot(xc, yc, '*', color='white', ms=10, zorder=5)
-        for ci, cj in [(0,0),(Nx-1,0),(0,Ny-1),(Nx-1,Ny-1)]:
+        for ci, cj in prod_ijs:
             ax.plot(XX[ci], YY[cj], '^', color='black', ms=7, zorder=5)
 
+    # Hide any unused axes
+    for ax in list(ax_list):
+        pass   # already consumed by zip
+
+    fig.suptitle(f't = {t_yr:.2f} yr', fontsize=10, y=1.01)
     plt.tight_layout()
     fname = f'{outdir}/snap_{step:03d}.png'
-    plt.savefig(fname, dpi=120)
+    plt.savefig(fname, dpi=120, bbox_inches='tight')
     plt.close()
     return fname
 
@@ -579,109 +646,227 @@ def plot_snapshot(z: np.ndarray, fr: dict, T: float, P: float,
 # =============================================================================
 # 11.  MAIN SIMULATION LOOP
 # =============================================================================
-def main(pressure_solver: str = 'tpfa', flash_model: str = 'ecpa'):
+def main(
+    pressure_solver : str   = 'tpfa',
+    flash_model     : str   = 'ecpa',
+    *,
+    # Grid
+    Nx_             : int   = 50,
+    Ny_             : int   = 50,
+    Lx_             : float = 100.0,
+    Ly_             : float = 100.0,
+    Lz_             : float = 10.0,
+    # Rock
+    K_mean_mD       : float = 100.0,
+    K_sigma_ln      : float = 0.0,     # 0 = uniform; >0 = log-normal heterogeneity
+    K_seed          : int   = 42,
+    # Fluid
+    T_K_            : float = 350.0,
+    P_ref_bar_      : float = 200.0,
+    ms0_            : float = 1.0,     # mol/kg NaCl (eCPA); ignored for CPA
+    phi_            : float = 0.20,
+    mu_co2_         : float = 5.0e-5,  # Pa·s
+    mu_brine_       : float = 4.5e-4,  # Pa·s
+    # Wells
+    inj_pvi_yr      : float = 0.10,    # injected PVI per year
+    bhp_prod_bar    : float | None = None,  # BHP of producers [bar]; None = rate-ctrl
+    r_w_m           : float = 0.1,     # wellbore radius [m]
+    # Time
+    t_max_yr_       : float = 3.0,
+    n_steps_        : int   = 100,
+    snap_frac       : int   = 8,       # save snapshot every n_steps/snap_frac steps
+    # Output
+    outdir          : str | None = None,
+    n_workers       : int | None = None,  # None = all available CPUs
+) -> dict:
     """
-    Run the IMPES CO₂-brine simulation.
+    Run the IMPES CO₂-brine simulation.  All physical parameters are keyword args
+    so that demo scripts can call main() with custom configurations.
 
-    Parameters
-    ----------
-    pressure_solver : 'tpfa' | 'mfe'
-    flash_model     : 'ecpa' | 'cpa'
+    Returns a result dict containing timing data and final state arrays.
     """
     pressure_solver = pressure_solver.lower()
     flash_model     = flash_model.lower()
-    assert pressure_solver in ('tpfa', 'mfe'),  f"Unknown solver: {pressure_solver}"
-    assert flash_model     in ('ecpa', 'cpa'),  f"Unknown model: {flash_model}"
+    assert pressure_solver in ('tpfa', 'mfe'), f"Unknown solver: {pressure_solver}"
+    assert flash_model     in ('ecpa', 'cpa'), f"Unknown model:  {flash_model}"
 
-    label   = f"{pressure_solver.upper()} + {flash_model.upper()}"
-    outdir  = f'figures/simulator/{pressure_solver}_{flash_model}'
+    tag    = f"{pressure_solver}_{flash_model}"
+    label  = f"{pressure_solver.upper()} + {flash_model.upper()}"
+    if outdir is None:
+        outdir = f'figures/simulator/{tag}'
     os.makedirs(outdir, exist_ok=True)
 
-    print(f"=== CO₂-brine simulator  [{label}] ===\n")
-    print("Loading eCPA parameters and solution table …")
+    # ── Grid ─────────────────────────────────────────────────────────────────
+    Nx, Ny, Nz_loc = Nx_, Ny_, 1
+    N_loc  = Nx * Ny
+    dx_    = Lx_ / Nx;  dy_ = Ly_ / Ny;  dz_ = Lz_
+    gV     = dx_ * dy_ * dz_
+    gPV    = phi_ * gV
+    PVtot_ = N_loc * gPV
+
+    # ── Permeability ─────────────────────────────────────────────────────────
+    mD_       = 9.869e-16
+    rng_      = np.random.default_rng(K_seed)
+    if K_sigma_ln > 0:
+        K_flat = K_mean_mD * mD_ * np.exp(
+            K_sigma_ln * rng_.standard_normal((Nx, Ny)) -
+            0.5 * K_sigma_ln**2)
+    else:
+        K_flat = K_mean_mD * mD_ * np.ones((Nx, Ny))
+    K_loc = np.ones((3, Nx, Ny, 1))
+    K_loc[0, :, :, 0] = K_flat
+    K_loc[1, :, :, 0] = K_flat
+    K_loc[2, :, :, 0] = K_mean_mD * mD_
+
+    # ── Fluid ─────────────────────────────────────────────────────────────────
+    mu_g = mu_co2_;  mu_w = mu_brine_
+
+    def _relperm(S_g_):
+        Se_g = ((S_g_ - Sgr) / (1 - Swc - Sgr)).clip(0, 1)
+        Se_w = ((1 - S_g_ - Swc) / (1 - Swc - Sgr)).clip(0, 1)
+        return krg0 * Se_g**ng, krw0 * Se_w**nw
+
+    # ── Wells ─────────────────────────────────────────────────────────────────
+    Q_m3s_   = inj_pvi_yr * PVtot_ / year_s
+    inj_i_   = Nx // 2;  inj_j_ = Ny // 2
+    prod_ijs_ = [(0, 0), (Nx-1, 0), (0, Ny-1), (Nx-1, Ny-1)]
+
+    # Flat Fortran-order indices
+    inj_k_  = inj_i_ + inj_j_ * Nx
+    prod_ks_ = [ci + cj * Nx for (ci, cj) in prod_ijs_]
+
+    # Q vector: injector only (BHP producers are handled separately)
+    Q_loc = np.zeros((N_loc, 1))
+    Q_loc[inj_k_, 0] = Q_m3s_
+    if bhp_prod_bar is None:
+        # Rate-controlled 5-spot: split evenly among producers
+        for k in prod_ks_:
+            Q_loc[k, 0] = -Q_m3s_ / 4.0
+
+    # BHP well specification
+    bhp_wells_spec = None
+    if bhp_prod_bar is not None:
+        P_BHP_Pa = bhp_prod_bar * 1e5
+        r_e      = 0.14 * np.sqrt(dx_**2 + dy_**2)
+        ln_re_rw = np.log(r_e / r_w_m)
+        bhp_wells_spec = []
+        for (ci, cj) in prod_ijs_:
+            k      = ci + cj * Nx
+            K_geom = np.sqrt(K_loc[0, ci, cj, 0] * K_loc[1, ci, cj, 0])
+            WI_geom = 2 * np.pi * K_geom * dz_ / ln_re_rw  # [m³]
+            bhp_wells_spec.append((k, WI_geom, P_BHP_Pa))
+
+    # ── EOS / flash setup ─────────────────────────────────────────────────────
+    print(f"\n=== CO₂-brine simulator  [{label}] ===")
+    print(f"    Grid: {Nx}×{Ny}  K_sigma_ln={K_sigma_ln:.1f}  "
+          f"T={T_K_}K  P={P_ref_bar_}bar  ms={ms0_ if flash_model=='ecpa' else 0} mol/kg")
+    print(f"    Rate: {inj_pvi_yr:.0%} PVI/yr  "
+          + (f"BHP producers: {bhp_prod_bar} bar" if bhp_prod_bar else "rate-controlled producers")
+          + f"  t_max={t_max_yr_}yr  n_steps={n_steps_}\n")
+
+    print("  Loading eCPA parameters and solution table …", end=' ', flush=True)
     params    = make_params()
     grid_data = load_solution_table()
     guess_fn  = make_solution_guess_fn(grid_data)
-    print("  done.\n")
+    print("done.")
 
-    # ── Set module-level globals for serial (CFL) and worker flash ───────────
     global _W_params, _W_guess_fn, _W_flash_model
     _W_params      = params
     _W_guess_fn    = guess_fn
     _W_flash_model = flash_model
 
-    ms_flash = ms0 if flash_model == 'ecpa' else 0.0
+    ms_flash = ms0_ if flash_model == 'ecpa' else 0.0
 
     def _serial_flash(T, P, z_co2, ms):
         if flash_model == 'ecpa':
             return _flash_one_ecpa(float(T), float(P), float(z_co2), float(ms))
         return _flash_one_cpa(float(T), float(P), float(z_co2), float(ms))
 
-    print("Estimating max dF_z/dz for CFL …", end=' ', flush=True)
-    maxdFdz = estimate_maxdFdz(_serial_flash, T_K, P_ref, ms_flash)
-    print(f"max dF/dz = {maxdFdz:.2f}\n")
+    print("  Estimating max dF_z/dz for CFL …", end=' ', flush=True)
+    maxdFdz = estimate_maxdFdz(_serial_flash, T_K_, P_ref_bar_, ms_flash)
+    print(f"max dF/dz = {maxdFdz:.2f}")
 
-    # ── Spawn parallel pool ───────────────────────────────────────────────────
+    # ── Spawn parallel flash pool ─────────────────────────────────────────────
     ctx  = get_context('spawn')
-    pool = ctx.Pool(initializer=_worker_init,
+    pool = ctx.Pool(processes=n_workers,
+                    initializer=_worker_init,
                     initargs=(params, grid_data, flash_model))
 
-    # ── Initial conditions ────────────────────────────────────────────────────
-    z       = z_initial * np.ones(N)
-    inj_src = Q.ravel().clip(min=0) * z_inject
-    dt_big  = t_max_yr * year_s / n_steps
+    # ── Initial conditions ─────────────────────────────────────────────────────
+    z_arr   = z_initial * np.ones(N_loc)
+    inj_src = Q_loc.ravel().clip(min=0) * z_inject
+    dt_big  = t_max_yr_ * year_s / n_steps_
 
     timing     = []
-    snap_every = max(1, n_steps // 8)
+    snap_every = max(1, n_steps_ // snap_frac)
 
-    print(f"Grid: {Nx}×{Ny} = {N} cells  |  {t_max_yr:.0f} yr  |  "
-          f"{n_steps} steps  |  dt = {dt_big/year_s:.3f} yr/step")
-    print(f"Pressure solver: {pressure_solver.upper()}  |  "
-          f"Flash model: {flash_model.upper()}\n")
-    print(f"{'Step':>5}  {'t [yr]':>7}  {'N_sub':>5}  {'N_flash':>7}  "
+    print(f"\n{'Step':>5}  {'t [yr]':>7}  {'N_sub':>5}  {'N_flash':>7}  "
           f"{'t_flash [s]':>11}  {'t_step [s]':>10}  {'flash/s':>8}")
     print("─" * 66)
 
     t0_total = time.perf_counter()
+    P_field  = None    # updated each step
 
-    for step in range(1, n_steps + 1):
+    for step in range(1, n_steps_ + 1):
         t_yr = step * dt_big / year_s
         t0   = time.perf_counter()
 
         # 1. Flash all cells
-        fr      = run_flash_parallel(z, ms_flash, T_K, P_ref, pool)
+        fr      = run_flash_parallel(z_arr, ms_flash, T_K_, P_ref_bar_, pool)
         t_flash = time.perf_counter() - t0
 
-        # 2. Saturations and fractional flow
-        S_g       = beta_to_Sg(fr, T_K, P_ref)
-        Fz, lam_t = compute_Fz(S_g, fr['x4w'], fr['x4c'])
+        # 2. Saturations, mobility, fractional flow
+        S_g       = beta_to_Sg(fr, T_K_, P_ref_bar_)
+        kr_g, kr_w = _relperm(S_g)
+        lam_g = kr_g / mu_g;  lam_w = kr_w / mu_w
+        lam_t = lam_g + lam_w + 1e-40
+        Fz    = (lam_g * fr['x4c'] + lam_w * fr['x4w']) / lam_t
 
-        # 3. Effective permeability → pressure solve
-        lam_3d = np.stack([lam_t.reshape(Nx, Ny, Nz, order='F')] * 3, axis=0)
-        Keff   = K * lam_3d
+        # 3. Effective permeability (mobility × absolute perm)
+        lam_3d = np.stack([lam_t.reshape(Nx, Ny, 1, order='F')] * 3, axis=0)
+        Keff   = K_loc * lam_3d
 
+        # BHP well transmissibilities (update with current mobility at well cell)
+        bhp_step = None
+        if bhp_wells_spec is not None:
+            bhp_step = [(k, WI_g * lam_t[k], P_bhp)
+                        for (k, WI_g, P_bhp) in bhp_wells_spec]
+
+        # 4. Pressure solve
         if pressure_solver == 'mfe':
-            _, Vx, Vy, Vz = MFE(Lx, Ly, Lz, Nx, Ny, Nz, Q, Keff)
+            P_sol, Vx, Vy, Vz, Q_bhp = MFE(
+                Lx_, Ly_, Lz_, Nx, Ny, 1, Q_loc, Keff, bhp_wells=bhp_step)
         else:
-            _, Vx, Vy, Vz = TPFA(Lx, Ly, Lz, Nx, Ny, Nz, Q, Keff)
+            P_sol, Vx, Vy, Vz, Q_bhp = TPFA(
+                Lx_, Ly_, Lz_, Nx, Ny, 1, Q_loc, Keff, bhp_wells=bhp_step)
 
-        # 4. CFL-limited transport sub-steps
-        UPW, CFL = upwindingmatrix(Nx, Ny, Nz, Vx, Vy, Vz, Q, maxdFdz)
+        P_field = P_sol.ravel(order='F')
+
+        # 5. Actual source/sink vector for transport (injectors + BHP producers)
+        Q_actual = Q_loc.ravel().copy() + Q_bhp
+
+        # 6. CFL-limited transport sub-steps
+        UPW, CFL = upwindingmatrix(Nx, Ny, 1, Vx, Vy, Vz,
+                                   Q_actual.reshape(N_loc, 1), maxdFdz)
         Nt  = int(np.ceil(dt_big / CFL))
-        dtx = (dt_big / Nt) / gridPV
+        dtx = (dt_big / Nt) / gPV
         for _ in range(Nt):
-            z = z + (UPW.dot(Fz) + inj_src) * dtx
-        z = z.clip(0, 1)
+            z_arr = z_arr + (UPW.dot(Fz) + inj_src) * dtx
+        z_arr = z_arr.clip(0, 1)
 
         t_step  = time.perf_counter() - t0
         n_flash = fr['n_flash']
         timing.append((step, t_yr, t_flash, t_step, n_flash))
         rate = f"{n_flash/t_flash:.0f}" if t_flash > 1e-4 and n_flash > 0 else "   —"
         print(f"{step:5d}  {t_yr:7.2f}  {Nt:5d}  {n_flash:7d}  "
-              f"{t_flash:11.2f}  {t_step:10.2f}  {rate:>8}")
+              f"{t_flash:11.2f}  {t_step:10.2f}  {rate:>8}", flush=True)
 
-        if step % snap_every == 0 or step == n_steps:
-            fname = plot_snapshot(z, fr, T_K, P_ref, step, t_yr, outdir=outdir)
+        if step % snap_every == 0 or step == n_steps_:
+            fname = plot_snapshot(
+                z_arr, fr, T_K_, P_ref_bar_, step, t_yr,
+                Nx, Ny, Lx_, Ly_,
+                inj_ij=(inj_i_, inj_j_), prod_ijs=prod_ijs_,
+                P_field=P_field, outdir=outdir)
             print(f"          → saved {fname}")
 
     pool.close()
@@ -703,27 +888,33 @@ def main(pressure_solver: str = 'tpfa', flash_model: str = 'ecpa'):
     if len(nf_pos):
         print(f"  Flash throughput        : {(nf_pos/tf_pos).mean():.0f} calls/s")
 
-    # ── Performance figure ────────────────────────────────────────────────────
+    # ── Performance figure ─────────────────────────────────────────────────────
     fig, axes = plt.subplots(2, 1, figsize=(6, 5), sharex=True)
     axes[0].plot(t_yrs, t_fl, lw=1.5, label='Flash (two-phase cells)')
     axes[0].plot(t_yrs, t_st, lw=1.5, ls='--', label='Total step')
-    axes[0].set_ylabel('Wall time [s]')
-    axes[0].set_title(label, fontsize=10)
-    axes[0].legend(fontsize=9)
-    axes[0].grid(True, alpha=0.3)
+    axes[0].set_ylabel('Wall time [s]');  axes[0].set_title(label, fontsize=10)
+    axes[0].legend(fontsize=9);  axes[0].grid(True, alpha=0.3)
     axes[1].bar(t_yrs, n_fls, width=(t_yrs[1]-t_yrs[0])*0.8, alpha=0.7)
-    axes[1].axhline(N, color='grey', ls=':', lw=1, label=f'Total cells ({N})')
-    axes[1].set_xlabel('Simulation time [yr]')
-    axes[1].set_ylabel('Cells flashed')
-    axes[1].legend(fontsize=9)
-    axes[1].grid(True, alpha=0.3)
+    axes[1].axhline(N_loc, color='grey', ls=':', lw=1, label=f'Total cells ({N_loc})')
+    axes[1].set_xlabel('Simulation time [yr]');  axes[1].set_ylabel('Cells flashed')
+    axes[1].legend(fontsize=9);  axes[1].grid(True, alpha=0.3)
     plt.tight_layout()
     perf_fig = f'{outdir}/performance.png'
-    plt.savefig(perf_fig, dpi=150)
-    plt.close()
+    plt.savefig(perf_fig, dpi=150);  plt.close()
     print(f"  Saved {perf_fig}")
 
-    return dict(timing=timing, wall=wall)
+    # ── Save final state ──────────────────────────────────────────────────────
+    np.savez(f'{outdir}/final_state.npz',
+             z=z_arr, P=P_field,
+             beta=fr['beta'], x4w=fr['x4w'], x4c=fr['x4c'],
+             ms_aq=fr['ms_aq'], Z_aq=fr['Z_aq'], Z_c=fr['Z_c'])
+    print(f"  Saved {outdir}/final_state.npz")
+
+    return dict(timing=timing, wall=wall,
+                z=z_arr, fr=fr, P_field=P_field,
+                outdir=outdir, label=label,
+                Nx=Nx, Ny=Ny, Lx=Lx_, Ly=Ly_,
+                T_K=T_K_, P_ref_bar=P_ref_bar_, ms0=ms0_)
 
 
 if __name__ == '__main__':
