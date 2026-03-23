@@ -187,22 +187,71 @@ def make_comparison_figure(result_a: dict, result_b: dict,
     print(f"Saved comparison figure → {outpath}")
 
 
-def load_result(outdir: str) -> dict | None:
+def make_trapping_figure(result_a: dict, result_b: dict,
+                          outpath: str = 'figures/demo/trapping_comparison.png'):
+    """
+    Plot solubility trapping fraction vs. time for both cases on one panel.
+    Solubility trapping  = fraction of in-situ CO₂ dissolved in brine.
+    Structural trapping  = fraction in the free CO₂-rich phase.
+    """
+    os.makedirs(os.path.dirname(outpath) or '.', exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    styles = [
+        dict(color='steelblue',  label=r'CPA  ($m_s = 0$, salt-free)'),
+        dict(color='orangered',  label=r'eCPA ($m_s = 4$ mol kg$^{-1}$ NaCl)'),
+    ]
+
+    for res, sty in zip([result_a, result_b], styles):
+        t       = res.get('trap_t',     np.array([]))
+        f_diss  = res.get('trap_fdiss', np.array([]))
+        f_free  = res.get('trap_ffree', np.array([]))
+        if len(t) == 0:
+            continue
+        ax.plot(t, f_diss * 100, lw=2.0, ls='-',  **sty)
+        ax.plot(t, f_free * 100, lw=2.0, ls='--', color=sty['color'],
+                label='_nolegend_')
+
+    # Dummy lines for mechanism legend
+    ax.plot([], [], 'k-',  lw=2, label='Solubility trapping (dissolved)')
+    ax.plot([], [], 'k--', lw=2, label='Structural trapping (free CO₂ phase)')
+
+    ax.set_xlabel('Simulation time [yr]', fontsize=11)
+    ax.set_ylabel('Fraction of in-situ CO₂  [%]', fontsize=11)
+    ax.set_xlim(left=0)
+    ax.set_ylim(0, 100)
+    ax.legend(fontsize=9, loc='center right')
+    ax.grid(True, alpha=0.3)
+    ax.set_title(
+        r'CO$_2$ trapping efficiency: MFE, $T=350\,$K, $P=200\,$bar, '
+        r'$\dot{q}=20\%$ PVI/yr',
+        fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(outpath, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Saved trapping figure → {outpath}")
+
+
+def load_result(outdir: str, ms0: float | None = None) -> dict | None:
     """Load saved final state from a previous run."""
     npz_path = f'{outdir}/final_state.npz'
     if not os.path.exists(npz_path):
         return None
     npz = np.load(npz_path)
-    # Reconstruct minimal result dict from saved arrays
     fr = dict(beta=npz['beta'], x4w=npz['x4w'], x4c=npz['x4c'],
               ms_aq=npz['ms_aq'], Z_aq=npz['Z_aq'], Z_c=npz['Z_c'])
+    trap_t     = npz['trap_t']     if 'trap_t'     in npz else np.array([])
+    trap_fdiss = npz['trap_fdiss'] if 'trap_fdiss' in npz else np.array([])
+    trap_ffree = npz['trap_ffree'] if 'trap_ffree' in npz else np.array([])
     return dict(z=npz['z'], P_field=npz['P'],
                 fr=fr, outdir=outdir,
-                # These need to match COMMON parameters:
                 T_K=COMMON['T_K_'], P_ref_bar=COMMON['P_ref_bar_'],
                 Nx=COMMON['Nx_'], Ny=COMMON['Ny_'],
                 Lx=COMMON['Lx_'], Ly=COMMON['Ly_'],
-                ms0=CASE_A['ms0_'])
+                ms0=ms0 if ms0 is not None else CASE_A['ms0_'],
+                trap_t=trap_t, trap_fdiss=trap_fdiss, trap_ffree=trap_ffree)
 
 
 # =============================================================================
@@ -228,17 +277,15 @@ if __name__ == '__main__':
         result_b = run_sim(**CASE_B)
 
     if mode == 'figures':
-        # Load from saved state
-        result_a = load_result(CASE_A['outdir'])
-        result_b = load_result(CASE_B['outdir'])
+        result_a = load_result(CASE_A['outdir'], ms0=CASE_A['ms0_'])
+        result_b = load_result(CASE_B['outdir'], ms0=CASE_B['ms0_'])
         if result_a is None or result_b is None:
             print("ERROR: final_state.npz not found in one or both output dirs.")
             print("  Run simulations first:  python _run_demo_simulations.py")
             sys.exit(1)
-        # Patch ms0 for Case B
-        result_b['ms0'] = CASE_B['ms0_']
 
     if result_a is not None and result_b is not None:
         make_comparison_figure(result_a, result_b)
+        make_trapping_figure(result_a, result_b)
     elif result_a is not None or result_b is not None:
         print("(Only one case run — comparison figure requires both.)")
