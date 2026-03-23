@@ -119,7 +119,7 @@ def make_comparison_figure(result_a: dict, result_b: dict,
     fig = plt.figure(figsize=(12, 10))
     gs  = GridSpec(len(rows), 2, figure=fig,
                    hspace=0.35, wspace=0.08,
-                   left=0.06, right=0.94, top=0.93, bottom=0.06)
+                   left=0.06, right=0.94, top=0.97, bottom=0.06)
 
     col_labels = [
         r'CPA (salt-free,  $m_s = 0$)',
@@ -175,13 +175,9 @@ def make_comparison_figure(result_a: dict, result_b: dict,
             if row == 0:
                 ax.set_title(col_labels[col], fontsize=10, pad=4)
             if col == 0:
-                ax.annotate(row_label, xy=(-0.22, 0.5), xycoords='axes fraction',
+                ax.annotate(row_label, xy=(-0.14, 0.5), xycoords='axes fraction',
                             fontsize=8, ha='right', va='center', rotation=90)
 
-    fig.suptitle(
-        r'CO$_2$ injection: 5-spot, MFE, $T=350\,$K, $P_\mathrm{inj}=200\,$bar, '
-        r'$\dot{q}=20\%$ PVI/yr, $t=5\,$yr',
-        fontsize=10)
     plt.savefig(outpath, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Saved comparison figure → {outpath}")
@@ -198,24 +194,21 @@ def make_trapping_figure(result_a: dict, result_b: dict,
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
 
-    styles = [
-        dict(color='steelblue',  label=r'CPA  ($m_s = 0$, salt-free)'),
-        dict(color='orangered',  label=r'eCPA ($m_s = 4$ mol kg$^{-1}$ NaCl)'),
+    cases = [
+        (result_a, 'steelblue', r'CPA  ($m_s = 0$, salt-free)'),
+        (result_b, 'orangered', r'eCPA ($m_s = 4$ mol kg$^{-1}$ NaCl)'),
     ]
 
-    for res, sty in zip([result_a, result_b], styles):
-        t       = res.get('trap_t',     np.array([]))
-        f_diss  = res.get('trap_fdiss', np.array([]))
-        f_free  = res.get('trap_ffree', np.array([]))
+    for res, color, case_label in cases:
+        t      = res.get('trap_t',     np.array([]))
+        f_diss = res.get('trap_fdiss', np.array([]))
+        f_free = res.get('trap_ffree', np.array([]))
         if len(t) == 0:
             continue
-        ax.plot(t, f_diss * 100, lw=2.0, ls='-',  **sty)
-        ax.plot(t, f_free * 100, lw=2.0, ls='--', color=sty['color'],
-                label='_nolegend_')
-
-    # Dummy lines for mechanism legend
-    ax.plot([], [], 'k-',  lw=2, label='Solubility trapping (dissolved)')
-    ax.plot([], [], 'k--', lw=2, label='Structural trapping (free CO₂ phase)')
+        ax.plot(t, f_diss * 100, lw=2.0, ls='-',  color=color,
+                label=f'{case_label} — solubility trapping')
+        ax.plot(t, f_free * 100, lw=2.0, ls='--', color=color,
+                label=f'{case_label} — structural trapping')
 
     ax.set_xlabel('Simulation time [yr]', fontsize=11)
     ax.set_ylabel('Fraction of in-situ CO₂  [%]', fontsize=11)
@@ -223,10 +216,6 @@ def make_trapping_figure(result_a: dict, result_b: dict,
     ax.set_ylim(0, 100)
     ax.legend(fontsize=9, loc='center right')
     ax.grid(True, alpha=0.3)
-    ax.set_title(
-        r'CO$_2$ trapping efficiency: MFE, $T=350\,$K, $P=200\,$bar, '
-        r'$\dot{q}=20\%$ PVI/yr',
-        fontsize=10)
 
     plt.tight_layout()
     plt.savefig(outpath, dpi=150, bbox_inches='tight')
