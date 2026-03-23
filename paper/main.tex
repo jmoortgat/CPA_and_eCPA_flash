@@ -1498,7 +1498,7 @@ Convergence is robust across the full validation range.
 To demonstrate the applicability of the flash algorithms developed in this work within
 a reservoir simulation context, we implemented an isothermal IMPES
 (implicit-pressure, explicit-composition) compositional simulator for CO$_2$ injection
-into a 2D aquifer.
+into heterogenous 3D saline aquifers and geothermal formations.
 The primary goal is to stress-test the robustness and efficiency of the stability and
 flash routines under the repetitive, varying-composition calls of a time-stepping loop,
 not to produce physically predictive reservoir simulations.
@@ -1511,14 +1511,13 @@ a two-point flux approximation (TPFA, \citealt{Aavatsmark2003}) or a lowest-orde
 mixed finite element (MFE, RT$_0$) scheme \citep{chaventjaffre}.
 Both were implemented and tested; results shown here use MFE, which avoids the
 pronounced grid-orientation artefacts of TPFA on Cartesian grids while remaining
-computationally inexpensive.
+computationally inexpensive \citep{moortgat2011compositional,moortgat2013higher,moortgat2016mixed}.
 The solved pressure field yields Darcy velocities that drive explicit first-order upwind
 advection of the overall CO$_2$ mole fraction $z$.
 The transport sub-step size is constrained by a CFL condition based on the maximum
 slope of the molar fractional flow $\partial F_z / \partial z$, estimated by a
 one-dimensional scan at startup.
-Production wells are controlled by a fixed bottom-hole pressure (BHP) via standard
-Peaceman well indices; the injector delivers a fixed volumetric rate.
+Production wells are controlled by a fixed bottom-hole pressure (BHP); the injector delivers a fixed volumetric rate.
 
 At each time step, the full Michelsen stability test followed by the two-phase flash
 is called at every grid cell, using the cell pressure from the previous time step
@@ -1526,8 +1525,6 @@ is called at every grid cell, using the cell pressure from the previous time ste
 For the eCPA case ($m_s > 0$) the warm-started K-value flash with hierarchical stability
 fallback is used (Section~\ref{sec:fast_flash}); for the salt-free case ($m_s = 0$) the
 CPA warm-started flash is used.
-Two-phase cells with $z < z_\mathrm{lo}$ or $z > z_\mathrm{hi}$ are treated as trivially
-single-phase and bypass the flash entirely.
 NaCl is non-volatile; the equilibrium aqueous molality $m_s^\mathrm{aq}$ returned by the
 flash reflects local salting-out and is used directly in the saturation calculation.
 
@@ -1576,21 +1573,7 @@ Given that CO$_2$ solubility in water is already low---on the order of 1--2\,mol
 under typical storage conditions---the further reduction from salting-out has negligible
 impact on the high-rate displacement dynamics on these time scales.
 
-The dissolved CO$_2$ maps (middle row) tell a different story.
-Inside the plume the aqueous phase is everywhere CO$_2$-saturated at the local
-equilibrium value: $m_c \approx 1.25$\,mol\,kg$^{-1}$ for the salt-free case
-and only $m_c \approx 0.63$\,mol\,kg$^{-1}$ at $m_s = 4$\,mol\,kg$^{-1}$---a reduction
-of approximately a factor of two, consistent with the salting-out effect seen in the
-validation data (Section~\ref{sec:co2nacl}).
-The white region around the central injector marks cells where the brine has been fully
-expelled into the CO$_2$-rich phase (complete drying out, $S_g \to 1$), leaving no
-aqueous phase to dissolve CO$_2$ into.
-Correctly capturing this drying-out regime requires a robust stability test: a
-simplified flash that merely solves the two-phase equilibrium without first checking
-single-phase stability would fail or produce unphysical compositions for these cells.
-No flash failures were recorded in either simulation across all 300 time steps and
-all 2500 grid cells, confirming the reliability of the hierarchical stability and flash
-approach.
+
 
 \begin{figure}[H]
   \centering
@@ -1616,12 +1599,27 @@ approach.
   \label{fig:sim_comparison}
 \end{figure}
 
+The dissolved CO$_2$ maps (middle row) tell a different story.
+Inside the plume the aqueous phase is everywhere CO$_2$-saturated at the local
+equilibrium value: $m_c \approx 1.25$\,mol\,kg$^{-1}$ for the salt-free case
+and only $m_c \approx 0.63$\,mol\,kg$^{-1}$ at $m_s = 4$\,mol\,kg$^{-1}$---a reduction
+of approximately a factor of two, consistent with the salting-out effect seen in the
+validation data (Section~\ref{sec:co2nacl}).
+The white region around the central injector marks cells where the brine has been fully
+expelled into the CO$_2$-rich phase (complete drying out, $S_g \to 1$), leaving no
+aqueous phase to dissolve CO$_2$ into.
+Correctly capturing this drying-out regime requires a robust stability and flash model that fully captures the mutual solubilities of CO$_2$ and H$_2$O. 
+
+No flash failures were recorded in either simulation across all 300 time steps and
+all 2500 grid cells, confirming the reliability of the hierarchical stability and flash
+approach.
+
 While the saturation fields are similar, the implications for long-term CO$_2$ storage
 are markedly different.
 Solubility trapping---the dissolution of CO$_2$ into the formation brine---is a key
 mechanism for storage permanence, because dissolved CO$_2$ cannot escape as a
 buoyant supercritical phase.
-Figure~\ref{fig:sim_trapping} shows the fraction of the in-situ CO$_2$ inventory that
+Figure~S\ref{fig:sim_trapping} (SI) shows the fraction of the in-situ CO$_2$ inventory that
 is dissolved in brine (solubility trapping, solid lines) versus residing in the
 CO$_2$-rich phase (structural trapping, dashed lines) as a function of time for both
 cases.
@@ -1636,21 +1634,6 @@ effect.
 This demonstrates that brine salinity has a quantitatively significant impact on
 long-term storage permanence even when the short-term displacement dynamics appear
 unaffected.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.80\textwidth]{../figures/demo/trapping_comparison.png}
-  \caption{Fraction of total in-situ CO$_2$ inventory undergoing solubility trapping
-           (dissolved in the aqueous phase, solid lines) versus structural trapping
-           (residing in the CO$_2$-rich phase, dashed lines) as a function of time.
-           Blue: salt-free brine (CPA, $m_s = 0$);
-           red: saline brine (eCPA, $m_s = 4$\,mol\,kg$^{-1}$ NaCl).
-           The persistent factor-of-two gap in solubility trapping between the two cases
-           reflects the reduction in equilibrium CO$_2$ solubility due to the
-           salting-out effect, which has negligible impact on short-term displacement
-           dynamics but is critical for long-term storage permanence.}
-  \label{fig:sim_trapping}
-\end{figure}
 
 \subsection{Flash performance in the simulator}
 \label{sec:sim_perf}
@@ -2074,6 +2057,21 @@ to machine precision).
     \bottomrule
   \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.80\textwidth]{../figures/demo/trapping_comparison.png}
+  \caption{Fraction of total in-situ CO$_2$ inventory undergoing solubility trapping
+           (dissolved in the aqueous phase, solid lines) versus structural trapping
+           (residing in the CO$_2$-rich phase, dashed lines) as a function of time.
+           Blue: salt-free brine (CPA, $m_s = 0$);
+           red: saline brine (eCPA, $m_s = 4$\,mol\,kg$^{-1}$ NaCl).
+           The persistent factor-of-two gap in solubility trapping between the two cases
+           reflects the reduction in equilibrium CO$_2$ solubility due to the
+           salting-out effect, which has negligible impact on short-term displacement
+           dynamics but is critical for long-term storage permanence.}
+  \label{fig:sim_trapping}
+\end{figure}
 
 \section*{Appendix: Additional Validation Figures}
 \label{sec:si}
