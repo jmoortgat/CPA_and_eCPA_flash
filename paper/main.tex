@@ -1646,6 +1646,14 @@ Performance numbers for both simulations are summarized in Table~\ref{tab:sim_pe
 the flash accounts for the dominant fraction of total step cost throughout both runs,
 confirming that the algorithmic efficiency of the warm-started flash directly governs
 simulation throughput.
+Interestingly, the eCPA flash achieves a higher throughput than CPA (14{,}270 vs.\
+8{,}840 calls\,s$^{-1}$), even though the eCPA EoS involves more unknowns and is
+inherently more expensive per iteration.
+While one would expect CPA to be the faster of the two in general, the solution-table
+warm start appears to provide particularly accurate initial guesses for the eCPA system
+at the temperature, pressure, and salinity conditions of these simulations ($T = 77\,^\circ$C,
+$P \approx 150$\,bar, $m_s = 4$\,mol\,kg$^{-1}$), resulting in fewer SSI iterations
+to convergence than for the salt-free CPA case at otherwise identical conditions.
 
 \begin{table}[H]
   \centering
