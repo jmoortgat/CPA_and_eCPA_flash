@@ -1,7 +1,7 @@
 """
 eCPA phase stability analysis — Michelsen tangent-plane distance (TPD).
 
-Generalises the CPA2 stability approach to the eCPA CO₂ + H₂O + NaCl system.
+Generalises the CPA stability approach to the eCPA CO₂ + H₂O + NaCl system.
 
 Public API
 ----------
@@ -49,6 +49,7 @@ Aqueous phase: scipy.fsolve on 3 variables (Zw, epsr, chi1w).
   NOT additional free variables (ELV includes them as explicit self-consistency
   checks only to allow the complex-step Jacobian to propagate through them).
 """
+from __future__ import annotations
 
 import multiprocessing as mp
 import threading
@@ -163,7 +164,7 @@ def _eval_c_residual(vars_, x1c, T, P):
     DELTA   = delta * P_Pa / R / T
 
     # S14 < 0 at T < ~293 K: anti-association makes chi1c denominator go negative.
-    # Mirror CPA2.py's fallback: treat cross-association as zero when S14 < 0.
+    # Mirror CPA.py's fallback: treat cross-association as zero when S14 < 0.
     # chi_CO2 → 1 (unassociated), chi_H2O from H2O self-association only.
     S14_eff = max(S14, 0.0)
 
@@ -212,7 +213,7 @@ def _eval_c_all_with_jac(Zc, chi1c, x1c, T, P):
     dDELTA_dZc = (P_Pa / (R*T)) * E * dg_deta * deta_dZc   # = E*(P/RT)*1.9*g^2*deta_dZc
     dH_dZc     = 1.9 * deta_dZc * g_eta * H_pack
 
-    # S14 < 0 at T < ~293 K: clamp to zero to avoid chi divergence (see CPA2.py).
+    # S14 < 0 at T < ~293 K: clamp to zero to avoid chi divergence (see CPA.py).
     S14_eff = max(S14, 0.0)
 
     # ── chi4c and its derivatives ─────────────────────────────────────────────
@@ -326,7 +327,7 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
     A14 = a14*P_Pa/R**2/T**2
 
     # Effective S14: clamp negative values to zero (T < ~293 K anti-association
-    # makes chi denominators diverge; CPA2.py uses the same fallback to S14=0).
+    # makes chi denominators diverge; CPA.py uses the same fallback to S14=0).
     S14_eff = max(ASij*(T/Tc4)**2 + BSij*(T/Tc4) + CSij, 0.0)
 
     def _lnphi_from_zc_chi(Zc, chi1c):
@@ -1224,7 +1225,7 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
 
 def _wilson_K(T: float, P_bar: float) -> tuple[float, float]:
     """Wilson K-values for H₂O (1) and CO₂ (4): K_i = (Pc_i/P)*exp(5.373*(1+ω_i)*(1-Tc_i/T))."""
-    # Acentric factors (same values as CPA2)
+    # Acentric factors (same values as CPA)
     omega_h2o, omega_co2 = 0.34400, 0.22394
     # Pc in bar (convert from Pa constants)
     Pc1_bar = Pc1 / 1e5   # H₂O
