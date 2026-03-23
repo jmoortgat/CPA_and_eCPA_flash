@@ -5,6 +5,7 @@ The table is a Parquet file consolidating the salt-free CPA_ELV_T###K.dat
 files.  Each row stores (T_K, P_bar, Zw, xw_W, eps_r, Zc, xw_C,
 chiw_W, chiw_C, Ndchi1w_dNw, Ndchi1w_dNc, Vdchi1w_dV).
 """
+from __future__ import annotations
 import re
 from pathlib import Path
 

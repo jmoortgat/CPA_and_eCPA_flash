@@ -40,6 +40,7 @@ Z_aq, Z_c   float: phase compressibilities
 sol         np.ndarray: converged 10-element ELV solution vector
 n_iter_ms   int: number of outer iterations (SSI only)
 """
+from __future__ import annotations
 import time
 import warnings
 
@@ -54,17 +55,17 @@ from .elv import ELV, ELV_jac, USE_COMPLEX_JAC
 
 def _cpa2_phase_check(T: float, P_bar: float, z_co2: float, params) -> str:
     """
-    Quick CPA2 salt-free flash to classify the likely phase state.
+    Quick CPA salt-free flash to classify the likely phase state.
 
     Returns: 'two_phase' | 'single_phase_liquid' | 'single_phase_gas' | 'unknown'
-    CPA2 is salt-free, so the two-phase window only shrinks with salt —
+    CPA is salt-free, so the two-phase window only shrinks with salt —
     this provides a conservative pre-filter for bulk scans.
     """
     try:
-        import CPA2
+        import CPA
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            out = CPA2.flash_co2_h2o_tpz(T=float(T), P_bar=float(P_bar),
+            out = CPA.flash_co2_h2o_tpz(T=float(T), P_bar=float(P_bar),
                                           z_co2=float(z_co2))
         if out["phase"] == "two_phase":
             return "two_phase"
@@ -228,13 +229,13 @@ def flash_co2_h2o_salt_1d(
     if m_tot < 0.0:
         raise ValueError("m_tot must be >= 0.")
     if m_tot == 0.0:
-        raise NotImplementedError("m_tot=0 (salt-free): use CPA2 flash instead.")
+        raise NotImplementedError("m_tot=0 (salt-free): use CPA flash instead.")
 
     if stability_check:
         hint = _cpa2_phase_check(T, P_bar, z_co2, params)
         if hint in ("single_phase_liquid", "single_phase_gas"):
             raise RuntimeError(
-                f"CPA2 pre-check: {hint} at T={T:.1f}K P={P_bar:.2f}bar. "
+                f"CPA pre-check: {hint} at T={T:.1f}K P={P_bar:.2f}bar. "
                 "Two-phase window only shrinks with salt — eCPA flash skipped.")
 
     n_co2_tot = z_co2
@@ -423,13 +424,13 @@ def flash_co2_h2o_salt_ssi(
     if m_tot < 0.0:
         raise ValueError("m_tot must be >= 0.")
     if m_tot == 0.0:
-        raise NotImplementedError("m_tot=0 (salt-free): use CPA2 flash instead.")
+        raise NotImplementedError("m_tot=0 (salt-free): use CPA flash instead.")
 
     if stability_check:
         hint = _cpa2_phase_check(T, P_bar, z_co2, params)
         if hint in ("single_phase_liquid", "single_phase_gas"):
             raise RuntimeError(
-                f"CPA2 pre-check: {hint} at T={T:.1f}K P={P_bar:.2f}bar. "
+                f"CPA pre-check: {hint} at T={T:.1f}K P={P_bar:.2f}bar. "
                 "Two-phase window only shrinks with salt — eCPA flash skipped.")
 
     n_co2_tot = z_co2
@@ -625,7 +626,7 @@ def flash_co2_h2o_salt_fast(
         SSI damping for the warm-started flash.  Default 1.0 (no damping) is
         safe near the solution and gives fastest convergence.
     fallback_guess_table_fn : callable (T, P_bar) → np.ndarray, optional
-        CPA2 guess table for a full cold-start SSI if the fast path fails.
+        CPA guess table for a full cold-start SSI if the fast path fails.
         If None and the fast SSI fails, the RuntimeError propagates.
     force_stability_check : bool
         If True, always run ecpa_stability regardless of the table hint.
