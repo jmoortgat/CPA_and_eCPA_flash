@@ -1651,18 +1651,18 @@ simulation throughput.
   \centering
   \caption{Aggregate flash performance for the 5-year simulations
            ($50\times50$ grid, $T = 77\,^\circ$C, $P \approx 150$\,bar, 300 time steps,
-           48 CPU cores).}
+           48 CPU cores). Total wall time: 91\,s (CPA) and 63\,s (eCPA).}
   \label{tab:sim_perf}
   \begin{tabular}{lrr}
     \toprule
     Metric & CPA ($m_s = 0$) & eCPA ($m_s = 4$) \\
     \midrule
-    Grid cells                          & 2500  & 2500  \\
-    Time steps                          & 300   & 300   \\
-    Mean two-phase cells / step         & ---   & ---   \\
-    Mean flash wall time / step (s)     & ---   & ---   \\
-    Flash fraction of step cost         & ---   & ---   \\
-    Flash throughput (calls\,s$^{-1}$)  & ---   & ---   \\
+    Grid cells                          & 2500       & 2500       \\
+    Time steps                          & 300        & 300        \\
+    Mean two-phase cells / step         & 2219 (max 2479) & 2213 (max 2479) \\
+    Mean flash wall time / step (s)     & 0.247      & 0.151      \\
+    Flash fraction of step cost         & 87\%       & 80\%       \\
+    Flash throughput (calls\,s$^{-1}$)  & 8{,}840    & 14{,}270   \\
     \bottomrule
   \end{tabular}
 \end{table}
