@@ -18,6 +18,7 @@ Usage
     EXP_DF, EXP_TEMPS = load_exp_data()
     df = exp_xc_W(323, EXP_DF)
 """
+from __future__ import annotations
 import re
 from pathlib import Path
 
