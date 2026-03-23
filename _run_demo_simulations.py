@@ -41,10 +41,10 @@ COMMON = dict(
     Ly_             = 100.0,    # m
     Lz_             = 10.0,     # m
     K_mean_mD       = 100.0,    # mean permeability [mD]
-    K_sigma_ln      = 1.5,      # log-normal σ; 0 = homogeneous
+    K_sigma_ln      = 0.0,      # log-normal σ; 0 = homogeneous
     K_seed          = 42,
     T_K_            = 350.0,    # K  (isothermal)
-    P_ref_bar_      = 200.0,    # bar (reference flash pressure)
+    P_ref_bar_      = 150.0,    # bar (initial flash reference pressure; updated per-cell each step)
     phi_            = 0.20,
     mu_co2_         = 5.0e-5,   # Pa·s
     mu_brine_       = 4.5e-4,   # Pa·s
