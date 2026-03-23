@@ -1495,177 +1495,195 @@ Convergence is robust across the full validation range.
 \section{Reservoir Simulation Demonstration}
 \label{sec:simulator}
 
-To illustrate the practical applicability of the fast eCPA flash routine in a reservoir
-simulation context, we implemented a minimal but complete isothermal compositional
-simulator for CO$_2$ injection into a 2D saline aquifer.
+To demonstrate the applicability of the flash algorithms developed in this work within
+a reservoir simulation context, we implemented an isothermal IMPES
+(implicit-pressure, explicit-composition) compositional simulator for CO$_2$ injection
+into a 2D aquifer.
+The primary goal is to stress-test the robustness and efficiency of the stability and
+flash routines under the repetitive, varying-composition calls of a time-stepping loop,
+not to produce physically predictive reservoir simulations.
 
 \subsection{Numerical scheme}
 \label{sec:sim_scheme}
 
-The simulator uses a standard IMPEC (implicit-pressure, explicit-composition) scheme
-\citep{Lie2019} on a uniform Cartesian grid.
-Pressure is solved implicitly at each time step via a two-point flux approximation (TPFA)
-\citep{Aavatsmark2003}, yielding Darcy velocities that drive the explicit advection of the
-overall CO$_2$ mole fraction $z$.
+Pressure is solved implicitly at each time step on a uniform Cartesian grid using either
+a two-point flux approximation (TPFA, \citealt{Aavatsmark2003}) or a lowest-order
+mixed finite element (MFE, RT$_0$) scheme \citep{Aavatsmark2003}.
+Both were implemented and tested; results shown here use MFE, which avoids the
+pronounced grid-orientation artefacts of TPFA on Cartesian grids while remaining
+computationally inexpensive.
+The solved pressure field yields Darcy velocities that drive explicit first-order upwind
+advection of the overall CO$_2$ mole fraction $z$.
 The transport sub-step size is constrained by a CFL condition based on the maximum
-derivative of the molar fractional flow $\partial F_z / \partial z$, estimated by a
+slope of the molar fractional flow $\partial F_z / \partial z$, estimated by a
 one-dimensional scan at startup.
+Production wells are controlled by a fixed bottom-hole pressure (BHP) via standard
+Peaceman well indices; the injector delivers a fixed volumetric rate.
 
-The physical model includes two mobile phases (aqueous and CO$_2$-rich) with Corey
-relative permeabilities, and interphase CO$_2$/H$_2$O transfer computed by calling
-the fast eCPA flash at every grid cell every time step.
-NaCl is treated as non-volatile; its equilibrium aqueous molality $m_s^\mathrm{aq}$,
-which exceeds the nominal feed molality in two-phase cells (salting-out effect), is
-returned by the flash and carried forward to the saturation calculation.
+At each time step, the full Michelsen stability test followed by the two-phase flash
+is called at every grid cell, using the cell pressure from the previous time step
+(standard IMPES lagged-pressure).
+For the eCPA case ($m_s > 0$) the warm-started K-value flash with hierarchical stability
+fallback is used (Section~\ref{sec:fast_flash}); for the salt-free case ($m_s = 0$) the
+CPA warm-started flash is used.
+Two-phase cells with $z < z_\mathrm{lo}$ or $z > z_\mathrm{hi}$ are treated as trivially
+single-phase and bypass the flash entirely.
+NaCl is non-volatile; the equilibrium aqueous molality $m_s^\mathrm{aq}$ returned by the
+flash reflects local salting-out and is used directly in the saturation calculation.
 
-We deliberately neglect the density dependence of the pressure equation, replacing the
-true compressible flux divergence by the volume-rate constraint $\nabla\cdot\mathbf{u} = q$.
-This is non-physical---real CO$_2$--brine systems are weakly compressible and the
-density contrast between phases drives buoyancy---but it is sufficient for our purpose,
-which is to demonstrate the robustness and efficiency of the flash routine in a
-time-stepping loop, not to produce quantitatively predictive reservoir simulations.
-Readers wishing to deploy the flash in production-grade simulators can integrate it
-directly into open-source codes such as the MATLAB Reservoir Simulation Toolbox
-(MRST, \citealt{Lie2019}), OPM Flow \citep{Rasmussen2021}, or DuMu$^x$ \citep{Koch2021},
-all of which expose user-supplied flash callbacks or component-level EoS interfaces.
+We deliberately replace the true compressible volume-rate divergence by the
+incompressible constraint $\nabla\cdot\mathbf{u} = q$.
+This neglects buoyancy, compressibility, and the density difference between injected and
+displaced fluid.
+We state this limitation explicitly because neglecting it removes the main physical driver
+of CO$_2$ plume geometry in real aquifer storage, and readers should not interpret the
+results as quantitative predictions.
+The purpose is solely to confirm that the stability and flash routines converge reliably
+and efficiently at every cell of a $50{\times}50$ grid over 300 time steps spanning 5 years.
 
 \subsection{Simulation setup}
 \label{sec:sim_setup}
 
-The domain is a $100\times100$\,m$^2$ square with a 10\,m thickness, discretized onto a
-$50\times50$ Cartesian grid ($N = 2500$ cells).
-Permeability is uniform at 100\,mD and porosity is 0.20.
-A five-spot well pattern is used: one injector at the domain center and four producers
-at the corners, with CO$_2$ injected at 10\% of total pore volume per year.
-The simulation runs for 3 years at $T = 77\,^\circ$C, $P = 200$\,bar, and an initial NaCl
-molality of $m_s = 1.0$\,mol\,kg$^{-1}$.
+Two simulations are run on identical grids with identical flow parameters, differing only
+in brine salinity:
+\begin{itemize}
+  \item \textbf{Case A (CPA):} salt-free brine, $m_s = 0$\,mol\,kg$^{-1}$
+  \item \textbf{Case B (eCPA):} saline brine, $m_s = 4$\,mol\,kg$^{-1}$ NaCl
+\end{itemize}
+The domain is a $100\times100$\,m$^2$ square of 10\,m thickness discretized onto a
+$50\times50$ Cartesian grid ($N = 2500$ cells) with homogeneous permeability of 100\,mD
+and porosity $\phi = 0.20$.
+A five-spot well pattern is used: a CO$_2$ injector at the domain center and four
+BHP-controlled producers at the corners (BHP $= 150$\,bar).
+CO$_2$ is injected at 20\% of total pore volume per year.
+The simulation runs for 5 years ($T = 77\,^\circ$C) with 300 pressure time steps.
+Full simulation parameters are listed in Table~S\ref{tab:sim_setup} in the Supplemental
+Information.
 
 \subsection{Results}
 \label{sec:sim_results}
 
-Figure~\ref{fig:simulator} shows the CO$_2$-rich phase saturation $S_g$ at three
-representative times.
-The plume grows radially from the injector, progressively sweeping toward the corner
-producers.
-At early time (panel a, $t = 0.36$\,yr) significant grid-orientation effects, inherent to
-TPFA on Cartesian grids and well documented in the literature \citep{Aavatsmark2003},
-are visible in the diamond-shaped front.
-This is a known limitation of TPFA and can be reduced by using multi-point flux
-approximation (MPFA) schemes \citep{Aavatsmark2003} or unstructured grids; we note it
-here only to be transparent about the numerics, since our goal is to demonstrate the
-flash rather than the flow solver.
-At later times the front smooths out as the plume grows beyond a few grid spacings.
+Figure~\ref{fig:sim_comparison} shows the final-time ($t = 5$\,yr) spatial fields for
+both cases: the CO$_2$-rich saturation $S_g$ (top row), the dissolved CO$_2$ molality
+$m_c$ in the aqueous phase (middle row), and the pressure field (bottom row).
+The CO$_2$ saturation maps are strikingly similar between the two cases.
+This is physically expected: at a high injection rate of 20\% PVI\,yr$^{-1}$, advection
+strongly dominates over dissolution-driven transport.
+The CO$_2$ displacement front is governed primarily by the mobility ratio and the
+imposed pressure gradient, not by whether the equilibrium CO$_2$ solubility in the
+aqueous phase is slightly reduced by salt.
+Given that CO$_2$ solubility in water is already low---on the order of 1--2\,mol\,kg$^{-1}$
+under typical storage conditions---the further reduction from salting-out has negligible
+impact on the high-rate displacement dynamics on these time scales.
+
+The dissolved CO$_2$ maps (middle row) tell a different story.
+Inside the plume the aqueous phase is everywhere CO$_2$-saturated at the local
+equilibrium value: $m_c \approx 1.25$\,mol\,kg$^{-1}$ for the salt-free case
+and only $m_c \approx 0.63$\,mol\,kg$^{-1}$ at $m_s = 4$\,mol\,kg$^{-1}$---a reduction
+of approximately a factor of two, consistent with the salting-out effect seen in the
+validation data (Section~\ref{sec:co2nacl}).
+The white region around the central injector marks cells where the brine has been fully
+expelled into the CO$_2$-rich phase (complete drying out, $S_g \to 1$), leaving no
+aqueous phase to dissolve CO$_2$ into.
+Correctly capturing this drying-out regime requires a robust stability test: a
+simplified flash that merely solves the two-phase equilibrium without first checking
+single-phase stability would fail or produce unphysical compositions for these cells.
+No flash failures were recorded in either simulation across all 300 time steps and
+all 2500 grid cells, confirming the reliability of the hierarchical stability and flash
+approach.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{../figures/simulator/fig_simulator.png}
-  \caption{CO$_2$-rich saturation $S_g$ at three simulation times for a $50\times50$
-           Cartesian grid ($T = 77\,^\circ$C, $P = 200$\,bar, $m_s = 1.0$\,mol\,kg$^{-1}$).
-           White star: CO$_2$ injector; black triangles: producers.
-           The diamond shape at early time (panel a) reflects the well-known
-           grid-orientation sensitivity of TPFA.}
-  \label{fig:simulator}
+  \includegraphics[width=\textwidth]{../figures/demo/comparison_final.png}
+  \caption{Final-state ($t = 5$\,yr) spatial fields for the salt-free CPA case
+           ($m_s = 0$, left column) and the saline eCPA case
+           ($m_s = 4$\,mol\,kg$^{-1}$ NaCl, right column).
+           \emph{Top row}: CO$_2$-rich phase saturation $S_g$.
+           The plumes are nearly identical, reflecting advection-dominated displacement
+           at 20\% PVI\,yr$^{-1}$.
+           \emph{Middle row}: dissolved CO$_2$ molality $m_c$ in the aqueous phase.
+           Inside the plume the aqueous phase is CO$_2$-saturated at the eCPA
+           equilibrium value: ${\approx}1.25$\,mol\,kg$^{-1}$ (salt-free) vs.\
+           ${\approx}0.63$\,mol\,kg$^{-1}$ ($m_s = 4$\,mol\,kg$^{-1}$), a factor-of-two
+           reduction from the salting-out effect.
+           The white region near the central injector (white star) marks cells where
+           brine has been completely expelled into the CO$_2$-rich phase (drying-out).
+           \emph{Bottom row}: pressure field; the ${\approx}0.15$\,bar gradient across
+           the 100\,m domain reflects the small pressure drop required to drive
+           20\% PVI\,yr$^{-1}$ through 100\,mD rock with BHP-controlled producers at
+           150\,bar.
+           Black triangles: producers.}
+  \label{fig:sim_comparison}
 \end{figure}
 
-Figure~\ref{fig:compositions} shows the three compositional quantities returned by the
-eCPA flash at each time step: the equilibrium brine salinity $m_s^\mathrm{aq}$, the
-CO$_2$ mole fraction in the aqueous phase $x_{\text{CO}_2}$, and the H$_2$O mole
-fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$.
-These fields have no counterpart in a conventional black-oil simulator and are the
-direct output of the compositional eCPA flash at each grid cell.
-
-The brine salinity map (panels a, d) reveals the \emph{salting-out} effect: as CO$_2$
-displaces water from pore space, the remaining brine becomes more concentrated in NaCl.
-The salting-out is strongest where $S_g$ is largest (near the injector), producing the
-vivid radial gradient from 1.0\,mol\,kg$^{-1}$ (background) toward the
-color-saturated maximum (cells adjacent to the pure-CO$_2$ injector zone, which
-appears pale because the brine has been fully expelled).
-The gradient broadens from $t = 1.08$\,yr (panel a) to $t = 3.00$\,yr (panel d) as the
-high-saturation zone expands.
-
-The CO$_2$ dissolution map (panels b, e) shows the two-phase zone extent: inside the
-plume the aqueous phase is CO$_2$-saturated at the eCPA equilibrium value
-($x_{\text{CO}_2} \approx 0.016$ at $T = 77\,^\circ$C, $P = 200$\,bar, $m_s \approx 1$\,mol\,kg$^{-1}$),
-while outside the plume the brine remains essentially CO$_2$-free.
-Similarly, panels (c, f) show that the CO$_2$-rich phase everywhere in the plume
-contains the eCPA-predicted equilibrium water content
-($y_{\text{H}_2\text{O}} \approx 0.010$).
-The spatial uniformity of $x_{\text{CO}_2}$ and $y_{\text{H}_2\text{O}}$ within the
-plume is physically correct for this isothermal, isobaric model: thermodynamic
-equilibrium dictates that the phase compositions depend only on $(T, P, m_s)$, which
-are nearly uniform away from the salting-out gradient.
-In a real simulation with temperature and pressure gradients, these fields would exhibit
-richer spatial structure.
+While the saturation fields are similar, the implications for long-term CO$_2$ storage
+are markedly different.
+Solubility trapping---the dissolution of CO$_2$ into the formation brine---is a key
+mechanism for storage permanence, because dissolved CO$_2$ cannot escape as a
+buoyant supercritical phase.
+Figure~\ref{fig:sim_trapping} shows the fraction of the in-situ CO$_2$ inventory that
+is dissolved in brine (solubility trapping, solid lines) versus residing in the
+CO$_2$-rich phase (structural trapping, dashed lines) as a function of time for both
+cases.
+Within the first year, structural trapping dominates as the injected CO$_2$ rapidly
+fills pore space.
+Over the remaining four years, solubility trapping grows steadily as CO$_2$ dissolves
+into the surrounding brine.
+The gap between the CPA and eCPA curves is clear and persistent throughout: at $t = 5$\,yr
+the solubility trapping fraction is roughly a factor of two lower for the saline case,
+directly reflecting the reduction in equilibrium CO$_2$ solubility from the salting-out
+effect.
+This demonstrates that brine salinity has a quantitatively significant impact on
+long-term storage permanence even when the short-term displacement dynamics appear
+unaffected.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{../figures/simulator/fig_compositions.png}
-  \caption{Compositional flash outputs at $t = 1.08$\,yr (top row) and $t = 3.00$\,yr
-           (bottom row).
-           \textbf{(a, d)} Equilibrium brine salinity $m_s^\mathrm{aq}$: the smooth
-           radial gradient reflects salting-out proportional to CO$_2$ saturation;
-           the pale region near the injector is the pure-CO$_2$ cell cluster where
-           brine is absent.
-           Colorbar is clipped at the 80th-percentile value to make the gradient
-           visible across the domain; cells near the injector exceed the colorbar
-           maximum.
-           \textbf{(b, e)} CO$_2$ mole fraction in the aqueous phase $x_{\text{CO}_2}$:
-           the plume interior (dark) is CO$_2$-saturated at the eCPA equilibrium value
-           (${\approx}0.016$); the exterior (pale) is essentially CO$_2$-free.
-           \textbf{(c, f)} H$_2$O mole fraction in the CO$_2$-rich phase
-           $y_{\text{H}_2\text{O}}$: the plume carries ${\approx}1$\% water throughout,
-           consistent with the eCPA prediction at these conditions.
-           White star: injector; black triangles: producers.}
-  \label{fig:compositions}
+  \includegraphics[width=0.80\textwidth]{../figures/demo/trapping_comparison.png}
+  \caption{Fraction of total in-situ CO$_2$ inventory undergoing solubility trapping
+           (dissolved in the aqueous phase, solid lines) versus structural trapping
+           (residing in the CO$_2$-rich phase, dashed lines) as a function of time.
+           Blue: salt-free brine (CPA, $m_s = 0$);
+           red: saline brine (eCPA, $m_s = 4$\,mol\,kg$^{-1}$ NaCl).
+           The persistent factor-of-two gap in solubility trapping between the two cases
+           reflects the reduction in equilibrium CO$_2$ solubility due to the
+           salting-out effect, which has negligible impact on short-term displacement
+           dynamics but is critical for long-term storage permanence.}
+  \label{fig:sim_trapping}
 \end{figure}
 
 \subsection{Flash performance in the simulator}
 \label{sec:sim_perf}
 
-Figure~\ref{fig:sim_perf} shows the wall time per time step and the number of flash calls
-as a function of simulation time.
-Flash dominates the total step cost throughout the run: the blue and dashed curves
-(flash time and total step time) are nearly coincident.
-The number of two-phase cells grows steadily as CO$_2$ spreads, peaking near 2500 (all
-cells) around $t \approx 2.5$\,yr before falling slightly as producers sweep the domain.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.72\textwidth]{../figures/simulator/fig_perf.png}
-  \caption{Simulator performance over 100 time steps (3 yr).
-           \emph{Top}: wall time for the flash (two-phase cells only) and the complete
-           time step.
-           \emph{Bottom}: number of cells dispatched to the eCPA flash per step, with
-           the total cell count (2500) shown as a dotted reference.
-           Flash accounts for $\gtrsim 90$\% of total step cost at all times.}
-  \label{fig:sim_perf}
-\end{figure}
-
-Table~\ref{tab:sim_perf} summarizes the aggregate flash performance.
-The measured throughput of 713 flash calls per second (multi-core) demonstrates that the warm-started eCPA flash is
-fast enough to sustain a 2500-cell compositional simulation at 2.45\,s per step,
-with flash accounting for essentially all of that cost.
-Scaling to larger grids ($10^5$--$10^6$ cells) would benefit from compiled
-implementations or GPU acceleration of the innermost EoS evaluations, but the
-algorithmic speedup demonstrated here---$3.2\times$ over cold-start SSI---applies
-equally at any scale.
+At every time step, the stability test and flash are called at each of the $N = 2500$
+grid cells.
+Cells identified as trivially single-phase (overall CO$_2$ fraction below the two-phase
+entry threshold $z_\mathrm{lo} = 0.015$ or above $z_\mathrm{hi} = 0.97$) bypass the flash
+entirely; the remaining two-phase candidates are dispatched in parallel across all
+available CPU cores.
+As the plume grows, an increasing fraction of the domain becomes two-phase until
+essentially all cells require a flash call (peak ${\approx}2500$ calls per step).
+Performance numbers for both simulations are summarized in Table~\ref{tab:sim_perf};
+the flash accounts for the dominant fraction of total step cost throughout both runs,
+confirming that the algorithmic efficiency of the warm-started flash directly governs
+simulation throughput.
 
 \begin{table}[H]
   \centering
-  \caption{Aggregate flash performance across the 3-year simulation
-           ($50\times50$ grid, $T = 77\,^\circ$C, $P = 200$\,bar, $m_s = 1.0$\,mol\,kg$^{-1}$,
-           multi-core).}
+  \caption{Aggregate flash performance for the 5-year simulations
+           ($50\times50$ grid, $T = 77\,^\circ$C, $P \approx 150$\,bar, 300 time steps,
+           48 CPU cores).}
   \label{tab:sim_perf}
-  \begin{tabular}{lr}
+  \begin{tabular}{lrr}
     \toprule
-    Metric & Value \\
+    Metric & CPA ($m_s = 0$) & eCPA ($m_s = 4$) \\
     \midrule
-    Grid cells & 2500 \\
-    Time steps & 100 \\
-    Mean two-phase cells / step & 1585 (max 2472) \\
-    Mean flash wall time / step & 2.45\,s \\
-    Flash fraction of step cost & $\approx 100$\% \\
-    Flash throughput (multi-core) & 713 calls\,s$^{-1}$ \\
+    Grid cells                          & 2500  & 2500  \\
+    Time steps                          & 300   & 300   \\
+    Mean two-phase cells / step         & ---   & ---   \\
+    Mean flash wall time / step (s)     & ---   & ---   \\
+    Flash fraction of step cost         & ---   & ---   \\
+    Flash throughput (calls\,s$^{-1}$)  & ---   & ---   \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -2002,6 +2020,60 @@ Comparison with centered finite differences confirms this approximation
 incurs a 1--2\,\% error in $H_{00}$ at typical conditions, which does not
 impair Newton convergence from warm starts (the other eight entries are exact
 to machine precision).
+
+\section*{Appendix: Simulation Parameters}
+\label{sec:sim_table}
+
+\begin{table}[H]
+  \centering
+  \caption{Reservoir simulation parameters used in Section~\ref{sec:simulator}.}
+  \label{tab:sim_setup}
+  \begin{tabular}{llr}
+    \toprule
+    Parameter & Symbol & Value \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Grid and geometry}} \\
+    Domain size (x, y)                 & $L_x \times L_y$ & $100 \times 100$\,m \\
+    Domain thickness                   & $L_z$            & 10\,m \\
+    Grid cells (x, y)                  & $N_x \times N_y$ & $50 \times 50$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Rock properties}} \\
+    Permeability (isotropic, uniform)  & $K$              & 100\,mD \\
+    Porosity                           & $\phi$           & 0.20 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Relative permeability (Corey)}} \\
+    Connate water saturation           & $S_{wc}$         & 0.15 \\
+    Residual gas saturation            & $S_{gr}$         & 0.05 \\
+    End-point $k_{rg}$                 & $k_{rg}^0$       & 0.80 \\
+    End-point $k_{rw}$                 & $k_{rw}^0$       & 1.00 \\
+    Corey exponent (CO$_2$-rich phase) & $n_g$            & 2.0  \\
+    Corey exponent (aqueous phase)     & $n_w$            & 2.5  \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Fluid properties}} \\
+    Temperature (isothermal)           & $T$              & 350\,K ($77\,^\circ$C) \\
+    CO$_2$-rich phase viscosity        & $\mu_g$          & $5\times10^{-5}$\,Pa\,s \\
+    Aqueous phase viscosity            & $\mu_w$          & $4.5\times10^{-4}$\,Pa\,s \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Well and injection parameters}} \\
+    Well pattern                       & ---              & five-spot \\
+    Injector location                  & ---              & domain center \\
+    Producer locations                 & ---              & four corners \\
+    Wellbore radius                    & $r_w$            & 0.10\,m \\
+    Producer BHP                       & $P_\mathrm{BHP}$ & 150\,bar \\
+    Injection rate                     & ---              & 20\% PVI\,yr$^{-1}$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Simulation control}} \\
+    Total simulation time              & $t_\mathrm{max}$ & 5\,yr \\
+    Number of pressure time steps      & $N_t$            & 300 \\
+    Pressure solver                    & ---              & MFE (RT$_0$) \\
+    Transport scheme                   & ---              & first-order upwind, CFL-limited \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Cases}} \\
+    Case A (CPA)                       & $m_s$            & $0$\,mol\,kg$^{-1}$ (salt-free) \\
+    Case B (eCPA)                      & $m_s$            & $4$\,mol\,kg$^{-1}$ NaCl \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \section*{Appendix: Additional Validation Figures}
 \label{sec:si}
