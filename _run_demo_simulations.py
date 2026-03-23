@@ -93,7 +93,8 @@ def make_comparison_figure(result_a: dict, result_b: dict,
         z_arr  = res['z']
         P_fld  = res['P_field']
 
-        S_g  = sim.beta_to_Sg(fr, T, P).reshape(Nx_, Ny_, order='F')
+        P_cells = (P_fld.ravel() / 1e5) if P_fld is not None else P
+        S_g  = sim.beta_to_Sg(fr, T, P_cells).reshape(Nx_, Ny_, order='F')
         mc   = sim.dissolved_co2_molality(fr['x4w'], fr['ms_aq']).reshape(Nx_, Ny_, order='F')
         ms_  = fr['ms_aq'].reshape(Nx_, Ny_, order='F')
         z2d  = z_arr.reshape(Nx_, Ny_, order='F')
