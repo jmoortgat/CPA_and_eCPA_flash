@@ -469,12 +469,16 @@ def _flash_one_cpa(T: float, P_bar: float, z_co2: float, ms: float) -> dict:
 
 
 def run_flash_parallel(z_arr: np.ndarray, ms: float,
-                       T: float, P: float, pool) -> dict:
+                       T: float, P: float | np.ndarray, pool) -> dict:
     """
     Flash all N cells; trivially single-phase cells (z < Z_LO or z > Z_HI)
     are bypassed.  Two-phase candidates are dispatched to the worker pool.
+
+    P may be a scalar (uniform pressure) or a 1-D array of per-cell pressures
+    in bar, allowing the IMPES lagged-pressure update.
     """
     N_     = len(z_arr)
+    P_arr  = np.broadcast_to(np.asarray(P, dtype=float), (N_,))
     out_beta  = np.zeros(N_)
     out_x4w   = np.zeros(N_)
     out_x4c   = np.zeros(N_)
@@ -489,7 +493,7 @@ def run_flash_parallel(z_arr: np.ndarray, ms: float,
 
     tp_idx = np.where((z_arr >= _Z_LO) & (z_arr <= _Z_HI))[0]
     if len(tp_idx) > 0:
-        args  = [(T, P, float(z_arr[i]), ms) for i in tp_idx]
+        args  = [(T, float(P_arr[i]), float(z_arr[i]), ms) for i in tp_idx]
         chunk = max(1, len(tp_idx) // (pool._processes or 1))
         raw   = pool.map(_flash_one, args, chunksize=chunk)
         for j, res in zip(tp_idx, raw):
@@ -509,8 +513,8 @@ def run_flash_parallel(z_arr: np.ndarray, ms: float,
 # =============================================================================
 # 7.  SATURATION AND FRACTIONAL FLOW
 # =============================================================================
-def beta_to_Sg(fr: dict, T: float, P_bar: float) -> np.ndarray:
-    P_Pa = P_bar * 1e5
+def beta_to_Sg(fr: dict, T: float, P_bar: float | np.ndarray) -> np.ndarray:
+    P_Pa = np.asarray(P_bar) * 1e5
     Vm_c = fr['Z_c']  * R_GAS * T / P_Pa
     Vm_w = fr['Z_aq'] * R_GAS * T / P_Pa
     b    = fr['beta']
@@ -807,19 +811,20 @@ def main(
           f"{'t_flash [s]':>11}  {'t_step [s]':>10}  {'flash/s':>8}")
     print("─" * 66)
 
-    t0_total = time.perf_counter()
-    P_field  = None    # updated each step
+    t0_total   = time.perf_counter()
+    P_field    = None                              # updated each step
+    P_bar_cells = np.full(N_loc, P_ref_bar_)      # per-cell pressure [bar]; lagged by one step
 
     for step in range(1, n_steps_ + 1):
         t_yr = step * dt_big / year_s
         t0   = time.perf_counter()
 
-        # 1. Flash all cells
-        fr      = run_flash_parallel(z_arr, ms_flash, T_K_, P_ref_bar_, pool)
+        # 1. Flash all cells at lagged per-cell pressures
+        fr      = run_flash_parallel(z_arr, ms_flash, T_K_, P_bar_cells, pool)
         t_flash = time.perf_counter() - t0
 
         # 2. Saturations, mobility, fractional flow
-        S_g       = beta_to_Sg(fr, T_K_, P_ref_bar_)
+        S_g       = beta_to_Sg(fr, T_K_, P_bar_cells)
         kr_g, kr_w = _relperm(S_g)
         lam_g = kr_g / mu_g;  lam_w = kr_w / mu_w
         lam_t = lam_g + lam_w + 1e-40
@@ -843,7 +848,8 @@ def main(
             P_sol, Vx, Vy, Vz, Q_bhp = TPFA(
                 Lx_, Ly_, Lz_, Nx, Ny, 1, Q_loc, Keff, bhp_wells=bhp_step)
 
-        P_field = P_sol.ravel(order='F')
+        P_field     = P_sol.ravel(order='F')
+        P_bar_cells = P_field / 1e5   # update lagged pressure for next step's flash
 
         # 5. Actual source/sink vector for transport (injectors + BHP producers)
         Q_actual = Q_loc.ravel().copy() + Q_bhp
