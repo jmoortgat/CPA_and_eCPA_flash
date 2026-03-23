@@ -1,5 +1,5 @@
 """
-CPA2.py — two-component CPA flash for CO₂ + H₂O, salt-free.
+CPA.py — two-component CPA flash for CO₂ + H₂O, salt-free.
 
 This revision replaces the original van der Waals one-fluid (vdW1f) mixing
 rule with the Huron–Vidal (HV) mixing rule used in the eCPA notebook
@@ -8,7 +8,7 @@ radial distribution function with the simplified form g(η) = 1/(1−1.9η) used
 in the same reference.  With these changes and the eCPA parameter set the
 salt-free flash reproduces the eCPA ELV solution at ms→0.
 
-Key differences from the previous CPA2.py
+Key differences from the previous CPA.py
 ------------------------------------------
 MIXING RULE
   Old:  vdW1f — a_mix = ΣᵢΣⱼ xᵢxⱼ √(aᵢaⱼ)(1−kᵢⱼ)   (symmetric quadratic)
@@ -36,8 +36,8 @@ ASSOCIATION FUGACITY
     lnφᵢ_ass = 4·ln(χᵢ) + Bᵢ/(8·g·Z)·(dg/dη)·Σⱼ 4xⱼ(χⱼ−1)
 
 PARAMETER SETS
-  "CPA2"  — original MATLAB parameters.  Use MIXING="vdW1f", G_ETA="CS",
-             kij12=0.0 for the best standalone CPA2 results.
+  "CPA_orig"  — original MATLAB parameters.  Use MIXING="vdW1f", G_ETA="CS",
+             kij12=0.0 for the best standalone CPA_orig results.
   "eCPA"  — Coelho et al. 2025.  Use MIXING="HV", G_ETA="MOD" (defaults),
              kij12=kij_ecpa(T).  Reproduces eCPA ELV at ms→0.
 
@@ -56,7 +56,7 @@ Notebook variable mapping (eCPA → this module)
   Zw  = aqueous Z          →  Zx
   Zc  = CO₂-rich Z         →  Zy
 
-Author: derived from CPA2_040926.py and eCPA_VLE_04102026.ipynb by Claude.
+Author: derived from CPA_040926.py and eCPA_VLE_04102026.ipynb by Claude.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ import numpy as np
 # =============================================================================
 # PARAMETER SET SELECTION
 # =============================================================================
-PARAM_SET: str = "eCPA"   # "CPA2" | "eCPA"
+PARAM_SET: str = "eCPA"   # "CPA_orig" | "eCPA"
 
 # =============================================================================
 # ALGORITHM FLAGS
@@ -81,9 +81,9 @@ _LN2       = np.log(2.0)
 _LOG_GUARD = 1e-300
 
 # =============================================================================
-# CPA2 parameter set  (original MATLAB / ParaCompEOS.m)
+# CPA original parameter set  (original MATLAB / ParaCompEOS.m)
 # =============================================================================
-_PARAMS_CPA2 = {
+_PARAMS_CPA_ORIG = {
     "Tc_co2":    304.1282,
     "Pc_co2":    73.773,
     "Omega_co2": 0.22394,
@@ -168,7 +168,7 @@ _PARAMS_ECPA = {
 # =============================================================================
 # Active parameter set
 # =============================================================================
-_VALID_PARAM = {"CPA2", "eCPA"}
+_VALID_PARAM = {"CPA_orig", "eCPA"}
 _VALID_MIX   = {"HV", "vdW1f"}
 _VALID_G     = {"MOD", "CS"}
 
@@ -179,7 +179,7 @@ if MIXING not in _VALID_MIX:
 if G_ETA not in _VALID_G:
     raise ValueError(f"G_ETA must be one of {_VALID_G}")
 
-_P = _PARAMS_CPA2 if PARAM_SET == "CPA2" else _PARAMS_ECPA
+_P = _PARAMS_CPA_ORIG if PARAM_SET == "CPA_orig" else _PARAMS_ECPA
 
 _DEFAULT_CO2_H2O = {
     "Tc":    np.array([_P["Tc_co2"],    _P["Tc_h2o"]],    dtype=float),
@@ -2054,6 +2054,94 @@ def flash_co2_h2o_tpz_robust(
     if result is None:
         base.update({"phase": "failed", "beta": np.nan, "tie": None})
         return base
+
+    return result
+
+
+def flash_co2_h2o_tpz_warmstart(
+    T: float, P_bar: float, z_co2: float,
+    solution_guess_fn,
+    kij12: float | None = None, swc: float | None = None,
+    *,
+    tol: float = 1e-10,
+    maxiter: int = 1000,
+) -> dict:
+    """
+    CPA two-phase flash warm-started from the eCPA solution table.
+
+    Queries the solution table at ms=0 for K-value initial guesses, skipping
+    the expensive Michelsen stability test when the table indicates two-phase.
+    Falls back to flash_co2_h2o_tpz_robust on any failure.
+
+    Parameters
+    ----------
+    solution_guess_fn : callable
+        As returned by ecpa.solution_table.make_solution_guess_fn().
+        Signature: (T, P_bar, z_co2, ms) → (sol_10, ms_aq, is_two_phase_hint)
+        Queried at ms=0 for the salt-free CPA limit.
+
+    Returns
+    -------
+    Same dict format as flash_co2_h2o_tpz_robust, plus:
+        "n_iter" : int   — SSI+Newton iterations from tie_line_two_comp
+        "warmstarted" : bool — True if table guess was used (False = fell back)
+    """
+    if kij12 is None:
+        kij12 = kij_ecpa(T) if PARAM_SET == "eCPA" else 0.0
+    if swc is None:
+        swc = s14_ecpa(T) if PARAM_SET == "eCPA" else 0.0
+
+    comps = make_components_co2_h2o()
+    z = np.array([z_co2, 1.0 - z_co2])
+    base = {"T": float(T), "P_bar": float(P_bar), "z": z.copy()}
+    kw = dict(Omega=comps["Omega"], Tc=comps["Tc"], Pc=comps["Pc"],
+              Mw=comps["Mw"], kij12=kij12, swc=swc, tol=tol, maxiter=maxiter)
+
+    # ── Step 1: table lookup at ms=0 ─────────────────────────────────────────
+    try:
+        sol_10, _ms_aq, is_two_phase_hint = solution_guess_fn(
+            float(T), float(P_bar), float(z_co2), 0.0)
+        sol_10 = np.asarray(sol_10, dtype=float)
+        x1w = float(sol_10[1])   # H2O in aqueous phase
+        x1c = float(sol_10[4])   # H2O in CO2-rich phase
+        # K[0]=K_CO2, K[1]=K_H2O  (K_i = y_i/x_i, y=CO2-rich, x=aqueous)
+        denom_co2 = max(1.0 - x1w, 1e-15)
+        denom_h2o = max(x1w, 1e-15)
+        K_table = np.array([(1.0 - x1c) / denom_co2, x1c / denom_h2o])
+        table_ok = (np.all(np.isfinite(K_table)) and np.all(K_table > 0)
+                    and bool(is_two_phase_hint))
+    except Exception:
+        table_ok = False
+        K_table = None
+        is_two_phase_hint = None
+
+    # ── Step 2: warm-started flash (skip stability test) ─────────────────────
+    result = None
+    warmstarted = False
+    if table_ok:
+        try:
+            tie = tie_line_two_comp(T=T, P_bar=P_bar, K_init=K_table,
+                                    accelerated=True, **kw)
+            if tie["converged"]:
+                result = _build_flash_result(T, P_bar, z, tie, comps,
+                                             base, 0.0, 0.0)
+                if result is not None:
+                    result["n_iter"] = int(tie.get("iterations", -1))
+                    result["warmstarted"] = True
+                    warmstarted = True
+        except Exception:
+            pass
+
+    # ── Step 3: fallback to full robust solver ────────────────────────────────
+    # Used when: table says single-phase, warm-started tie-line failed, or
+    # table lookup itself raised an exception.
+    if result is None:
+        r = flash_co2_h2o_tpz_robust(T=T, P_bar=P_bar, z_co2=z_co2,
+                                     kij12=kij12, swc=swc,
+                                     tol=tol, maxiter=maxiter)
+        r["n_iter"] = int((r.get("tie") or {}).get("iterations", -1))
+        r["warmstarted"] = False
+        return r
 
     return result
 
