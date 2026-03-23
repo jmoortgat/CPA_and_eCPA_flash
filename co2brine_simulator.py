@@ -799,6 +799,9 @@ def main(
 
     timing     = []
     snap_every = max(1, n_steps_ // snap_frac)
+    trap_t      = []   # simulation time [yr]
+    trap_fdiss  = []   # fraction of CO₂ dissolved in brine
+    trap_ffree  = []   # fraction of CO₂ in CO₂-rich phase
 
     print(f"\n{'Step':>5}  {'t [yr]':>7}  {'N_sub':>5}  {'N_flash':>7}  "
           f"{'t_flash [s]':>11}  {'t_step [s]':>10}  {'flash/s':>8}")
@@ -854,6 +857,13 @@ def main(
             z_arr = z_arr + (UPW.dot(Fz) + inj_src) * dtx
         z_arr = z_arr.clip(0, 1)
 
+        # Trapping fractions (fraction of domain CO₂ in each phase)
+        z_tot = z_arr.sum()
+        if z_tot > 0:
+            trap_t.append(t_yr)
+            trap_fdiss.append(((1 - fr['beta']) * fr['x4w']).sum() / z_tot)
+            trap_ffree.append((fr['beta'] * fr['x4c']).sum() / z_tot)
+
         t_step  = time.perf_counter() - t0
         n_flash = fr['n_flash']
         timing.append((step, t_yr, t_flash, t_step, n_flash))
@@ -904,17 +914,23 @@ def main(
     print(f"  Saved {perf_fig}")
 
     # ── Save final state ──────────────────────────────────────────────────────
+    trap_t     = np.array(trap_t)
+    trap_fdiss = np.array(trap_fdiss)
+    trap_ffree = np.array(trap_ffree)
+
     np.savez(f'{outdir}/final_state.npz',
              z=z_arr, P=P_field,
              beta=fr['beta'], x4w=fr['x4w'], x4c=fr['x4c'],
-             ms_aq=fr['ms_aq'], Z_aq=fr['Z_aq'], Z_c=fr['Z_c'])
+             ms_aq=fr['ms_aq'], Z_aq=fr['Z_aq'], Z_c=fr['Z_c'],
+             trap_t=trap_t, trap_fdiss=trap_fdiss, trap_ffree=trap_ffree)
     print(f"  Saved {outdir}/final_state.npz")
 
     return dict(timing=timing, wall=wall,
                 z=z_arr, fr=fr, P_field=P_field,
                 outdir=outdir, label=label,
                 Nx=Nx, Ny=Ny, Lx=Lx_, Ly=Ly_,
-                T_K=T_K_, P_ref_bar=P_ref_bar_, ms0=ms0_)
+                T_K=T_K_, P_ref_bar=P_ref_bar_, ms0=ms0_,
+                trap_t=trap_t, trap_fdiss=trap_fdiss, trap_ffree=trap_ffree)
 
 
 if __name__ == '__main__':
