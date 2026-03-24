@@ -1,4 +1,4 @@
-\begin{thebibliography}{41}
+\begin{thebibliography}{44}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 \providecommand{\url}[1]{\texttt{#1}}
 \providecommand{\href}[2]{#2}
@@ -273,15 +273,39 @@
   equation-of-state}.
 \newblock \bibinfo{journal}{PLoS One} \bibinfo{volume}{20},
   \bibinfo{pages}{e0332157}.
+%Type = Article
+\bibitem[{Moortgat and Firoozabadi(2013)}]{moortgat2013higher}
+\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Firoozabadi, A.},
+  \bibinfo{year}{2013}.
+\newblock \bibinfo{title}{Higher-order compositional modeling of three-phase
+  flow in 3d fractured porous media based on cross-flow equilibrium}.
+\newblock \bibinfo{journal}{Journal of Computational Physics}
+  \bibinfo{volume}{250}, \bibinfo{pages}{425--445}.
+%Type = Article
+\bibitem[{Moortgat and Firoozabadi(2016)}]{moortgat2016mixed}
+\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Firoozabadi, A.},
+  \bibinfo{year}{2016}.
+\newblock \bibinfo{title}{Mixed-hybrid and vertex-discontinuous-galerkin finite
+  element modeling of multiphase compositional flow on 3d unstructured grids}.
+\newblock \bibinfo{journal}{Journal of Computational Physics}
+  \bibinfo{volume}{315}, \bibinfo{pages}{476--500}.
 %Type = Inproceedings
-\bibitem[{Moortgat et~al.(2011)Moortgat, Li and
+\bibitem[{Moortgat et~al.(2011a)Moortgat, Li and
   Firoozabadi}]{moortgat2011three}
 \bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Li, Z.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2011}.
+  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2011}a.
 \newblock \bibinfo{title}{Three-phase compositional modeling of co2 injection
   by higher-order finite element methods with cpa equation of state}, in:
   \bibinfo{booktitle}{SPE Reservoir Simulation Conference},
   \bibinfo{organization}{SPE}. pp. \bibinfo{pages}{SPE--141907}.
+%Type = Article
+\bibitem[{Moortgat et~al.(2011b)Moortgat, Sun and
+  Firoozabadi}]{moortgat2011compositional}
+\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Sun, S.},
+  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2011}b.
+\newblock \bibinfo{title}{Compositional modeling of three-phase flow with
+  gravity using higher-order finite element methods}.
+\newblock \bibinfo{journal}{Water Resources Research} \bibinfo{volume}{47}.
 %Type = Article
 \bibitem[{Nasrabadi et~al.(2016)Nasrabadi, Moortgat and
   Firoozabadi}]{nasrabadi2016new}
