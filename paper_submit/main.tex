@@ -900,7 +900,7 @@ for $T = 0$--$350\,^\circ$C, achieving 100\% convergence across all conditions.
 Both phases are characterised: the CO$_2$ mole fraction in the aqueous phase $x_{\text{CO}_2}$ and
 the H$_2$O mole fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$.
 
-Fig.~\ref{fig:co2h2o_Tpanel} shows representative comparisons at six temperatures spanning
+Figure~\ref{fig:co2h2o_Tpanel} shows representative comparisons at six temperatures spanning
 the validated range ($T = 25$--$250\,^\circ$C); results for all 35 temperatures are collected in
 Fig.~\ref{fig:co2h2o_Tpanel_SI} in the Supplemental Information (phase split results for molalities up to $m_s = 6$\,mol\,kg$^{-1}$ are also included for comparison and discussed further below).
 Table~\ref{tab:co2h2o_metrics} summarizes the accuracy metrics by condition regime.
@@ -1019,7 +1019,7 @@ simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
 \subsection{CO$_2$ + NaCl brine}
 \label{sec:co2nacl}
 
-Fig.~\ref{fig:co2h2o_Tpanel} also illustrates the effect of brine salinity on the equilibrium compositions by including predictions for the full molality range considered in this work. 
+Figure~\ref{fig:co2h2o_Tpanel} also illustrates the effect of brine salinity on the equilibrium compositions by including predictions for the full molality range considered in this work. 
 We further validate the eCPA ternary flash against all available experimental data from the
 literature \citep{Guo2015, Rumpf1994, Koschel2006, Kiepe2002, Takenouchi1965,
 Chabab2020, Messabeb2016, Hou2013, Yan2011, Zhao2015,
@@ -1108,7 +1108,7 @@ in the model.
 Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
 (AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
 the freezing point where eCPA is not specifically parameterized.
-Fig.~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
+Figure~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
 across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
 ($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
 systematically at the boundaries of the validated range.
@@ -1158,7 +1158,7 @@ This elevated salinity modifies the aqueous-phase fugacity coefficients and in
 turn shifts the equilibrium phase compositions --- an effect that cannot be
 captured by a VLE table indexed on feed molality alone.
 
-Fig.~\ref{fig:flash_vs_z} demonstrates these effects for $P = 200$\,bar,
+Figure~\ref{fig:flash_vs_z} demonstrates these effects for $P = 200$\,bar,
 $m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$ NaCl, and ten isotherms from $27$ to
 $252\,^\circ$C (in $25\,^\circ$C increments) over the two-phase feed range $z_4 = 0.005$--$0.995$.
 Panel (a) shows the CO$_2$-rich phase fraction $\beta$, which rises from 0 to 1
@@ -1406,7 +1406,7 @@ space are shown in Fig.~\ref{fig:newton_heatmap_SI}.
   \label{fig:scan_summary}
 \end{figure}
 
-Fig.~\ref{fig:stability_best_trial} shows that all six stability initial guesses
+Figure~\ref{fig:stability_best_trial} shows that all six stability initial guesses
 contribute materially: Wilson is best for 17.2\% of unstable points, inverse Wilson for
 25.0\%, H$_2$O-rich for 20.3\%, CO$_2$-rich for 14.5\%, inverse cube-root for 14.1\%, and
 cube-root Wilson for 8.9\%.
@@ -1494,10 +1494,10 @@ Figures~\ref{fig:ecpa_aq_grid} and~\ref{fig:ecpa_c_grid} map $x_{\text{CO}_2}$ a
 $y_{\text{H}_2\text{O}}$, respectively, across the full $(T, P)$ domain for six NaCl molalities (and a pure salt-free condition with CPA)
 at a representative feed $z_4 = 0.5$; red curves trace the dew- (solid) and bubble-point (dashed) boundaries,
 with the gray region indicating single-phase conditions.
-Fig.~\ref{fig:ecpa_ssi_heatmap} maps mean flash wall time per call
+Figure~\ref{fig:ecpa_ssi_heatmap} maps mean flash wall time per call
 across the $T$--$P$ plane for all six NaCl molalities, serving as a proxy for
 solver effort.
-Fig.~\ref{fig:ecpa_aq_grid} shows $x_{\text{CO}_2}$ (aqueous phase) over a
+Figure~\ref{fig:ecpa_aq_grid} shows $x_{\text{CO}_2}$ (aqueous phase) over a
 logarithmic color scale spanning 0.05--25\,mol\%.
 The two-phase window is broad, spanning the full pressure range from 1 to
 2000\,bar at most temperatures below $\sim$250\,$^\circ$C, and closes at the highest
@@ -1522,7 +1522,7 @@ two-phase window rather than a change in the window's extent.
 
 
 \paragraph{H$_2$O content of the CO$_2$-rich phase}
-Fig.~\ref{fig:ecpa_c_grid} shows $y_{\text{H}_2\text{O}}$ (CO$_2$-rich phase) on the same
+Figure~\ref{fig:ecpa_c_grid} shows $y_{\text{H}_2\text{O}}$ (CO$_2$-rich phase) on the same
 grid layout.
 In sharp contrast to CO$_2$ solubility, the water content of the CO$_2$-rich phase is
 controlled almost entirely by temperature: the color field in each panel varies
@@ -1558,7 +1558,7 @@ temperature alone and is insensitive to brine salinity.
 \end{figure}
 
 \paragraph{Flash wall time}
-Fig.~\ref{fig:ecpa_ssi_heatmap} maps the mean wall time per eCPA flash call
+Figure~\ref{fig:ecpa_ssi_heatmap} maps the mean wall time per eCPA flash call
 (table-warm-started K-value SSI) across the $T$--$P$ plane for six NaCl molalities;
 gray regions are single-phase.
 The $m_s\!=\!0$ (CPA) column is excluded: its cold-start six-trial robust solver
@@ -2623,7 +2623,7 @@ Full simulation parameters are listed in Table~\ref{tab:sim_setup}.
 
 \subsection*{Results}
 
-Fig.~\ref{fig:sim_comparison} shows the final-time ($t = 5$\,yr) spatial fields for
+Figure~\ref{fig:sim_comparison} shows the final-time ($t = 5$\,yr) spatial fields for
 both cases: the CO$_2$-rich saturation $S_g$ (top row), the dissolved CO$_2$ molality
 $m_c$ in the aqueous phase (middle row), and the pressure field (bottom row).
 The CO$_2$ saturation maps are strikingly similar between the two cases.
@@ -2682,7 +2682,7 @@ are markedly different.
 Solubility trapping---the dissolution of CO$_2$ into the formation brine---is a key
 mechanism for storage permanence, because dissolved CO$_2$ cannot escape as a
 buoyant supercritical phase.
-Fig.~\ref{fig:sim_trapping} shows the fraction of the in-situ CO$_2$ inventory that
+Figure~\ref{fig:sim_trapping} shows the fraction of the in-situ CO$_2$ inventory that
 is dissolved in brine (solubility trapping, solid lines) versus residing in the
 CO$_2$-rich phase (structural trapping, dashed lines) as a function of time for both
 cases.
