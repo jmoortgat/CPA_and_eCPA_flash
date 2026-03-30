@@ -1,0 +1,2754 @@
+%% elsarticle-based draft
+%% Target: Fluid Phase Equilibria / Industrial & Engineering Chemistry Research
+%% Compilation: pdflatex main && bibtex main && pdflatex main && pdflatex main
+
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage[version=4]{mhchem}
+\usepackage{siunitx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[left=1.5cm, right=1.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{lineno}
+\modulolinenumbers[5]
+\usepackage[section]{placeins}  % \FloatBarrier at every \section automatically
+\usepackage{float}              % provides [H] placement
+\usepackage{longtable}          % multi-page tables (nomenclature)
+
+\journal{Fluid Phase Equilibria}
+
+%% ============================================================
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Fast and Robust Phase Equilibrium Computations for CO$_2$ + H$_2$O + NaCl Mixtures
+       Using the Electrolyte Cubic-Plus-Association Equation of State}
+
+\author[ohio]{Joachim Moortgat\corref{cor1}}
+\ead{moortgat.1@osu.edu}
+\author[uga]{Felipe Mour\~{a}o Coelho}
+\author[rice]{Abbas Firoozabadi}
+\cortext[cor1]{Corresponding author}
+\affiliation[ohio]{organization={School of Earth Sciences, The Ohio State University},
+             addressline={125 South Oval Mall},
+             city={Columbus},
+             state={OH},
+             postcode={43201},
+             country={USA}}
+\affiliation[uga]{organization={Universit\'{e} Grenoble Alpes},
+             addressline={LIPhy},
+             city={Grenoble},
+             postcode={38000},
+             country={France}}
+\affiliation[rice]{organization={Rice University},
+             city={Houston},
+             state={TX},
+             postcode={77005},
+             country={USA}}
+
+\begin{abstract}
+We present phase stability and flash calculations for
+CO$_2$ + H$_2$O + NaCl mixtures using the electrolyte Cubic-Plus-Association (eCPA) equation
+of state parameterized by \citet{Coelho2025}.
+In this ternary system, H$_2$O partitioning into the CO$_2$-rich phase concentrates NaCl
+in the aqueous phase, raising the equilibrium molality $m_s^\mathrm{aq}$ above the feed value
+and suppressing CO$_2$ solubility — a salting-out coupling that makes phase compositions
+feed-fraction-dependent and requires full stability+flash rather than a fixed VLE lookup.
+Starting from the eCPA thermodynamic framework, we develop: (i) a generalized salt-free CPA flash
+routine with Michelsen tangent-plane distance (TPD) stability tests using six initial guesses and
+accelerated successive-substitution iterations (SSI) following \citet{Jex2024}, validated
+for the CO$_2$ + H$_2$O binary over 29{,}412 conditions with 100\% convergence; (ii) an extension
+to the full ternary system via analytical elimination of $m_s^\mathrm{aq}$ within each SSI step;
+(iii) a precomputed three-dimensional solution table
+spanning $T = 0$--$360\,^\circ$C, $P = 1$--$2000$\,bar, and $m_s = 0$--$6$\,mol\,kg$^{-1}$
+(505{,}400 grid points) that provides warm-start initial guesses reducing flash cost by
+3.2$\times$ for the ternary system and more than two orders of magnitude for the salt-free
+CPA binary (cold-start six-trial robust algorithm versus warm-started SSI); and (iv) a
+simplified flash exploiting $y_{\text{H}_2\text{O}} \approx 0$, valid for $T \lesssim 80\,^\circ$C
+with errors below 2\% in dissolved CO$_2$ molality.
+Accelerated SSI reduces the mean flash iteration count by 46\% (25.4 to 13.7) versus
+standard SSI; analytical Newton polish after warm-started SSI further reduces the mean to 6.9
+iterations ($\sim$20\% wall-time saving).
+Analytical Jacobian-based Newton--Raphson inner solvers reduce the per-iteration
+cost of CPA/eCPA to only $\sim$3$\times$ that of a plain cubic EoS, and are
+6--13$\times$ faster than cold-start alternatives.
+The six-guess stability test detects all two-phase conditions without false negatives.
+Validation against $>$1100 experimental data points achieves 100\% flash convergence
+with average absolute relative errors (AARE) of
+9.6\% for CO$_2$ solubility in pure water (6.5\% under subsurface storage conditions)
+and 24.4\% for H$_2$O content in the CO$_2$-rich phase (17.4\% after excluding
+flagged outlier datasets);
+6.6\% for CO$_2$ molality in NaCl brine and 6.2\% across all converged points
+($T = 5$--$350\,^\circ$C);
+and 0.76\% for aqueous-phase density without any volume shift correction for water.
+\end{abstract}
+
+\begin{keyword}
+CO$_2$ sequestration \sep eCPA equation of state \sep phase stability \sep flash calculation \sep
+accelerated successive substitution \sep reservoir simulation
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+Geological storage of CO$_2$ in saline aquifers and depleted hydrocarbon reservoirs is one
+of the most important near-term options for large-scale carbon capture and storage
+\citep{Metz2005, Orr2004}.
+Geothermal energy extraction presents an equally compelling application \citep{solovsky2026efficient}:
+enhanced geothermal systems and hydrothermal reservoirs operate at temperatures often above
+$227\,^\circ$C, where CO$_2$ can serve as a working fluid or co-migrate with brine, and where the
+phase behavior of the CO$_2$ + H$_2$O + NaCl system must be accurately described to model
+fluid circulation, energy extraction efficiency, and mineral scaling.
+In both applications, accurate modeling of CO$_2$+brine phase behavior is a prerequisite
+for reliable reservoir simulation: the equilibrium compositions of the CO$_2$-rich and aqueous
+phases govern injectivity, trapping efficiency, and caprock integrity, while accurate density
+predictions are needed for fluid flow and pressure calculations.
+The high-temperature range ($T > 227\,^\circ$C) is particularly relevant to geothermal applications,
+motivating the wide temperature coverage of the present model.
+
+The equilibrium of CO$_2$ with brine is challenging to model. It spans a wide range of
+conditions---temperatures from near-ambient ($\sim$10\,°C) to supercritical and hydrothermal
+($>$327\,°C), pressures from hydrostatic (1\,bar) to lithostatic ($>$1000\,bar), and salinities
+from fresh water to near-saturation ($>$6\,mol\,kg$^{-1}$ NaCl)---and involves both association
+interactions (hydrogen bonding in water), CO$_2$--water cross-association, and electrostatic
+effects of dissolved ions.
+
+Cubic-Plus-Association (CPA) equations of state \citep{Kontogeorgis1996} successfully combine
+a cubic (Soave--Redlich--Kwong, SRK) repulsive/dispersion term with a Wertheim association
+term \citep{Wertheim1984} and have been widely applied to systems with hydrogen-bonding fluids.
+Considering the \textit{cross}-association between CO$_2$ and H$_2$O molecules further improved the predictive powers of CPA considerably \citep{LiFiroozabadi2009}.
+The electrolyte CPA (eCPA) extension \citep{MaribMogensen2015} adds Debye--Hückel and Born
+electrostatic terms to describe ion--solvent and ion--ion interactions.
+\citet{Coelho2025} recently parameterized eCPA for the CO$_2$ + H$_2$O + NaCl ternary system
+with temperature-dependent binary interaction parameters, achieving a 74\% reduction in CO$_2$ solubility error in brine
+compared to the prior model of \citet{MaribMogensen2015}, which neglected cross-association (AARE: 6.9\% vs.\ 26.6\% over
+660 data points from 10 to $450\,^\circ$C).
+
+Despite the availability of well-parameterized thermodynamic models, practical use in reservoir
+simulation has been limited by the lack of open, efficient phase equilibrium routines for multicomponent mixtures.
+A key thermodynamic subtlety compounds this challenge.
+For a binary mixture such as CO$_2$ + H$_2$O, the Gibbs phase rule fixes the compositions of
+the coexisting phases at any given $T$ and $P$: only the phase \emph{amounts} depend on the
+overall CO$_2$ feed mole fraction, so a simple vapor--liquid equilibrium (VLE) table indexed on
+$(T, P)$ fully characterizes the system.
+In the ternary CO$_2$ + H$_2$O + NaCl system this no longer holds.
+As CO$_2$ partitions into the CO$_2$-rich phase it carries along some water, so the
+equilibrium aqueous NaCl molality $m_s^\mathrm{aq}$ exceeds the feed molality $m_\mathrm{feed}$
+by an amount that grows with the CO$_2$ phase fraction $\beta$---the well-known
+salting-out effect.
+Because $m_s^\mathrm{aq}$ depends on the overall compositions, $\mathbf{z}$, through the phase split, the equilibrium
+phase compositions themselves depend on $\mathbf{z}$: a VLE table at fixed feed salinity is
+thermodynamically inconsistent for the ternary system, and full stability+flash is
+required to resolve the self-consistent ($\beta$, $m_s^\mathrm{aq}$, $\mathbf{x}$, $\mathbf{y}$) output for
+every $(T, P, \mathbf{z}, m_\mathrm{feed})$ query.
+Reservoir simulators therefore need flash calculations that are both \emph{robust}---returning the correct
+phase split across the entire physically relevant parameter space---and \emph{fast}---executing
+in milliseconds per grid cell to be compatible with time-stepping over millions of cells.
+Achieving this for an EoS as complex as eCPA (which requires iterative solution of both the
+cubic compressibility equation and the nonlinear association equations) is non-trivial.
+
+This work makes the following contributions:
+\begin{enumerate}
+  \item A complete implementation of the full eCPA equation of state of \citet{Coelho2025},
+        including Debye--Hückel, Born, association, and permittivity terms,
+        validated against the original parameterization over $T = 10$--$455\,^\circ$C.
+  \item Analytical Jacobian-based Newton--Raphson solvers for both the CPA and eCPA equations of state (EOS) that reduce the computational cost to only
+        $\sim$3$\times$ that of a plain cubic EoS with an analytical $Z$-root solution,
+        rather than the one-to-two orders of magnitude typically assumed.
+  \item A generalized salt-free CPA flash routine with Michelsen tangent-plane distance
+        (TPD) stability testing \citep{Michelsen1982a} using six initial guesses
+        \citep{Jex2024} and accelerated successive-substitution iteration (SSI) with
+        dominant-eigenvalue step-size control \citep{Jex2024}, validated for the
+        CO$_2$ + H$_2$O binary across 29{,}412 $(T, P, z)$ conditions with 100\%
+        convergence and a $\sim$2$\times$ iteration-count reduction over standard SSI.
+  \item An extension to the ternary CO$_2$ + H$_2$O + NaCl system, in which the
+        equilibrium aqueous molality $m_s^\mathrm{aq}$ is determined self-consistently within the
+        SSI loop, replacing an earlier robust but slow outer root-finding loop over
+        molality.
+  \item A precomputed three-dimensional ($T$, $P$, $m_s$) solution table with
+        505{,}400 grid points covering $T = 0$--$360\,^\circ$C, $P = 1$--$2000$\,bar,
+        and $m_s = 0$--$6$\,mol\,kg$^{-1}$, computed with the full hierarchical
+        stability+flash algorithm (100\% convergence), and a fast warm-started flash
+        that reduces iteration counts from $\sim$12 to $\sim$3 (3.2$\times$ wall-time
+        speedup), suitable for integration into reservoir simulators.
+  \item Several algorithmic optimizations: multi-core parallelization
+        for solution-table construction, phase-envelope
+        tracing, and stability mapping; temperature and salinity continuation within the table
+        build to maximize convergence rates; and a logarithmic pressure axis for the interpolation
+        grid.
+  \item Systematic validation against experimental vapor--liquid equilibrium (VLE) and density data,
+        demonstrating 0.76\% AARE for aqueous-phase density without a volume shift correction
+        for water---a strength of the CPA equation of state.
+  \item A minimal but complete IMPEC compositional reservoir simulator (both Mixed Finite Element and Two-Point-Flux-Approximation options,
+        two-phase Darcy flow, Corey relative permeabilities) that integrates the fast
+        CPA and eCPA flash routines and demonstrates 8{,}840--14{,}270 flash calls\,s$^{-1}$ on a 2500-cell
+        grid (80--87\% of step cost), with a discussion of how the routine can be embedded
+        in existing simulators such as MRST \citep{Lie2019}, OPM Flow \citep{Rasmussen2021}, and DuMu$^x$ \citep{Koch2021}.
+\end{enumerate}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:eos} presents the CPA and eCPA thermodynamic framework.
+Section~\ref{sec:flash} describes the phase stability test and flash algorithms,
+including the hierarchical multi-guess strategy, the accelerated SSI, the
+precomputed solution table, and a simplified flash exploiting $y_{\text{H}_2\text{O}} \approx 0$.
+Section~\ref{sec:validation} validates the implementation against experimental
+CO$_2$ + H$_2$O and CO$_2$ + H$_2$O + NaCl VLE and density data.
+Section~\ref{sec:performance} analyzes computational performance of the inner and
+outer Newton--Raphson solvers and the warm-start speedup.
+Section~\ref{sec:simulator} demonstrates the flash routines within a minimal
+IMPEC reservoir simulator.
+Conclusions are given in Section~\ref{sec:conclusions}.
+Some additional technical details and supporting figures are provided in Supplemental Information. 
+
+%% ============================================================
+\section{Thermodynamic Framework}
+\label{sec:eos}
+
+Throughout this work species are indexed H$_2$O\,$\equiv$\,1, Na$^+$\,$\equiv$\,2,
+Cl$^-$\,$\equiv$\,3, CO$_2$\,$\equiv$\,4; for the salt-free CPA binary, indices 2 and 3
+are absent and only species 1 (H$_2$O) and 4 (CO$_2$) are present.
+NaCl is treated as a single molecular species (with ionic parameters for Na$^+$ and Cl$^-$
+entering the electrostatic terms); extension to multiple-salt brines on an ionic basis
+is discussed in Section~\ref{sec:future}.
+
+
+Mole fractions in the aqueous phase are denoted $x_i$ and in the CO$_2$-rich phase $y_i$,
+with equilibrium ratios (K-values) $K_i = y_i/x_i$.
+Where it aids readability, explicit subscripts are used instead of indices
+(e.g.\ $x_{\mathrm{H_2O}} \equiv x_1$, $y_{\mathrm{CO_2}} \equiv y_4$);
+the two notations are used interchangeably.
+A complete list of symbols is given in the Nomenclature section of the Supporting Information.
+
+\subsection{CPA equation of state}
+\label{sec:cpa}
+
+For the salt-free CO$_2$ + H$_2$O binary the residual Helmholtz energy per mole is
+\begin{equation}
+  A^r = A^{\text{SRK}} + A^{\text{assoc}},
+  \label{eq:Ar_cpa}
+\end{equation}
+where $A^{\text{SRK}}$ is the Soave--Redlich--Kwong \citep{Soave1972} physical term and
+$A^{\text{assoc}}$ is the Wertheim association term \citep{Wertheim1984}.
+
+The SRK compressibility factor satisfies
+\begin{equation}
+  Z = \frac{v}{v-b} - \frac{a(T)}{RT}\frac{1}{v+b},
+  \label{eq:Z_srk}
+\end{equation}
+where $v$ is the molar volume and $x_i$ is the mole fraction of species $i$;
+$a(T) = \sum_i \sum_j x_i x_j (1-k_{ij})\sqrt{a_i a_j}$
+and $b = \sum_i x_i b_i$ are the mixture attractive and co-volume parameters, respectively,
+with sums over molecular species $i, j \in \{\text{H}_2\text{O},\, \text{CO}_2\}$
+(and additionally Na$^+$, Cl$^-$ for brines).
+The Soave temperature dependence is
+$a_i(T) = a_{0i}[1 + c_{1i}(1 - \sqrt{T/T_{c,i}})]^2$.
+The Peng--Robinson (PR) equation of state \citep{PengRobinson1976} can serve equally well as
+the cubic backbone; it has been used with cross-association in the CPA framework for
+water-containing mixtures \citep{LiFiroozabadi2009,moortgat2018reservoir, nasrabadi2016new, moortgat2025vapor, moortgat2011three}.
+We follow \citet{Coelho2025} in using SRK throughout the present work.
+
+The association term accounts for hydrogen bonding in water via the 4C scheme (two proton
+donors and two proton acceptors), and includes cross-association between CO$_2$ and H$_2$O
+\citep{LiFiroozabadi2009}.
+The sum runs over molecular species only ($i \in \{1, 4\}$);
+ions carry no association sites:
+\begin{equation}
+  \frac{A^{\text{assoc}}}{NRT} = \sum_i x_i \sum_{A \in i}
+    \left(\ln\chi^{A_i} - \frac{\chi^{A_i}}{2} + \frac{1}{2}\right),
+  \label{eq:Aassoc}
+\end{equation}
+where $\chi^{A_i}$ is the fraction of molecules $i$ not bonded at site $A$:
+\begin{equation}
+  \chi^{A_i} = \frac{1}{1 + c \sum_j x_j \sum_{B \in j} \chi^{B_j}\,\delta^{A_iB_j}},
+  \label{eq:chi}
+\end{equation}
+with $c = N_A/v$ the molecular number density ($N_A$ is Avogadro's number, $v$ the molar
+volume) and $\delta^{A_iB_j}$ the association bonding volume between site $A$ on species
+$i$ and site $B$ on species $j$.
+The CO$_2$--H$_2$O cross-association strength is proportional to water self-association
+\citep{Coelho2025}:
+\begin{equation}
+  \delta^{A_wB_c} = S_{cw}(T)\,\delta^{A_wB_w},
+  \label{eq:Scw}
+\end{equation}
+where $S_{cw}(T)$ and the binary interaction parameter $k_{cw}(T)$ both follow quadratic
+polynomials in $T/T_{c,c}$ ($T_{c,c} = 31.3\,^\circ$C, the CO$_2$ critical temperature), with
+coefficients from \citet{Coelho2025} (Table~\ref{tab:binary_params}).
+
+The temperature dependence of both $k_{cw}$ and $S_{cw}$ is essential because the CO$_2$+H$_2$O
+system spans qualitatively different regimes across the validated temperature range.
+Below $T_{c,c} = 31.3\,^\circ$C, CO$_2$ is a subcritical liquid and its fugacity is
+governed primarily by vapor-pressure equilibrium.
+Between $\sim$31\,°C and $\sim$177\,°C, CO$_2$ is supercritical and the aqueous solubility
+decreases steeply with temperature.
+Above $\sim$227\,°C, the CO$_2$-rich phase acquires substantial water content
+(up to 20--25\,mol\% at $T = 227\,^\circ$C and $P = 200$\,bar), making accurate modeling of both
+phases equally important.
+A single set of temperature-independent binary interaction parameters cannot simultaneously
+describe all three regimes; the quadratic polynomial form of \citet{Coelho2025} provides
+sufficient flexibility while remaining analytically tractable.
+
+\subsection{eCPA equation of state}
+\label{sec:ecpa}
+
+For the ternary system, two electrostatic terms are added \citep{MaribMogensen2015}:
+\begin{equation}
+  A^r = A^{\text{SRK}} + A^{\text{assoc}} + A^{\text{DH}} + A^{\text{Born}},
+  \label{eq:Ar_ecpa}
+\end{equation}
+where $A^{\text{DH}}$ and $A^{\text{Born}}$ are the Debye--Hückel and Born solvation
+contributions, respectively.
+The presence of NaCl (Na$^+$ + Cl$^-$ ion pair) modifies the dielectric constant $\varepsilon_r$
+of the aqueous phase, which enters both electrostatic terms.
+The permittivity is computed self-consistently from the Onsager--Kirkwood equation, linking
+it to the Wertheim association fractions and the molecular dipole moments \citep{Coelho2025}.
+
+Ion--molecule interactions in the SRK mixing rule are modeled via energy
+parameters $\Delta U_{is}$ of the Non-Random Two-Liquid (NRTL) type with a temperature dependence of the form
+\begin{equation}
+  \Delta U_{is} = \Delta U_{is}^{\text{ref}} + \alpha_{is}R\!\left[
+    \left(1 - \frac{T}{T_{is}^\alpha}\right)^2 - \left(1-\frac{T_{\text{ref}}}{T_{is}^\alpha}\right)^2
+  \right],
+  \label{eq:DeltaU}
+\end{equation}
+with $T_{\text{ref}} = 25\,^\circ$C and parameters from \citet{Coelho2025}.
+All EoS parameters are listed in Tables~\ref{tab:pure_params} and \ref{tab:binary_params}.
+
+\subsection{Density and Péneloux volume correction}
+\label{sec:peneloux}
+
+The molar volume in each phase is $v = ZRT/P$.
+Cubic equations of state systematically over- or underpredict liquid densities.
+The Péneloux volume translation \citep{Peneloux1982} corrects this without affecting
+phase compositions (it is isofugacity-preserving):
+\begin{equation}
+  v^{\text{corr}} = v^{\text{EoS}} + \sum_i x_i c_i,
+  \label{eq:peneloux}
+\end{equation}
+with the corrected density $\rho = M_{\text{mix}}/v^{\text{corr}}$.
+\citet{Coelho2025} apply a shift $c_s = -53.5$\,cm$^3$\,mol$^{-1}$ to the NaCl species
+to correct brine density.
+No volume shift is applied to the water or CO$_2$ components; as shown in
+Section~\ref{sec:density}, the uncorrected eCPA model already achieves sub-1\% accuracy
+for aqueous-phase densities.
+
+
+%% ============================================================
+\section{Phase Stability and Flash Computations}
+\label{sec:flash}
+
+\subsection{Initial implementation: outer Brent loop over aqueous molality}
+\label{sec:brent}
+
+As a first, robust implementation of the eCPA flash, we employ an outer Brent
+root-finding loop over the equilibrium NaCl molality $m_s^{\rm aq}$ [mol\,kg$^{-1}$] in
+the aqueous phase.
+The Brent method \citep{Brent1973} is a bracketed root-finding algorithm that combines
+bisection with inverse quadratic interpolation, guaranteeing convergence within a
+user-specified bracket without requiring a derivative.
+At each trial $m_s^{\rm aq}$, the full two-phase equilibrium is solved by an inner VLE
+solver (enforcing CO$_2$ and H$_2$O fugacity equality between phases), and the
+resulting phase amounts and compositions are used to evaluate the H$_2$O mass-balance
+residual; the Brent algorithm then bisects toward the $m_s^{\rm aq}$ at which this
+residual is zero.
+Initial guesses (warm starts) for the inner VLE solver are obtained from a molality-continuation
+cache built by marching from $m_s^{\rm aq}=0$ to an upper bound in small steps.
+This approach requires no initial guess for the full phase-state vector, making it highly
+robust.
+However, each function evaluation requires solving the eCPA phase compressibilities via nested Newton solves,
+making the outer loop expensive and ill-suited to the large number of evaluations required
+in a parameter-space scan or a production reservoir simulator.
+This motivated the development of the direct SSI approach described below.
+
+\subsection{Michelsen tangent-plane distance stability test}
+\label{sec:stability}
+
+We implement the Michelsen tangent-plane distance (TPD) criterion \citep{Michelsen1982a}
+to determine whether a mixture at given $(T, P, \mathbf{z})$ is stable (single phase) or
+unstable (two-phase).
+Here $\mathbf{z} = (z_1, z_4)$ are the overall feed mole
+fractions of the two molecular species (NaCl is not an independent flash
+variable but enters through the molality-dependent fugacity coefficients,  $\hat{\phi}_i$, below).
+Following \citet{Michelsen1982a}, we introduce the vector of
+\emph{unnormalized} trial mole numbers
+$\mathbf{W} = (W_1, W_4)$, which do not
+in general sum to unity.
+The normalized trial mole fractions are $w_i = W_i / \sum_j W_j$, and
+the TPD function is
+\begin{equation}
+  \text{TPD}(\mathbf{W}) = \sum_{i} W_i \left[\ln W_i + \ln \hat{\phi}_i(\mathbf{w}) - d_i\right],
+  \label{eq:tpd}
+\end{equation}
+where the sum is over $i \in \{1, 4\}$,
+$d_i = \ln z_i + \ln \hat{\phi}_i(\mathbf{z})$ are reference chemical-potential
+offsets evaluated at the feed composition, and $\hat{\phi}_i$ is the fugacity
+coefficient.
+At any stationary point of $\text{TPD}$, one can show that
+$\text{TPD} = 1 - \sum_i W_i$, so a negative minimum
+(equivalently, $\sum_i W_i > 1$ at convergence of the SSI) indicates
+thermodynamic instability.
+Initial trial compositions are specified as normalized mole fractions derived
+from each K-value set (e.g.\ for the Wilson CO$_2$-rich trial,
+$w_1^{(0)} = K_1\,z_1 / \sum_i K_i z_i$; for the fixed trials, $y_1 = 0.01$ or
+$x_1 \approx 0.999$).
+
+Following \citet{Jex2024}, we initialize the stability SSI from six trial K-value sets to
+ensure that no unstable stationary point is missed:
+\begin{enumerate}
+  \item Wilson's correlation: $K_i^W = (P_{c,i}/P)\exp[5.373(1+\omega_i)(1-T_{c,i}/T)]$,
+  \item Inverse Wilson: $K_i = 1/K_i^W$,
+  \item Cube-root Wilson: $K_i = (K_i^W)^{1/3}$,
+  \item Inverse cube-root: $K_i = (1/K_i^W)^{1/3}$,
+  \item CO$_2$-rich: $K_{\text{CO}_2} = 0.95/z_{\text{CO}_2}$,
+        $K_{\text{H}_2\text{O}} = 0.05/z_{\text{H}_2\text{O}}$,
+  \item H$_2$O-rich: $K_{\text{H}_2\text{O}} = (1-10^{-15})/z_{\text{H}_2\text{O}}$,
+        $K_{\text{CO}_2} = 10^{-15}/z_{\text{CO}_2}$.
+\end{enumerate}
+Each trial is iterated to convergence or a maximum of 200 SSI steps using the
+accelerated scheme described in Section~\ref{sec:ssi}.
+The mixture is classified as unstable if any trial converges to
+$\text{TPD} < -10^{-7}$; the K-values from the most negative TPD are
+passed to the flash as initial guess (Section~\ref{sec:ssi}).
+
+As demonstrated in the parameter-space scan of Section~\ref{sec:convergence}, all six
+initial guesses play a material role: no single guess is best across the full $(T, P, z)$
+space, and all six are needed to ensure the optimal K-value initialization for the
+subsequent flash (Fig.~\ref{fig:stability_best_trial}).
+
+In practice, the stability test is the most computationally expensive step ($\sim$30\,ms per
+call for the eCPA system), because it requires iterating the inner equations at each SSI step
+for each of the six trials.
+In the fast-flash algorithm described in Section~\ref{sec:fast_flash}, the stability test is
+bypassed for conditions pre-classified as two-phase by the solution table, reducing this
+overhead to zero for the vast majority of reservoir simulation cells.
+
+\paragraph{EoS root consistency in the stability reference}
+The reference $d_i = \ln z_i + \ln\hat{\phi}_i(\mathbf{z})$ and all trial-phase
+evaluations use the same EoS, but the highly nonlinear CPA and eCPA equations of
+state can admit multiple real compressibility roots at a given condition, and
+the number of roots cannot be determined a priori.
+If the reference solver converges to a different root than the trial-phase solver,
+the resulting TPD comparison is between fugacities belonging to physically distinct
+solution branches, and the sign of TPD carries no thermodynamic meaning.
+This root-mixing artefact is most pronounced at pressures below the saturation
+pressure of water, $P < P_{\rm sat}(\mathrm{H}_2\mathrm{O},T)$: an H$_2$O-rich
+feed composition (large $z_{\mathrm{H}_2\mathrm{O}}$) can simultaneously support
+a liquid-like root ($Z \ll 1$) and a gas-like root ($Z \approx 1$), among others.
+A naive implementation that returns the \emph{first} valid root found risks
+root-mixing: for H$_2$O-rich compositions at low pressure the reference
+may converge to the liquid root ($Z \ll 1$), while CO$_2$-rich trial iterates
+at small $y_1$ converge to the gas root ($Z \approx 1$), producing
+spuriously large negative TPD values and false two-phase predictions.
+Our implementation avoids this by collecting \emph{all} distinct valid roots
+from multiple cold starts and selecting the one that minimizes the residual
+Gibbs energy $G^{\rm res}/RT = \sum_i x_i\ln\hat{\phi}_i$.
+This is a purely thermodynamic criterion: the minimum-$G$ root is the
+thermodynamically stable single-phase state at any $(T,P,\mathbf{x})$,
+independent of initial guess ordering or any pressure threshold.
+In the parameter-space scan (Section~\ref{sec:convergence}), this criterion
+eliminates nine false-positive two-phase predictions at
+$T = 190$--$220\,^\circ$C, $P = 10$\,bar (below $P_{\rm sat}$ for those
+temperatures), conditions at which no genuine two-phase equilibrium exists
+according to the EoS.
+
+\subsection{Successive-substitution isothermal flash}
+\label{sec:ssi}
+
+For two-phase conditions, we solve the equilibrium equations
+\begin{equation}
+  x_i\,\hat{\phi}_i^{\text{aq}}(x, T, P) = y_i\,\hat{\phi}_i^c(y, T, P), \quad i = \text{H}_2\text{O},\, \text{CO}_2,
+  \label{eq:iso_eq}
+\end{equation}
+which are iterated by successive substitution on the K-values $K_i = y_i / x_i$.  At each iteration $k$, the fugacity-ratio residual vector is
+\begin{equation}
+  g_i^{(k)} = \ln\hat{\phi}_i^c(y^{(k)}) + \ln y_i^{(k)}
+             - \ln\hat{\phi}_i^{\text{aq}}(x^{(k)}) - \ln x_i^{(k)},
+  \label{eq:lng}
+\end{equation}
+and the K-value update is
+\begin{equation}
+  \ln K_i^{(k+1)} = \ln K_i^{(k)} - m^{(k)}\, g_i^{(k)},
+  \label{eq:ssi}
+\end{equation}
+where $m^{(k)}$ is a step-size acceleration factor, discussed next.
+
+\paragraph{Accelerated SSI}
+Following the dominant-eigenvalue acceleration of \citet{Jex2024}, the step size is
+\begin{equation}
+  m^{(k)} = \left| \frac{\mathbf{g}^{(k-1)\mathsf{T}}\, \mathbf{g}^{(k-1)}}
+                   {\mathbf{g}^{(k-1)\mathsf{T}}\,[\mathbf{g}^{(k-1)} - \mathbf{g}^{(k)}]}
+             \;\cdot\; m^{(k-1)} \right|, \quad
+  m^{(k)} \in [1,\; 1/L],
+  \label{eq:accel_m}
+\end{equation}
+with $L = 0.1$ (so $m^{(k)} \leq 10$) for two-phase systems, and $m^{(1)} = 1$
+(standard SSI on the first step).
+The formula estimates the dominant eigenvalue of the iteration map and extrapolates
+the K-value update along the slowest-decaying direction, dramatically reducing the
+number of iterations needed for convergence.
+Following \citet{Jex2024}, we use the identity matrix as the scaling operator
+$\mathbf{U}^{-1}$ in the inner product, which is exact for two-component systems.
+The accelerated step $m^{(k)} g_i^{(k)}$ is clipped to $[-5, +5]$ in log-K space
+to prevent overshooting.
+
+Convergence is declared when $\|\mathbf{g}^{(k)}\| < \tau$ with tolerance $\tau = 10^{-10}$.
+
+\paragraph{Newton polish}
+Once the SSI residual falls below a switchover threshold $\tau_\text{switch}$ (default $10^{-4}$),
+the solver switches to a Newton--Raphson step for quadratic convergence.
+At each Newton step, we solve the $2\times 2$ linear system
+\begin{equation}
+  \mathbf{J}^{(k)}\,\Delta\ln\mathbf{K}^{(k)} = -\mathbf{g}^{(k)},
+  \label{eq:newton}
+\end{equation}
+where the Jacobian $\mathbf{J} = \partial\mathbf{g}/\partial\ln\mathbf{K}$ is computed
+analytically.
+Each column of $\mathbf{J}$ requires the composition derivative $\partial\ln\hat{\phi}_i/\partial x_j$,
+which is obtained via the implicit function theorem applied to the three coupled inner equations
+for $(Z, \chi_{1w}, \chi_{1c})$: a $3\times 3$ linear system is solved analytically at the
+converged SSI state, yielding $\mathrm{d}Z/\mathrm{d}x$, $\mathrm{d}\chi_{1w}/\mathrm{d}x$,
+and $\mathrm{d}\chi_{1c}/\mathrm{d}x$, from which $\partial\ln\hat{\phi}_i/\partial x_j$
+follows by the chain rule.
+The Newton step is clipped to $[-5, +5]$ in $\ln K$ space.
+If Newton fails to reduce $\|\mathbf{g}\|$ or if the Jacobian is singular,
+the solver reverts to the pre-Newton state and continues with accelerated SSI,
+ensuring robustness.
+Across 9{,}825 two-phase conditions, Newton polish is triggered at 85.6\% of points and
+reduces the mean iteration count from 9.8 (SSI only) to 6.9 (4.8 SSI + 2.1 Newton);
+see Table~\ref{tab:accel_comparison} and Fig.~\ref{fig:newton_heatmap_SI}.
+
+The CO$_2$-rich phase mole fraction $\beta$ (the fraction of total moles in the CO$_2$-rich
+phase) is obtained at each step by solving the Rachford--Rice equation:
+\begin{equation}
+  \sum_{i} \frac{z_i(K_i - 1)}{1 + \beta(K_i - 1)} = 0,
+  \label{eq:rr}
+\end{equation}
+where the sum is over $i \in \{1, 4\}$ and
+$z_i$ are the overall feed mole fractions.
+Initial K-values are taken from Wilson's correlation, from the stability test
+(Section~\ref{sec:stability}), or from the solution table (Section~\ref{sec:table}).
+
+\paragraph{Hierarchical flash algorithm}
+The stability test and flash are combined in a hierarchical algorithm
+\citep{Jex2024}: (1)~run the TPD stability test with all six initial guesses;
+if stable, return single-phase; (2)~use K-values from the most negative TPD
+trial as the initial guess for the accelerated SSI flash; (3)~if the flash
+fails, fall back to Wilson K initialization.
+This strategy provides both robustness (100\% convergence across all 9{,}825 two-phase
+conditions in the parameter-space scan, Section~\ref{sec:convergence}) and efficiency
+(stability-informed K-values reduce flash iterations by an additional 8\% compared to
+Wilson initialization).
+
+For cold-start SSI (without a table guess), a damping factor $\omega = 0.7$ is used
+in the standard (non-accelerated) variant to avoid divergence; warm-started SSI
+(from a table guess with state-vector error $\lesssim 0.01$) converges reliably with
+$\omega = 1.0$ in 3--4 iterations.
+
+\paragraph{Inner Newton--Raphson solve for $Z$ and $\chi$ (CPA)}
+Within each SSI iteration, the CPA fugacity coefficients require simultaneous solution of
+the compressibility factor $Z$ and the association site fractions $\chi$ for each phase.
+These quantities are mutually dependent: $Z$ sets the molar volume and hence the packing
+fraction $\eta$, which enters the radial distribution function $g(\eta)$ and therefore the
+association strength $\Delta$; the association fractions $\chi$ in turn feed back into the
+compressibility equation through the Wertheim term.
+For the CO$_2$--H$_2$O binary, the inner problem comprises three coupled equations per phase:
+\begin{align}
+  F_1 &= Z - \frac{Z}{Z - B} + \frac{A}{Z + B}
+         - \left(1 + \frac{\eta}{g}\frac{\mathrm{d}g}{\mathrm{d}\eta}\right)
+         \bigl[x_w(\chi_w - 1) + x_c(\chi_c - 1)\bigr] = 0,
+         \label{eq:funZ} \\
+  F_2 &= c_3 \chi_w^3 + c_2 \chi_w^2 + c_1 \chi_w + c_0 = 0,
+         \label{eq:chiW} \\
+  F_3 &= \chi_c \bigl(Z + 2 x_w \chi_w \delta_1\bigr) - Z = 0,
+         \label{eq:chiC}
+\end{align}
+where the coefficients $c_0$--$c_3$ in $F_2$ depend on $Z$ through $\delta = g(\eta)\kappa\,[\exp(\varepsilon/k_BT)-1]$,
+$\delta_1 = S_{cw}\,\delta$ is the scaled cross-association strength, and
+$A$, $B$ are the dimensionless SRK parameters defined in Section~\ref{sec:eos}.
+Equation~\eqref{eq:funZ} is the residual of the compressibility equation,
+\eqref{eq:chiW} is the cubic equation for the H$_2$O bonding fraction $\chi_w$
+(four sites, 4C scheme), and \eqref{eq:chiC} is the algebraic closure for the CO$_2$
+cross-association fraction $\chi_c$.
+These three equations are solved simultaneously by Newton--Raphson, using the
+solution from the previous SSI iteration as the initial guess.
+The $3\times 3$ Jacobian is derived analytically; all partial derivatives of $F_1$,
+$F_2$, and $F_3$ with respect to $(Z, \chi_w, \chi_c)$ are available in closed form
+via the chain rule through $g(\eta)$ and its first two derivatives
+(Section~\ref{sec:jac_cpa}).
+A scan+Brent fallback is retained for robustness when no warm start is available.
+The analogous but structurally different inner solve for the eCPA aqueous phase,
+which additionally involves the relative permittivity $\varepsilon_r$, is described
+in the next Section.
+
+\subsection{K-value flash for the eCPA ternary system}
+\label{sec:kv_flash}
+
+In the full eCPA ternary (CO$_2$ + H$_2$O + NaCl), the equilibrium NaCl molality
+in the aqueous phase $m_s^{\rm aq}$ couples to the flash equations through the
+aqueous-phase fugacity coefficients.
+Since NaCl is non-volatile, all salt remains in the aqueous phase and
+$m_s^{\rm aq}$ is fully determined by the current K-values and the feed
+composition — it carries no independent degree of freedom.
+We exploit this to \emph{eliminate} $m_s^{\rm aq}$ analytically within each
+SSI step: given the current $(K_1, K_4)$, the compositions of both phases and
+the molality are computed algebraically before the fugacity-coefficient
+evaluation, so the entire flash reduces to a single-level SSI on $(K_1, K_4)$
+with no outer loop.
+
+\paragraph{Analytical elimination of $m_s^{\rm aq}$}
+Given $K_1 \equiv y_1/x_1$ and $K_4 \equiv y_4/x_4$, the compositions
+of both phases are fixed once $x_1$ is known.
+On a one-mole volatile-feed basis with CO$_2$ feed fraction $z_4$ (so $z_1 = 1 - z_4$
+is the H$_2$O feed fraction) and feed molality $m_{\rm feed}$, the H$_2$O molar
+balance relates $\beta$ to $x_1$:
+$\beta(x_1) = [z_1/x_1 - 1]\,/\,(K_1 - 1)$.
+The CO$_2$-rich phase normalization ($y_1 + y_4 = 1$, no NaCl) gives
+$x_4 = (1 - K_1\,x_1)/K_4$.
+Substituting $x_2 = x_3 = x_1\,m_s^{\rm aq}\,M_w$ and the NaCl molar
+balance $m_s^{\rm aq} = m_{\rm feed}\,z_1/[(1-\beta)\,x_1]$ into the aqueous
+normalization $\sum_i x_i = 1$ yields a single scalar equation in
+$x_1$:
+\begin{equation}
+  x_1
+  + \frac{2\,m_{\rm feed}\,z_1\,M_w}{1 - \beta(x_1)}
+  + \frac{1 - K_1\,x_1}{K_4} = 1.
+  \label{eq:x1w_kv}
+\end{equation}
+Equation~\eqref{eq:x1w_kv} is monotone in $x_1$ over the physical domain and is
+solved by Brent's method at each SSI step.
+Because this is a purely algebraic equation (no EoS evaluations), the scalar
+root-find adds negligible cost relative to the fugacity-coefficient evaluations
+that follow.
+Once $x_1$ is known, all compositions and the molality follow analytically:
+\begin{equation}
+  m_s^{\rm aq} = \frac{m_{\rm feed}\,z_1}{[1-\beta(x_1)]\,x_1}.
+  \label{eq:msaq_kv}
+\end{equation}
+
+\paragraph{K-value iteration and acceleration}
+With compositions fully determined by the current $(K_1, K_4)$, the fugacity
+residual is a 2-vector
+\begin{equation}
+  g_i^{(k)} =
+    \ln\hat{\phi}_i^{c}\!\bigl(y_1^{(k)}\bigr) + \ln y_i^{(k)}
+    - \ln\hat{\phi}_i^{\rm aq}\!\bigl(x_1^{(k)}, m_s^{{\rm aq},(k)}\bigr) - \ln x_i^{(k)},
+    \quad i \in \{\mathrm{H}_2\mathrm{O},\,\mathrm{CO}_2\},
+  \label{eq:g_kv}
+\end{equation}
+and the K-value update follows Eq.~\eqref{eq:ssi} with the Jex acceleration
+(Eq.~\eqref{eq:accel_m}).
+
+\paragraph{Inner Newton--Raphson solve for $Z_w$, $\varepsilon_r$, and $\chi_w$ (eCPA)}
+Within each SSI iteration, the eCPA aqueous-phase fugacity coefficients require
+simultaneous solution of $Z_w$, the relative permittivity $\varepsilon_r$, and the
+H$_2$O association fraction $\chi_w$.
+The permittivity is coupled to the association state through the Onsager--Kirkwood
+self-consistency equation \citep{MaribMogensen2015}, and both feed back into the
+compressibility through the Debye--Hückel and permittivity correction terms absent
+in the salt-free CPA.
+The CO$_2$ cross-association fraction is eliminated algebraically,
+$\chi_c = Z_w/D_c$ with $D_c = Z_w + 2x_w\chi_w S_{cw}\Delta_w$,
+reducing the aqueous inner problem to three coupled equations:
+\begin{align}
+  G_0 &= Z_w
+       - \frac{Z_w}{Z_w - B_w} + \frac{A_w}{Z_w + B_w}
+       - \!\left(1 + \frac{\eta}{g_w}\frac{\mathrm{d}g_w}{\mathrm{d}\eta}\right)
+         \bigl[x_w(\chi_w-1) + x_c(\chi_c-1)\bigr]
+       - Z_w^{\text{DH}} - Z_w^{\text{Perm}} = 0,
+       \label{eq:G0main} \\
+  G_1 &= \frac{(\varepsilon_r - \varepsilon_\infty)(2\varepsilon_r + \varepsilon_\infty)}
+              {\varepsilon_r(\varepsilon_\infty + 2)^2}
+       - \frac{N_A\rho\,\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_w\,g_w(\chi_w) = 0,
+       \label{eq:G1main} \\
+  G_2 &= \chi_w
+       - \frac{Z_w}{Z_w + 2x_w\chi_w\Delta_w + 2x_c\chi_c S_{cw}\Delta_w} = 0.
+       \label{eq:G2main}
+\end{align}
+Equation~\eqref{eq:G0main} is the eCPA compressibility residual: the SRK physical
+term is augmented by the Wertheim association correction (as in CPA) and by the
+Debye--Hückel compressibility $Z_w^{\text{DH}}$ and the permittivity
+correction $Z_w^{\text{Perm}}$ \citep{Coelho2025}, both of which depend on $\varepsilon_r$.
+Equation~\eqref{eq:G1main} is the Onsager--Kirkwood self-consistency condition:
+its left-hand side is the Onsager dielectric function of $\varepsilon_r$ and
+$\varepsilon_\infty(Z_w)$ (the high-frequency permittivity from the Clausius--Mossotti
+relation), while the right-hand side couples the H$_2$O molar density $\rho$
+to the Kirkwood g-factor $g_w(\chi_w)$ through the permanent dipole moment
+$\mu_{0w}$ \citep{Coelho2025}.
+Equation~\eqref{eq:G2main} is the self-consistency condition for the H$_2$O bonding
+fraction, with $\Delta_w = g_w(\eta)\,\kappa_w[\exp(\varepsilon_w/k_BT)-1]$
+the association strength.
+These three equations are solved simultaneously by Newton--Raphson, warm-started
+from the previous SSI iterate.
+The $3\times 3$ Jacobian $\mathbf{H} = \partial(G_0,G_1,G_2)/\partial(Z_w,\varepsilon_r,\chi_w)$
+is derived analytically in Section~\ref{sec:jac_ecpa}.
+The CO$_2$-rich phase retains the $3\times 3$ system of Section~\ref{sec:ssi}
+(with $x_{1c}=0$ eliminating the eCPA terms);
+when no warm start is available, a general-purpose root-finder provides
+the cold-start fallback for the aqueous phase.
+Convergence is declared when $\|\mathbf{G}^{(k)}\| < 10^{-8}$.
+
+In the hierarchical algorithm described in Section~\ref{sec:fast_flash},
+K-values are always initialized from the stability test result, with
+Wilson's correlation as a fallback.
+When the flash is invoked without a prior stability result, four fixed
+$(K_1, K_4)$ seeds are tried in sequence until one converges.
+
+\paragraph{Outer Newton polish for the eCPA K-value flash}
+By analogy with the CPA flash (``Newton polish'' paragraph in Section~\ref{sec:ssi}), we test an
+outer Newton--Raphson polish applied once the K-value SSI residual
+$\|\mathbf{g}\|$ falls below a switchover threshold.
+Because the eCPA K-value residual couples the highly non-linear electrostatic
+and association contributions through the implicitly defined aqueous composition
+$x_1$ (Eq.~\eqref{eq:x1w_kv}), deriving an analytical $2\times 2$ Jacobian
+$\partial\mathbf{g}/\partial\ln\mathbf{K}$ would require implicit differentiation
+through a scalar Brent solve at every Newton step.
+We therefore test the approach with a forward-difference numerical Jacobian,
+which adds two additional $\ln \phi $ evaluations per Newton step.
+The benchmarks (672 conditions spanning $T = 37$--$157\,^\circ$C, $P = 60$--$400\,$bar,
+$z_{\text{CO}_2} = 0.15$--$0.70$, $m_s = 0.5$--$4.5\,$mol\,kg$^{-1}$) show
+that on the warm-start path — the production path in sequential simulation —
+the SSI already converges in approximately one iteration because the table
+initial guess is close to the solution, so Newton is never triggered and the
+overhead is negligible.
+On the cold-start path, where SSI requires $\sim$7 iterations on average,
+the Newton polish reduces the total iteration count by 25\% (from 7.15 to 5.35
+for a switchover threshold of $10^{-3}$, or 17\% for $10^{-4}$), but the
+numerical-Jacobian overhead — three $\ln \phi $ evaluations per Newton step versus one
+for SSI — cancels the iteration savings in wall time ($\lesssim 1\%$
+improvement).
+Because the warm-start path dominates in practice and a worthwhile wall-time
+speedup would require an analytical Jacobian that is non-trivial to derive,
+the outer Newton polish is not applied by default in the eCPA flash.
+
+\subsection{Phase envelope}
+\label{sec:envelope}
+
+We trace the two-phase boundary ($P$--$T$ locus at fixed $z_4$ and $m_s$) using the following
+procedure:
+\begin{enumerate}
+  \item Scan a coarse grid of ($T$, $P$) points with the stability test to classify each
+        cell as stable or unstable.
+  \item Identify transitions between stable and unstable cells.
+  \item Refine each transition to the phase boundary by bisection, using SSI
+        to solve the flash at each trial point.
+\end{enumerate}
+To handle the large number of ($T$, $P$) combinations efficiently, the bisection at each
+boundary point is executed in parallel across all available CPU cores.
+
+\subsection{Fast flash for reservoir simulation}
+\label{sec:fast_flash}
+
+\subsubsection{Three-dimensional solution table}
+\label{sec:table}
+
+We precompute flash solutions on a three-dimensional grid $(T, P, m_s)$ with:
+\begin{itemize}
+  \item $T$: 361 points from 0 to $360\,^\circ$C ($1\,^\circ$C spacing),
+        covering conditions from cold-basin CO$_2$ storage to hydrothermal and
+        geothermal applications.
+  \item $\log_{10}P$: 100 points from $\log_{10}(1)$ to $\log_{10}(2000)$ (log-uniform).
+  \item $m_s$ (NaCl molality): 14 points from 0.0 to 6.0\,mol\,kg$^{-1}$, spanning
+        the full range of experimental data from dilute brine to near-saturation.
+\end{itemize}
+This gives $361 \times 100 \times 14 = 505{,}400$ grid cells.
+Here $m_s$ denotes the NaCl feed molality, i.e.\ moles of NaCl per kilogram
+of H$_2$O in the feed mixture; it differs from the equilibrium aqueous
+molality $m_s^{\rm aq}$, which is larger due to the salting-out effect.
+The overall CO$_2$ feed fraction $z_4$ is not included as a table dimension.
+All table entries were computed at a representative feed fraction $z_4 = 0.5$;
+the equilibrium quantities stored (K-values, $Z$, $\chi$, $m_s^{\rm aq}$)
+depend weakly on $z_4$ for fixed $(T, P, m_s)$.
+This dependence is primarily through the salting-out effect: a larger CO$_2$
+feed fraction partitions more water into the CO$_2$-rich phase, concentrating
+the brine and raising $m_s^{\rm aq}$, which in turn slightly shifts the
+K-values.
+We verified numerically that at typical subsurface conditions ($T = 50\,^\circ$C,
+$P = 100$\,bar, $m_s = 1$\,mol\,kg$^{-1}$) the spread of K-values across the
+full two-phase $z_4$ range is less than 0.15\%, confirming that the table
+provides adequate warm-start quality across the full feed composition range.
+Excluding $z_4$ reduces the table size by more than an order of magnitude
+relative to a four-dimensional grid.
+
+Each cell is solved using the full hierarchical algorithm
+(Section~\ref{sec:stability}): the Michelsen stability test (six trial compositions)
+is performed first; only genuinely unstable conditions proceed to K-value SSI flash.
+This means no external assumption about the phase state is required; every cell is
+self-consistently classified and solved.
+At each two-phase cell we store the converged K-values $(K_1, K_4)$, the
+inner-Newton state for the aqueous phase $(Z_w, \varepsilon_r, \chi_{1w})$
+and for the CO$_2$-rich phase $(Z_c, \chi_{1c})$, and the equilibrium
+aqueous molality $m_s^{\rm aq}$.
+All seven quantities serve directly as warm-start inputs to the hierarchical
+flash: K-values initialize the outer SSI, while $Z$, $\varepsilon_r$, and
+$\chi$ initialize the inner Newton solves for compressibility factor and
+association fractions (Section~\ref{sec:jac_ecpa}), eliminating the need for
+cold-start Newton iterations.
+A scalar stability flag (two-phase or single-phase) is also stored.
+
+Table lookup uses a trilinear interpolant operating in $(T, \log_{10}P, m_s)$ space,
+which is vectorized and evaluates in $<$1\,ms.
+
+\subsubsection{Fast flash algorithm}
+\label{sec:algorithm}
+
+The fast flash routine operates as follows.
+A query to the 3D interpolant in $(T, \log_{10}P, m_s)$ yields an initial state vector (compressibility factors, phase
+compositions, association fractions, and permittivity) together with a stability classification
+(two-phase or single-phase).
+If the interpolant classifies the condition as two-phase, the Michelsen stability test is
+skipped and SSI is initialized directly from the table state vector with no damping ($\omega = 1.0$).
+If the classification is single-phase or uncertain (for example, near the two-phase boundary
+or for grid cells with low convergence quality), the full Michelsen TPD test is performed;
+a stable result returns immediately without a flash, while an unstable result proceeds to SSI.
+In either two-phase path, the warm-started SSI converges in 3--4 iterations because the
+interpolated state vector is already within $\sim$1\% of the converged solution.
+Should SSI fail to converge, a full cold-start with Wilson K-value initialization and damped
+SSI ($\omega = 0.7$) provides a robust fallback.
+
+The key insight enabling this strategy is that the solution surface --- the mapping from
+$(T, P, m_s)$ to the equilibrium state vector --- is smooth and slowly varying except near
+the two-phase boundary and the CO$_2$ critical point ($T_{c,c} = 31.3\,^\circ$C, $P_c = 73.8$\,bar).
+A trilinear interpolant from a grid with $1\,^\circ$C temperature spacing and log-uniform pressure
+spacing (100 points over 1--2000\,bar) therefore provides an excellent initial guess for the vast
+majority of reservoir conditions.
+The selective stability check further reduces cost: in a typical reservoir simulation, the
+majority of grid cells are well within either a single-phase or a two-phase region (injected CO$_2$ coexisting with
+brine) and the interpolant stability flag can be trusted, while the expensive Michelsen test
+is reserved for cells near boundaries where phase transitions occur.
+
+
+%% ============================================================
+\subsection{Alternative simplified flash exploiting \texorpdfstring{$y_{\text{H}_2\text{O}} \approx 0$}{yH2O = 0}}
+\label{sec:simplified_flash}
+
+At typical CO$_2$ storage reservoir conditions ($T \lesssim 100\,^\circ$C), the
+H$_2$O content of the CO$_2$-rich phase remains below 1\,mol\%
+(see Fig.~\ref{fig:ecpa_c_grid} and the discussion in Section~\ref{sec:ecpa_scan}).
+The approximation $y_{\text{H}_2\text{O}} = 0$ then collapses the standard two-component
+K-value flash to a single scalar equation, enabling a simpler, self-contained
+calculation without the outer salinity iteration.
+
+\paragraph{Mathematical basis}
+Under $y_{\text{H}_2\text{O}} = 0$ the CO$_2$-rich phase is pure CO$_2$, so its fugacity
+reduces to the pure-component value:
+\begin{equation}
+  f_{\text{CO}_2}^{\,\text{c}}(T,P) = P\,\phi_{\text{CO}_2}^{\text{pure}}(T,P).
+  \label{eq:fpure}
+\end{equation}
+A compact material-balance argument shows that the aqueous NaCl molality equals the feed
+value exactly under this assumption.
+Define the effective H$_2$O feed mole fraction
+$z_1 = (1-z_{\text{CO}_2})/(1+2m_{\text{feed}}M_w)$, where $M_w = 0.018015$\,kg\,mol$^{-1}$.
+From the NaCl and H$_2$O balances (salt is non-volatile, so
+$z_{\text{NaCl}} = (1-\beta)\,x_1^{\,\text{aq}}\,m_s^{\,\text{aq}}\,M_w$ and
+$z_1 = (1-\beta)\,x_1^{\,\text{aq}}$), dividing gives
+$m_s^{\,\text{aq}} = z_{\text{NaCl}}/(z_1 M_w) = m_{\text{feed}}$.
+The equilibrium is therefore determined by a single equation in $x_1^{\,\text{aq}}$:
+\begin{equation}
+  f_{\text{CO}_2}^{\,\text{aq}}\!\left(x_1^{\,\text{aq}},\,m_{\text{feed}},\,T,\,P\right)
+  \;=\; f_{\text{CO}_2}^{\,\text{c}}(T,P),
+  \label{eq:simplified_balance}
+\end{equation}
+where $x_4^{\,\text{aq}} = 1 - x_1^{\,\text{aq}}(1+2m_{\text{feed}}M_w)$ and
+the aqueous fugacity is evaluated with the eCPA 3$\times$3 Newton solver
+(Section~\ref{sec:kv_flash}).
+The phase fraction follows from the H$_2$O material balance:
+\begin{equation}
+  \beta = 1 - \frac{z_1}{x_1^{\,\text{aq}}}.
+  \label{eq:beta_simplified}
+\end{equation}
+Phase identification is embedded in the root-finding step: if the CO$_2$-fugacity
+residual evaluated at $x_1^{\,\text{aq}} = z_1$ (i.e.\ $\beta = 0$) is
+non-positive, the mixture is single-phase aqueous and no further solve is needed.
+
+\paragraph{Algorithm}
+The pure-CO$_2$ fugacity~\eqref{eq:fpure} is computed once via the CO$_2$-rich-phase
+inner Newton solver at $x_1^c = 0$.
+Equation~\eqref{eq:simplified_balance} is then solved by Brent's method over the
+bracket $[z_1,\, x_1^{\max}]$ where $x_1^{\max} = 1/(1+2m_{\text{feed}}M_w)$ is the
+H$_2$O mole fraction of a salt-only aqueous phase.
+Warm-starting of the inner Newton solver across Brent evaluations (carrying forward
+$[Z_w, \varepsilon_r, \chi_{1w}]$ from each accepted step) reduces the inner-solve
+cost to the same 3--6 Newton iterations achieved in the full flash.
+The formulation is valid for both the salt-free CPA binary ($m_{\text{feed}} = 0$) and
+the full eCPA ternary; no outer salinity iteration is required in either case.
+Results are assessed against the full K-value flash in Section~\ref{sec:simplified_perf}.
+
+%% ============================================================
+\section{Validation}
+\label{sec:validation}
+
+\subsection{CO$_2$ + H$_2$O binary}
+\label{sec:co2h2o}
+
+We validate both the (new and tuned) salt-free CPA EOS and the eCPA EOS at $m_s = 10^{-4}$\,mol\,kg$^{-1}$
+(effectively salt-free) against 631 experimental VLE data points compiled by \citet{Coelho2025}
+for $T = 0$--$350\,^\circ$C, achieving 100\% convergence across all conditions.
+Both phases are characterised: the CO$_2$ mole fraction in the aqueous phase $x_{\text{CO}_2}$ and
+the H$_2$O mole fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$.
+
+Fig.~\ref{fig:co2h2o_Tpanel} shows representative comparisons at six temperatures spanning
+the validated range ($T = 25$--$250\,^\circ$C); results for all 35 temperatures are collected in
+Fig.~\ref{fig:co2h2o_Tpanel_SI} in the Supplemental Information (phase split results for molalities up to $m_s = 6$\,mol\,kg$^{-1}$ are also included for comparison and discussed further below).
+Table~\ref{tab:co2h2o_metrics} summarizes the accuracy metrics by condition regime.
+CPA and eCPA give essentially identical results for the salt-free binary (an encouraging
+consistency validation between independent codes), so only eCPA values are reported.
+The results in Fig.~\ref{fig:co2h2o_Tpanel} use a feed composition of 50\,mol\% CO$_2$
+and the full stability+flash framework; \citet{Coelho2025} report VLE compositions only
+(phase fractions are not needed for their parameterization validation).
+
+Over all 631 conditions, the overall AARE is 9.6\% for $x_{\text{CO}_2}$ ($N = 560$) and
+24.4\% for $y_{\text{H}_2\text{O}}$ ($N = 452$); the larger error for the CO$_2$-rich
+phase is consistent with the \citet{Coelho2025} parametrization, which prioritizes brine
+conditions.
+However, these headline numbers are inflated by three challenging regimes:
+\begin{enumerate}
+  \item \emph{Near the CO$_2$ critical point}
+        ($T_{c,c} = 31.3\,^\circ$C, $P_c = 73.8$\,bar): K-value gradients with pressure are
+        steep and small errors in fugacity coefficients translate to large errors in solubility,
+        consistent with the general difficulty of describing near-critical behavior with
+        equations of state based on a cubic repulsive term.
+  \item \emph{Near the H$_2$O critical point} ($T \geq 260\,^\circ$C): the two-phase envelope
+        narrows and the mixture critical locus predicted by the EoS deviates slightly from experiment.
+        At $T = 268$--$270\,^\circ$C, experimental compositions become identical ($K_i = 1$), indicating
+        conditions at or beyond the mixture critical point.
+  \item \emph{Ultra-high pressures} ($P > 1500$\,bar): beyond typical reservoir depths and
+        outside the solution-table range.  The sole data source at $P > 2000$\,bar
+        \citep{Todheide1963} cannot be independently cross-validated, and errors in this
+        regime reach 78\% AARE for $y_{\text{H}_2\text{O}}$.
+\end{enumerate}
+For conditions most relevant to subsurface CO$_2$ storage ($T = 30$--$150\,^\circ$C,
+$P = 50$--$600$\,bar), the AARE improves to \textbf{6.5\%} for $x_{\text{CO}_2}$ ($N = 137$).
+
+A cross-reference consistency analysis (Fig.~\ref{fig:error_heatmap_SI}) further reveals
+that the $y_{\text{H}_2\text{O}}$ data of \citet{King1992} are physically suspect:
+the reported water content in the CO$_2$-rich phase \emph{increases} with pressure above
+the CO$_2$ saturation pressure, contradicting thermodynamic expectations and the measurements
+of \citet{Meyer2015} at overlapping conditions.
+After excluding flagged outlier references (92 of 631 points, see
+Fig.~\ref{fig:error_heatmap_SI}), the overall $y_{\text{H}_2\text{O}}$ AARE decreases from
+24.4\% to 17.4\%.
+
+\begin{figure}[H]
+  \centering
+  \newcommand{\sw}{0.47\textwidth}%
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1a.png}\caption{$25\,^\circ$C\,(298\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1b.png}\caption{$50\,^\circ$C\,(323\,K)}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1c.png}\caption{$100\,^\circ$C\,(373\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1d.png}\caption{$150\,^\circ$C\,(423\,K)}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1e.png}\caption{$200\,^\circ$C\,(473\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\sw}\includegraphics[width=1.1\textwidth]{fig_1f.png}\caption{$250\,^\circ$C\,(523\,K)}\end{subfigure}
+  \caption{CO$_2$ + H$_2$O phase equilibria at six representative temperatures ($25$--$250\,^\circ$C).
+           For each temperature, the left panel shows the CO$_2$ mole fraction in the aqueous
+           phase ($x_{\text{CO}_2}$) and the right panel shows the H$_2$O mole fraction in the
+           CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$) vs.\ pressure.
+           Open symbols: experimental data \citep{Coelho2025}; black solid line: CPA (salt-free);
+           rainbow-colored filled bands: eCPA predictions spanning NaCl molalities
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (filled between consecutive molality contours;
+           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$), with discrete eCPA curves overlaid.
+           Results for all 35 temperatures are shown in Fig.~\ref{fig:co2h2o_Tpanel_SI}.}
+  \label{fig:co2h2o_Tpanel}
+\end{figure}
+
+These model errors should be interpreted in the context of the experimental
+uncertainty in the compiled dataset.
+Two independent estimates of measurement scatter can be obtained directly from the data.
+First, at the 76 ($T$, $P$) conditions where at least two independent references overlap
+(matched within $\pm 2.5$\,bar), the coefficient of variation between reported values
+averages 4.0\% for $x_{\text{CO}_2}$ and 11.1\% for $y_{\text{H}_2\text{O}}$.
+Second, the Gasser--Sroka--Jennen-Steinmetz (GSJS) difference-based variance
+estimator \citep{Gasser1986}, which estimates measurement noise from the
+scatter of consecutive data points around a locally interpolated trend within each
+isothermal series, yields a median relative noise of 2.4\% for $x_{\text{CO}_2}$ and
+4.7\% for $y_{\text{H}_2\text{O}}$.
+Taken together, these estimates suggest an intrinsic experimental uncertainty
+of roughly 2--4\% for $x_{\text{CO}_2}$ and 5--11\% for $y_{\text{H}_2\text{O}}$,
+so the model AARE of 6.5\% (subsurface) to 9.6\% (global) for $x_{\text{CO}_2}$
+are close to the measurement noise.
+
+Moreover, relative errors can be misleading when mole fractions span several orders of
+magnitude: a 35\% AARE for $y_{\text{H}_2\text{O}} < 0.005$ (101 points) corresponds to an
+average absolute error (AAE) of only 0.1 mol\%---negligible for reservoir
+simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
+3.5 mol\% for $y_{\text{H}_2\text{O}}$; under subsurface conditions these drop to
+0.13 and 0.68 mol\%, respectively.
+
+\begin{table}[H]
+  \centering
+  \caption{VLE accuracy metrics for the CO$_2$ + H$_2$O binary by condition regime.
+           AARE: average absolute relative error; AAE: average absolute error (mol\%).
+           CPA and eCPA ($m_s = 10^{-4}$) give identical results for this salt-free system;
+           only eCPA values are shown.
+           ``Excl.\ outliers'' removes references flagged by cross-reference consistency
+           (see text).}
+  \label{tab:co2h2o_metrics}
+  \begin{tabular}{lrrrrrr}
+    \toprule
+    & \multicolumn{3}{c}{$x_{\text{CO}_2}$ (aqueous)} & \multicolumn{3}{c}{$y_{\text{H}_2\text{O}}$ (CO$_2$-rich)} \\
+    \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+    Regime & $N$ & AARE & AAE & $N$ & AARE & AAE \\
+    \midrule
+    All data                          & 560 & 9.6\% & 0.53\,mol\% & 452 & 24.4\% & 3.5\,mol\% \\
+    All (excl.\ outliers)             & 468 & 9.3\% & 0.53\,mol\% & 355 & 17.4\% & 3.0\,mol\% \\
+    Subsurface                        & 137 & 6.5\% & 0.13\,mol\% & 102 & 25.6\% & 0.68\,mol\% \\
+    Extended ($T = 10$--$200\,^\circ$C)    & 362 & 8.9\% & 0.21\,mol\% & 299 & 24.6\% & 1.7\,mol\% \\
+    High-$T$ ($T \geq 260\,^\circ$C)        & 129 & 10.1\% & 1.6\,mol\% & 111 & 15.9\% & 8.0\,mol\% \\
+    High-$P$ ($P > 1500$\,bar)        & 27  & 18.4\% & 2.9\,mol\% & 27  & 78.0\% & 15.0\,mol\% \\
+    \bottomrule
+    \multicolumn{7}{l}{\footnotesize Subsurface: $T = 30$--$150\,^\circ$C, $P = 50$--$600$\,bar.} \\
+  \end{tabular}
+\end{table}
+
+
+
+
+
+\subsection{CO$_2$ + NaCl brine}
+\label{sec:co2nacl}
+
+Fig.~\ref{fig:co2h2o_Tpanel} also illustrates the effect of brine salinity on the equilibrium compositions by including predictions for the full molality range considered in this work. 
+We further validate the eCPA ternary flash against all available experimental data from the
+literature \citep{Guo2015, Rumpf1994, Koschel2006, Kiepe2002, Takenouchi1965,
+Chabab2020, Messabeb2016, Hou2013, Yan2011, Zhao2015,
+Bando2003, Nighswander1989, Liu2021, Liu2011b, Savary2012},
+spanning $T = 5$--$450\,^\circ$C, $P = 1$--$1400$\,bar, and
+$m_s = 0.17$--$6.0$\,mol\,kg$^{-1}$ NaCl (708 experimental data points in total).
+Two types of measurements are compared: CO$_2$ solubility in the aqueous
+phase and the CO$_2$ mole fraction in the CO$_2$-rich phase
+($y_{\text{CO}_2}$).
+Aqueous-phase solubility is reported differently by different sources:
+as CO$_2$ molality ($m_c$ [mol\,kg$^{-1}$]), or as the mole fraction
+on a NaCl-free basis
+($x_{\text{CO}_2}^{\text{sf}} = x_{\text{CO}_2}/(x_{\text{CO}_2}+x_{\text{H}_2\text{O}})$),
+where NaCl is excluded from the denominator.
+The latter is a reporting convention used by some authors and describes
+the same physical quantity as $m_c$; it is converted to molality via
+$m_c = x_{\text{CO}_2}^{\text{sf}}/[(1-x_{\text{CO}_2}^{\text{sf}})M_w]$
+before comparison.
+
+
+\begin{table}[H]
+  \centering
+  \caption{VLE accuracy metrics for CO$_2$ + NaCl brine ($T = 5$--$450\,^\circ$C,
+           $m_s = 0.17$--$6.0$\,mol\,kg$^{-1}$, 708 data points total,
+           689 two-phase converged). Bias $= \langle(\hat{y} - y)/y\rangle$.}
+  \label{tab:co2nacl_metrics}
+  \begin{tabular}{lrrr}
+    \toprule
+    Quantity & $N$ & AARE (\%) & Bias (\%) \\
+    \midrule
+    $m_c$ [mol\,kg$^{-1}$]            & 501 & 6.6 & $-3.3$ \\
+    $x_{\text{CO}_2}^{\text{sf}}$ (NaCl-free basis, conv.\ to $m_c$) & 116 & 5.5 & $+2.7$ \\
+    $x_{\text{CO}_2}$ [salt-incl.]    &  36 & 8.6 & $+8.6$ \\
+    $y_{\text{CO}_2}$                 &  36 & 0.5 & $-0.1$ \\
+    \midrule
+    All converged           & 689 & 6.2 & $-1.5$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \newcommand{\snw}{0.30\textwidth}%
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2a.png}\caption{$25\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2b.png}\caption{$40\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2c.png}\caption{$80\,^\circ$C}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2d.png}\caption{$120\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2e.png}\caption{$180\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2f.png}\caption{$250\,^\circ$C}\end{subfigure}
+  \caption{CO$_2$ solubility in NaCl brine at six representative temperatures ($25$--$250\,^\circ$C).
+           Each panel shows CO$_2$ molality $m_c$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
+           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Kiepe2002,
+           Nighswander1989, Bando2003, Liu2021, Takenouchi1965}; discrete lines
+           with markers: eCPA at the experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions spanning
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
+           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
+           Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
+           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~\ref{fig:co2nacl_Tpanel_SI} -- \ref{fig:co2nacl_highT_SI}.}
+  \label{fig:co2nacl_Tpanel}
+\end{figure}
+
+All experimental results and eCPA predictions are illustrated in Figs.~\ref{fig:co2nacl_Tpanel}, \ref{fig:co2nacl_2panel}, \ref{fig:co2nacl_Tpanel_SI}, and \ref{fig:co2nacl_highT_SI}.
+
+Table~\ref{tab:co2nacl_metrics} shows the accuracy breakdown.
+689 of 708 points converge to a two-phase solution using the K-value SSI warm-started
+from the solution table; the model predicts single-phase behavior at 18 points
+(particularly at $T \geq 350\,^\circ$C where CO$_2$ + H$_2$O approaches complete
+miscibility in the model) and fails to converge at one extreme high-$P$, high-$m_s$
+condition, giving an overall two-phase convergence rate of 97.3\%.
+The K-value SSI requires a median of 6 outer iterations per converged call.
+Overall AARE across all converged points is 6.2\%, with a slight underprediction bias
+of $-1.5\%$.
+The AARE for $m_c$ across all $T$ and $m_s$ is 6.6\%, in excellent agreement with the 6.9\%
+reported by \citet{Coelho2025} using the original eCPA parameterization.
+The CO$_2$-rich phase composition $y_{\text{CO}_2}$ is reproduced to within 0.4\% AARE, reflecting the
+near-purity of the CO$_2$-rich phase and its weak dependence on salinity.
+
+At hydrothermal temperatures, AARE for $m_c$ rises to 14.0\% at $T = 300\,^\circ$C and
+12.8\% at $T = 350\,^\circ$C, reflecting reduced eCPA accuracy at conditions beyond the
+conventional reservoir temperature range.
+At $T \geq 400\,^\circ$C, the available experimental pressures (300--900\,bar, all from
+\citealt{Takenouchi1965}) fall in the region where eCPA predicts single-phase behavior,
+suggesting that the CO$_2$ + H$_2$O miscibility gap closes at these extreme conditions
+in the model.
+Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
+(AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
+the freezing point where eCPA is not specifically parameterized.
+Fig.~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
+across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
+($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
+systematically at the boundaries of the validated range.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{fig_3a.png}\\[6pt]
+  \includegraphics[width=0.8\textwidth]{fig_3b.png}\\[6pt]
+  \includegraphics[width=0.8\textwidth]{fig_3c.png}
+  \caption{CO$_2$ + NaCl brine phase equilibria at temperatures for which both CO$_2$ molality
+           ($m_c$, left panel) and CO$_2$ mole fraction in the CO$_2$-rich phase ($y_{\text{CO}_2}$, right panel)
+           data are available: (top) $50\,^\circ$C, (middle) $100\,^\circ$C, (bottom) $150\,^\circ$C.
+           Open symbols: experimental data \citep{Bando2003, Chabab2020, Guo2015,
+           Hou2013, Koschel2006, Liu2021, Messabeb2016, Savary2012, Takenouchi1965,
+           Yan2011, Zhao2015}; discrete lines with markers: eCPA at the
+           experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions across
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}).}
+  \label{fig:co2nacl_2panel}
+\end{figure}
+
+\subsection{Flash results as a function of feed composition}
+\label{sec:flash_vs_z}
+
+A central motivation for full stability+flash --- rather than straightforward
+VLE calculations at a fixed salinity --- arises naturally in reservoir simulation.
+When CO$_2$ is injected into a saline aquifer, the reservoir fluid at any given
+grid cell can be represented as a mixture of brine (carrying NaCl at feed molality
+$m_\mathrm{feed}$) and varying amounts of injected CO$_2$.
+The overall CO$_2$ mole fraction $z_4$ in this mixture is the primary degree of freedom,
+and stability+flash must be performed to determine the equilibrium state.
+
+As shown in Section~\ref{sec:intro}, in the ternary system the equilibrium molality
+$m_s^\mathrm{aq}$ exceeds the feed value because NaCl is concentrated as H$_2$O
+partitions into the CO$_2$-rich phase; quantitatively (from Eq.~\ref{eq:msaq_kv}):
+\begin{equation*}
+  m_s^\mathrm{aq}
+    = m_\mathrm{feed}
+      \,\frac{(1-\beta)\,x_{\mathrm{H_2O}}+\beta\,y_{\mathrm{H_2O}}}
+             {(1-\beta)\,x_{\mathrm{H_2O}}}
+    = m_\mathrm{feed}\!\left(1 + \frac{\beta\,y_{\mathrm{H_2O}}}{(1-\beta)\,x_{\mathrm{H_2O}}}\right),
+\end{equation*}
+where $\beta$ is the CO$_2$-rich molar phase fraction.
+Because $\beta\,y_{\mathrm{H_2O}} > 0$ in the two-phase region, $m_s^\mathrm{aq}$
+\emph{exceeds} $m_\mathrm{feed}$, and the excess grows with $z_4$ as $\beta$ increases.
+This elevated salinity modifies the aqueous-phase fugacity coefficients and in
+turn shifts the equilibrium phase compositions --- an effect that cannot be
+captured by a VLE table indexed on feed molality alone.
+
+Fig.~\ref{fig:flash_vs_z} demonstrates these effects for $P = 200$\,bar,
+$m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$ NaCl, and ten isotherms from $27$ to
+$252\,^\circ$C (in $25\,^\circ$C increments) over the two-phase feed range $z_4 = 0.005$--$0.995$.
+Panel (a) shows the CO$_2$-rich phase fraction $\beta$, which rises from 0 to 1
+across the two-phase window.
+Higher temperatures narrow the window because CO$_2$ is less soluble and
+H$_2$O more volatile, both effects shrinking the range of $z_4$ that sustains
+two-phase coexistence.
+
+Panel (b) illustrates the salinity amplification: at the highest isotherm
+($T = 252\,^\circ$C) the ratio $m_s^\mathrm{aq}/m_\mathrm{feed}$ reaches
+$\approx 8$ at the high-$z_4$ end of the two-phase window, meaning the aqueous
+NaCl concentration increases eightfold relative to the injected brine as H$_2$O
+partitions into the growing CO$_2$-rich phase.
+At lower temperatures the amplification is smaller because less H$_2$O leaves
+the aqueous phase at the lower $\beta$ values attained.
+
+Panel (c) shows the resulting CO$_2$ molality in the aqueous phase,
+$m_c$ [mol\,kg$^{-1}$].
+Despite operating at fixed $(T, P)$, $m_c$ decreases substantially with increasing
+$z_4$: at $T = 227\,^\circ$C it falls from $\approx 1.1$ to $\approx 0.4$\,mol\,kg$^{-1}$
+across the two-phase window.
+This is a direct consequence of the salting-out effect --- the elevated
+$m_s^\mathrm{aq}$ suppresses CO$_2$ solubility.
+A simple VLE lookup at the feed molality $m_\mathrm{feed}$ would return the
+wrong CO$_2$ solubility for all but the dilute-CO$_2$ end of the window.
+
+\begin{figure}[tp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_4.png}
+  \caption{eCPA flash results as a function of overall CO$_2$ feed mole fraction $z_4$
+           at $P = 200$\,bar, feed molality $m_\mathrm{feed} = 1.0$\,mol\,kg$^{-1}$
+           NaCl, and ten isotherms from $27$ to $252\,^\circ$C (violet to red).
+           (a) CO$_2$-rich phase fraction $\beta$; the two-phase window narrows
+           progressively at higher temperature.
+           (b) Ratio of equilibrium aqueous NaCl molality to feed molality,
+           $m_s^\mathrm{aq}/m_\mathrm{feed}$; NaCl concentrates in the aqueous phase
+           as H$_2$O partitions to the CO$_2$-rich phase, reaching a factor of ${\sim}8$
+           at $T = 252\,^\circ$C and $z_4 \approx 0.98$.
+           (c) CO$_2$ molality $m_c$ in the aqueous phase; the salting-out effect
+           driven by the elevated $m_s^\mathrm{aq}$ reduces CO$_2$ solubility
+           with increasing $z_4$.
+           (d) H$_2$O mole fraction $y_{\mathrm{H_2O}}$ in the CO$_2$-rich phase;
+           substantial water content at high temperatures (up to ${\sim}30$\,mol\%
+           at $252\,^\circ$C) and its strong variation with $z_4$ highlight the need
+           for full flash rather than a fixed-salinity VLE lookup.}
+  \label{fig:flash_vs_z}
+\end{figure}
+
+Panel (d) shows the H$_2$O mole fraction in the CO$_2$-rich phase, $y_{\mathrm{H_2O}}$,
+and reveals a second consequence of the salting-out chain.
+As $z_4$ increases, $\beta$ increases and $m_s^\mathrm{aq}$ rises (panel b), which suppresses
+CO$_2$ solubility in the aqueous phase (panel c): the aqueous phase can dissolve less CO$_2$,
+so proportionally more CO$_2$ remains in the CO$_2$-rich phase and, by molar conservation,
+$y_{\mathrm{H_2O}}$ is diluted downward.
+At low temperatures this effect is invisible because the baseline water content of
+the CO$_2$-rich phase is tiny; at high temperatures, where $y_{\mathrm{H_2O}}$ starts near
+$\approx 35$\,mol\%, the same salting-out suppression translates into a large absolute drop
+--- falling to $\approx 22$\,mol\% by $z_4 \approx 0.75$ at $T = 252\,^\circ$C.
+This also underscores the importance of accurate modeling of the CO$_2$-rich phase
+at elevated temperatures.
+
+Taken together, these results demonstrate that the correct representation of
+CO$_2$+brine phase behavior in reservoir models requires a full
+stability+flash computation for each cell at each time step, with the
+NaCl molality updated self-consistently from the aqueous-phase amount.
+
+
+
+\subsection{Aqueous-phase density}
+\label{sec:density}
+
+The CPA energy parameter and co-volume for H$_2$O are tuned to pure-water vapor pressure
+and liquid density, so the model is expected to reproduce aqueous densities without
+requiring a Péneloux volume shift.
+Both CPA and eCPA predict CO$_2$-saturated aqueous densities with \textbf{0.76\%} AARE
+over 37 experimental points ($T = 15$--$200\,^\circ$C) from
+\citet{King1992} and \citet{Nighswander1989}, confirming that no volume shift is needed.
+
+To test density accuracy over the full $(T, P)$ range of the paper rather than the
+limited set of available CO$_2$-saturation measurements, we compare pure-water eCPA
+predictions against the IAPWS-95 reference equation \citep{IAPWS2016} — the
+internationally accepted scientific formulation for water properties, valid to
+1\,000\,MPa and 1\,273\,K, and the underlying standard of the NIST WebBook.
+Over 475 liquid/compressed-water conditions spanning
+$T = 0$--$350\,^\circ$C and $P = 1$--$2\,000$\,bar, the AARE is \textbf{1.0\%}
+with a maximum of 5\% near the liquid--vapour boundary at 350\,$^\circ$C.
+For subsurface CO$_2$ storage conditions ($T \leq 120\,^\circ$C,
+$P = 75$--$600$\,bar), the AARE reduces to \textbf{0.8\%}.
+Full details, the parity plot, and the signed-error surface are provided in
+Appendix~\ref{sec:density_si}.
+
+
+%% ============================================================
+\section{Computational Performance}
+\label{sec:performance}
+
+\subsection{Flash convergence statistics}
+\label{sec:convergence}
+
+\subsubsection{Parameter-space scan for the salt-free CPA binary}
+
+To rigorously evaluate the robustness and efficiency of the accelerated SSI and
+multi-guess stability test, we perform a comprehensive parameter-space scan over
+$86 \times 18 \times 19 = 29{,}412$ conditions spanning
+$T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar, and
+$z_4 = 0.001$--$0.999$ (Table~\ref{tab:scan_grid}).
+At each $(T, P, z_4)$ point, we ran the stability test with all six initial guesses,
+followed by four independent flash strategies:
+standard SSI with Wilson K initialization (``Std+Wilson''),
+accelerated SSI with Wilson K (``Acc+Wilson''),
+accelerated SSI with K from the stability test (``Acc+StabK''),
+and the full hierarchical robust algorithm (``Robust'').
+
+\begin{table}[H]
+  \centering
+  \caption{Parameter-space scan grid for the salt-free CPA binary.}
+  \label{tab:scan_grid}
+  \begin{tabular}{lrrr}
+    \toprule
+    Variable & Range & Points & Spacing \\
+    \midrule
+    $T$ ($^\circ$C)      & 0--425    & 86 & $5\,^\circ$C \\
+    $P$ (bar)            & 1--1500   & 18 & semi-log \\
+    $z_{\text{CO}_2}$    & 0.001--0.999 & 19 & variable \\
+    \midrule
+    Total                &           & 29{,}412 & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Of the 29{,}412 conditions, 19{,}586 (66.6\%) are classified as single-phase by the
+stability test and 9{,}825 (33.4\%) as two-phase.
+Table~\ref{tab:accel_comparison} compares six flash strategies on the
+two-phase subset.
+The hierarchical robust algorithm achieves 100\% convergence by combining the
+stability-informed K-value initialization with Wilson-K fallback for the
+0.3\% of points where the stability K fails to converge.
+Only a single point at the extreme corner of the domain ($T = 425\,^\circ$C,
+$P = 1500$\,bar, $z_{\text{CO}_2} = 0.995$) produces a spurious instability;
+all neighbors are correctly identified as single-phase.
+
+
+The accelerated SSI reduces the mean iteration count from 25.4 to 13.7
+(a 46\% reduction, or $1.9\times$ speedup) compared to standard SSI with the same
+Wilson K initialization (Figs.~\ref{fig:scan_summary}a and \ref{fig:strategy_comparison_SI}).
+The speedup is most pronounced near the CO$_2$ critical point and at extreme
+compositions, where standard SSI requires many iterations to converge
+(Fig.~\ref{fig:ssi_heatmap}).
+Using K-values from the stability test as the flash initial guess provides a further
+8\% reduction in iterations (13.7 to 12.6) on average.
+
+
+\begin{table}[H]
+  \centering
+  \caption{Comparison of six flash strategies across 9{,}825 two-phase conditions
+           from the parameter-space scan ($T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar,
+           $z_4 = 0.001$--$0.999$).
+           The first four rows use cold-start initialization;
+           the fifth and sixth use K-values interpolated from a pre-computed solution table
+           extended to $T = 0$--$400\,^\circ$C (99.9\% of two-phase points).
+           The sixth row additionally applies Newton polish once $\|\mathbf{g}\| < 10^{-4}$,
+           with mean 4.8 SSI and 2.1 Newton iterations per converged call.}
+  \label{tab:accel_comparison}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Strategy & Converged & Conv.\ rate & Mean iters & Median iters \\
+    \midrule
+    Std SSI + Wilson K           & 9{,}756 & 99.3\%  & 25.4 & 17 \\
+    Acc SSI + Wilson K           & 9{,}775 & 99.5\%  & 13.7 &  9 \\
+    Acc SSI + Stability K        & 9{,}793 & 99.7\%  & 12.6 &  9 \\
+    Acc SSI + Stability K + Wilson K fall-back        & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
+    \midrule
+    Acc SSI + Table K            & 9{,}818 & 99.9\%  &  9.8 &  6 \\
+    Acc SSI + Table K + Newton   & 9{,}808 & 99.8\%  &  \textbf{6.9} &  5 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+When a pre-computed solution table is available---as in sequential simulation
+where flash solutions from the previous time step or neighboring grid cells
+serve as initial guesses---the iteration count drops further to a mean of 9.8
+(median~6), a 25\% improvement over the best cold-start strategy.
+The table covers $T = 0$--$360\,^\circ$C with $1\,^\circ$C resolution and all practically
+relevant pressures ($P = 1$--$2000$\,bar); it captures 99.9\% of the two-phase
+scan points, eliminating the Wilson-K fallback for virtually all conditions.
+Because the table also pre-classifies each cell as single- or two-phase, the
+Michelsen stability test (six guesses, $\approx10$\,ms per guess) can be skipped
+for all cells confidently inside the two-phase window, so the dominant cost of a
+cold-start stability+flash call ($\approx30\times$ higher wall time) is avoided
+in the warm-start regime.
+Phase compositions obtained from the two approaches agree to within 1.1\% AARE
+for $x_{\text{CO}_2}$ and 3.9\% for $y_{\text{H}_2\text{O}}$, with residual
+discrepancies concentrated near the two-phase boundary where both methods are
+most sensitive to initial guesses.
+
+
+\begin{figure}[tp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_5.png}
+  \caption{Mean SSI iteration count for the salt-free CPA flash, averaged over all
+           $z_{\text{CO}_2}$ values (two-phase points only), as a function of $T$ and $P$.
+           Left: standard SSI with Wilson K initialization.
+           Center: accelerated SSI with Wilson K.
+           Right: accelerated SSI with stability-test K.
+           The accelerated SSI substantially reduces iteration counts across the
+           entire parameter space, with the largest improvements near the CO$_2$
+           critical point ($T \approx 31\,^\circ$C, $P \approx 74$\,bar).}
+  \label{fig:ssi_heatmap}
+\end{figure}
+
+Adding Newton polish (Table~\ref{tab:accel_comparison}, bottom row) reduces the
+mean count further to 6.9 (4.8 SSI + 2.1 Newton), a 29\% improvement over
+table-warm-started SSI alone and a 73\% reduction from the standard cold-start.
+Newton polish is triggered at 85.6\% of points; the remaining 14.4\% converge
+in fewer than $\tau_\text{switch} = 10^{-4}$ SSI steps and need no Newton
+correction.
+In the near-CO$_2$-critical region ($T \approx 7$--$57\,^\circ$C) the Newton step
+can temporarily diverge; the solver then reverts to the pre-Newton SSI state
+and continues, so no convergence is lost in that region.
+The iteration breakdown and wall-time ratio across the full $(T, P)$ parameter
+space are shown in Fig.~\ref{fig:newton_heatmap_SI}.
+
+
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{fig_6a.png}
+    \caption{Iteration speedup ratio (standard/accelerated SSI)}
+    \label{fig:speedup_ratio}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{fig_6b.png}
+    \caption{Distribution of best stability initial guess}
+    \label{fig:stability_best_trial}
+  \end{subfigure}
+  \caption{(a) Iteration speedup from accelerated SSI, averaged over $z_4$ (two-phase only).
+           The speedup exceeds 2$\times$ across most of the parameter space and reaches
+           3--4$\times$ near the critical region.
+           (b) Distribution of the initial guess that found the lowest TPD across all
+           9{,}825 unstable points. No single guess dominates: each of the six trials
+           is the best for 9--25\% of conditions, demonstrating the importance of multiple
+           initial guesses for robust stability testing.}
+  \label{fig:scan_summary}
+\end{figure}
+
+Fig.~\ref{fig:stability_best_trial} shows that all six stability initial guesses
+contribute materially: Wilson is best for 17.2\% of unstable points, inverse Wilson for
+25.0\%, H$_2$O-rich for 20.3\%, CO$_2$-rich for 14.5\%, inverse cube-root for 14.1\%, and
+cube-root Wilson for 8.9\%.
+While the first two guesses (Wilson and inverse Wilson) can detect instability (TPD\,$< 0$)
+for 99.8\% of conditions, they locate the \emph{most negative} TPD---and thus the best
+K-value initialization for the subsequent flash---for only 42.2\%.
+All six guesses are required to ensure the optimal K-value initialization across the
+full parameter space.
+
+\subsubsection{Convergence statistics for the eCPA ternary flash}
+\label{sec:ecpa_scan}
+
+To characterize eCPA flash performance over the full thermodynamic parameter space
+relevant to geological CO$_2$ storage and geothermal energy production, we compute the three-dimensional solution table
+described in Section~\ref{sec:table}, covering the grid summarized in
+Table~\ref{tab:ecpa_scan_grid}.
+
+\begin{table}[H]
+  \centering
+  \caption{Parameter grid for the eCPA ternary solution table
+           (CO$_2$+H$_2$O+NaCl, $361\times100\times14 = 505{,}400$ points).}
+  \label{tab:ecpa_scan_grid}
+  \begin{tabular}{lll}
+    \toprule
+    Dimension & Range & Points \\
+    \midrule
+    Temperature $T$ & $0$--$360\,^\circ$C & 361 ($1\,^\circ$C steps) \\
+    Pressure $P$ & 1--2000\,bar & 100 (log-spaced) \\
+    NaCl feed molality $m_s$ & 0--6\,mol\,kg$^{-1}$ & 14 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Each grid point was evaluated with the full hierarchical stability+flash algorithm: the Michelsen
+stability test (six trial compositions) is performed first; only genuinely unstable
+conditions proceed to the K-value SSI flash.
+The CO$_2$ feed fraction $z_4$ is not a table dimension; a representative value
+$z_4 = 0.5$ is used for the stability call (K-values and tie-line endpoints are
+only weakly $z_4$-dependent, as discussed in Section~\ref{sec:table}).
+Of the 505{,}400 grid points, 36{,}100 use the CPA sub-model ($m_s = 0$, no
+electrostatic terms); the eCPA model covers the remaining 469{,}300 points.
+
+Table~\ref{tab:ecpa_scan_convergence} reports the outcome of all evaluations.
+Every grid point is classified---100\% convergence is achieved over the
+complete three-dimensional domain.
+
+\begin{table}[H]
+  \centering
+  \caption{Classification of eCPA flash outcomes over the full 3D solution table
+           (505{,}400 total points; 469{,}300 eCPA, 36{,}100 CPA).}
+  \label{tab:ecpa_scan_convergence}
+  \begin{tabular}{lrl}
+    \toprule
+    Classification & Count & Description \\
+    \midrule
+    Two-phase, converged          & 289{,}065 & Valid two-phase split; SSI converged \\
+    Single-phase (stable)         & 216{,}335 & Michelsen stability test: no phase split \\
+    \midrule
+    Total classified              & 505{,}400 & 100\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[tp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_7.pdf}
+  \caption{Equilibrium CO$_2$ mol\% in the aqueous phase ($x_{\text{CO}_2}$)
+           over the $T$--$P$ plane at representative feed $z_4 = 0.5$,
+           for six NaCl molalities (columns, $m_s = 0$--$6$\,mol\,kg$^{-1}$).
+           The logarithmic color scale spans three orders of magnitude to resolve
+           both the dilute near-bubble-point regime and the high-solubility
+           hydrothermal limit.
+           Grey regions are thermodynamically single-phase at those conditions.
+           Red curves mark the phase envelope: the solid line is the dew-point
+           boundary (lower pressure limit of the two-phase window) and the dashed
+           line is the bubble-point boundary (upper pressure limit).
+           The phase boundaries are nearly independent of $m_s$; the salting-out
+           effect manifests as a reduction in $x_{\text{CO}_2}$ within the window,
+           not as a shift of its extent.}
+  \label{fig:ecpa_aq_grid}
+\end{figure}
+
+\paragraph{CO$_2$ solubility in the aqueous phase}
+Figures~\ref{fig:ecpa_aq_grid} and~\ref{fig:ecpa_c_grid} map $x_{\text{CO}_2}$ and
+$y_{\text{H}_2\text{O}}$, respectively, across the full $(T, P)$ domain for six NaCl molalities (and a pure salt-free condition with CPA)
+at a representative feed $z_4 = 0.5$; red curves trace the dew- (solid) and bubble-point (dashed) boundaries,
+with the gray region indicating single-phase conditions.
+Fig.~\ref{fig:ecpa_ssi_heatmap} maps mean flash wall time per call
+across the $T$--$P$ plane for all six NaCl molalities, serving as a proxy for
+solver effort.
+Fig.~\ref{fig:ecpa_aq_grid} shows $x_{\text{CO}_2}$ (aqueous phase) over a
+logarithmic color scale spanning 0.05--25\,mol\%.
+The two-phase window is broad, spanning the full pressure range from 1 to
+2000\,bar at most temperatures below $\sim$250\,$^\circ$C, and closes at the highest
+temperatures as CO$_2$ and water approach complete miscibility.
+Three physically distinct solubility regimes are apparent.
+At low temperatures ($T \lesssim 50\,^\circ$C), the CO$_2$-rich phase is a dense
+supercritical or liquid-like fluid; solubility is moderate and increases with pressure.
+At intermediate temperatures (50--200\,$^\circ$C), solubility passes through a minimum
+as the competing effects of pressure and thermal expansion partially cancel.
+At high temperatures ($T \gtrsim 250\,^\circ$C), solubility rises sharply because the
+aqueous phase increasingly resembles steam; values reach 20--25\,mol\% at the highest
+pressures, well into a regime relevant to hydrothermal and geothermal CO$_2$ storage.
+Increasing NaCl molality (left to right) reduces CO$_2$ solubility within the
+two-phase window---the classical salting-out effect.
+The phase boundaries (red curves) are nearly independent of $m_s$: the dew-point
+shifts by less than 15\% across the full salinity range,
+and the bubble-point (visible only near $T \approx 250\,^\circ$C where it falls below
+the 2000\,bar grid ceiling) likewise shows negligible salinity dependence.
+The dominant effect of NaCl is therefore a reduction in $x_{\text{CO}_2}$ within the
+two-phase window rather than a change in the window's extent.
+
+
+
+\paragraph{H$_2$O content of the CO$_2$-rich phase}
+Fig.~\ref{fig:ecpa_c_grid} shows $y_{\text{H}_2\text{O}}$ (CO$_2$-rich phase) on the same
+grid layout.
+In sharp contrast to CO$_2$ solubility, the water content of the CO$_2$-rich phase is
+controlled almost entirely by temperature: the color field in each panel varies
+primarily along the horizontal axis, with near-vertical isopleths.
+This reflects the dominant role of the water saturation pressure, which rises steeply
+with temperature and sets the water activity in the CO$_2$-rich phase regardless of
+pressure or salinity.
+At $T = 50\,^\circ$C, $y_{\text{H}_2\text{O}}$ is below 1\,mol\% across
+essentially all pressures; by $T = 300\,^\circ$C it reaches 50--70\,mol\%, meaning the
+nominal CO$_2$-rich phase is in fact predominantly water vapour.
+The effect of NaCl (columns) on $y_{\text{H}_2\text{O}}$ is weak:
+the isopleths and the phase envelope (red curves) are essentially unchanged across all
+salinity columns, confirming that water content in the CO$_2$-rich phase is set by
+temperature alone and is insensitive to brine salinity.
+
+\begin{figure}[tp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_8.pdf}
+  \caption{Equilibrium H$_2$O mol\% in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$)
+           over the $T$--$P$ plane at representative feed $z_4 = 0.5$,
+           on the same grid as Fig.~\ref{fig:ecpa_aq_grid}.
+           Unlike $x_{\text{CO}_2}$, water content in the CO$_2$-rich phase
+           is governed almost entirely by temperature (water vapour pressure),
+           producing near-vertical isopleths that are nearly independent of
+           pressure and NaCl molality.
+           Red curves show the phase envelope (solid: dew point; dashed: bubble
+           point); their near-identical positions across columns confirm that
+           NaCl has negligible influence on the phase boundaries.
+           At temperatures above $250\,^\circ$C the CO$_2$-rich phase contains
+           more than 25\,mol\% H$_2$O, approaching 70\,mol\% at the highest
+           temperatures---a regime relevant to geothermal CO$_2$ storage.}
+  \label{fig:ecpa_c_grid}
+\end{figure}
+
+\paragraph{Flash wall time}
+Fig.~\ref{fig:ecpa_ssi_heatmap} maps the mean wall time per eCPA flash call
+(table-warm-started K-value SSI) across the $T$--$P$ plane for six NaCl molalities;
+gray regions are single-phase.
+The $m_s\!=\!0$ (CPA) column is excluded: its cold-start six-trial robust solver
+runs at a median of $\sim$215\,ms per call (reported in Table~\ref{tab:convergence}),
+which would render uniformly at the colorbar ceiling; the warm-start table applies
+equally to CPA.
+Wall time serves as a proxy for solver effort.
+Times are lowest ($\lesssim 5$\,ms) in the interior of the two-phase region,
+where the warm-started SSI converges in 2--3 steps.
+Times rise near the phase boundaries---particularly near the bubble point and the
+CO$_2$ critical temperature---where K-values approach unity and more iterations
+are required.
+The pattern is qualitatively similar across all NaCl molalities.
+
+\begin{figure}[tp]
+  \centering
+  \includegraphics[width=\textwidth]{fig_9.pdf}
+  \caption{Mean wall time per flash call (ms) for the eCPA warm-started
+           K-value SSI over the $T$--$P$ plane for six NaCl molalities (columns),
+           from the 3D scan.
+           Gray regions are thermodynamically single-phase.
+           The colormap is log-scaled (1--200\,ms).
+           Times are lowest in the interior of the two-phase window and highest
+           near the phase boundaries where K-values approach unity and more
+           SSI iterations are required.
+           The $m_s\!=\!0$ (CPA) column is excluded; its cold-start robust solver
+           runs at a median of $\sim$215\,ms per call and is reported separately
+           in Table~\ref{tab:convergence}.}
+  \label{fig:ecpa_ssi_heatmap}
+\end{figure}
+
+Table~\ref{tab:convergence} summarizes SSI iteration counts and wall times across the
+experimental validation datasets used in Sections~\ref{sec:co2h2o}--\ref{sec:co2nacl}.
+
+\begin{table}[H]
+  \centering
+  \caption{Flash convergence statistics across the experimental validation datasets.}
+  \label{tab:convergence}
+  \begin{tabular}{llrrrrl}
+    \toprule
+    System & Method & $N$ calls & Mean iter & Median & Max & Median time/call \\
+    \midrule
+    CO$_2$+H$_2$O  & CPA (cold, accel.)   & 29{,}412 &  6.3 &  6 & 272 & $\sim$215\,ms \\
+    CO$_2$+H$_2$O  & CPA (warm SSI)       &    626   &  6.2 &  6 &  40 & $\sim$2\,ms   \\
+    CO$_2$+H$_2$O  & eCPA (warm SSI, $m_s\!\approx\!0$) &    631   &  5.9 &  6 &  10 & $\sim$2\,ms   \\
+    CO$_2$+NaCl    & eCPA (warm SSI)      &    686   &  5.8 &  6 &  16 & $\sim$2\,ms   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+All three warm-start rows use the same solution table and achieve a median of
+6 SSI iterations and $\lesssim$2\,ms per call.
+The warm-started CPA row directly demonstrates that the $\sim$100$\times$ speedup
+over cold-start CPA (row 1) is attributable entirely to the warm-start strategy:
+the eCPA model adds electrostatic terms not present in CPA, yet both achieve
+comparable wall times when started from a good initial guess.
+Among the eCPA rows, the additional salt does not materially increase cost.
+Each warm-started SSI step costs only $\sim$0.2\,ms; the solution-table lookup
+itself takes $\lesssim$0.05\,ms and contributes negligible overhead.
+Convergence is robust across the full validation range.
+
+\subsection{Inner EoS solve efficiency: Newton--Raphson versus cold-start alternatives}
+\label{sec:inner_newton_perf}
+
+Each outer SSI iteration requires solving the inner per-phase EoS system.
+The two systems — CPA's $(Z, \chi_w, \chi_c)$ and eCPA's $(Z_w, \varepsilon_r, \chi_w)$
+— differ in structure but share the same warm-started Newton--Raphson strategy
+described in Sections~\ref{sec:ssi} and~\ref{sec:kv_flash};
+the analytical Jacobians are derived in Appendices~\ref{sec:jac_cpa}
+and~\ref{sec:jac_ecpa}.
+The benchmarks below quantify the advantage of the warm-started Newton solve
+over the respective cold-start alternatives, and are distinct from the outer
+SSI$+$Newton-polish acceleration discussed in Section~\ref{sec:convergence}
+and Fig.~\ref{fig:newton_heatmap_SI}.
+
+\paragraph{CPA: $(Z, \chi_w, \chi_c)$ system}
+Starting from the previous SSI iterate (typically within 0.5\% of the converged
+value), the warm-started Newton solve converges in \textbf{3--4 iterations}
+(median~3, maximum~4 across 9{,}825 two-phase conditions).
+The cold-start fallback — a 12-point log-spaced scan to bracket the root of $F_1$,
+followed by Brent refinement — requires on average 23~residual evaluations
+(median~21) per call, equivalent to $\approx$0.38\,ms.
+The warm-start Newton solve costs $\approx$0.03\,ms across 128 two-phase conditions
+spanning $T = 27$--$227\,^\circ$C and $P = 50$--$800$\,bar:
+a \textbf{13$\times$} reduction in inner-solve cost per SSI step.
+
+\paragraph{eCPA: $(Z_w, \varepsilon_r, \chi_w)$ system}
+For the aqueous $3\times 3$ system, a 0.5--1\% warm-start perturbation yields
+convergence in \textbf{4--6~iterations} (median~5~at~1\%), with a wall time of
+$\approx$0.25\,ms per call.
+The cold-start alternative — solving from a heuristic initial guess via a
+general-purpose modified-Powell root-finder — requires on average 47~residual
+evaluations and costs $\approx$1.5\,ms per call: a \textbf{6$\times$} overhead.
+
+\paragraph{Computational cost of CPA and eCPA versus a cubic EOS}
+To quantify the per-iteration overhead of the association terms relative to a plain
+cubic EoS, we timed each component of a single SSI iteration across 871 two-phase
+$(T, P)$ conditions sampled from the CO$_2$--H$_2$O parameter space.
+CPA (with the Newton $Z$/$\chi$ solve) was compared against a notional SRK reference
+(same EoS parameter computation and fugacity evaluation, but $Z$ found by direct
+solution of the cubic and $\chi \equiv 1$).
+The per-iteration median wall times were 98\,\textmu{}s (CPA) versus 32\,\textmu{}s
+(SRK), a ratio of \textbf{3.1$\times$}.
+The EoS-parameter and fugacity-evaluation steps are identical between the two models;
+the entire overhead arises in the $Z$/$\chi$ solve, which costs 75\,\textmu{}s
+(CPA Newton, two phases) versus 9\,\textmu{}s (SRK direct cubic, two phases).
+This factor-of-3 per-iteration cost must be weighed against the additional physics
+captured by CPA: accurate partitioning of a self- and cross-associating system over
+a wide temperature and pressure range, and (in the full eCPA model) correct salt
+activity without empirical brine corrections.
+
+%% ============================================================
+\subsection{Simplified versus full flash: accuracy and efficiency}
+\label{sec:simplified_perf}
+
+Over 3{,}285 two-phase conditions spanning $T = 10$--$250\,^\circ$C,
+$P = 25$--$800$\,bar, and $m_s = 1$--$6$\,mol\,kg$^{-1}$, the simplified flash
+reproduces the full K-value SSI result with AARE $< 2\%$ in dissolved CO$_2$ molality
+for $T \leq 80\,^\circ$C, rising to 3.2\% at 100\,$^\circ$C and exceeding 5\% above
+120\,$^\circ$C as the $y_{\text{H}_2\text{O}} = 0$ assumption deteriorates.
+Phase identification agrees with the full flash in 99.7\% of cases.
+The accuracy is insensitive to brine salinity: the error is controlled entirely by
+temperature.
+Contrary to expectation, the mean wall time is essentially identical to the full flash
+($0.8\times$ speedup), because Brent root-finding on the 1D fugacity residual requires
+$\sim$11 inner Newton evaluations while SSI needs only $\sim$6 outer iterations with at
+most two inner solves each.
+Full per-temperature statistics, diagnostic figures, and a salinity breakdown are
+provided in Appendix~\ref{sec:simplified_si}.
+
+%% ============================================================
+\section{Reservoir Simulation Demonstration}
+\label{sec:simulator}
+
+To confirm that the flash algorithms developed in this work perform reliably under
+realistic conditions, we implement them within an isothermal IMPEC compositional
+simulator for CO$_2$ injection into heterogeneous 3D saline aquifers.
+Across 300 time steps and all 2500 grid cells of a $50\times50$ domain, no flash
+failures are recorded in either the salt-free (CPA, $m_s = 0$) or saline
+(eCPA, $m_s = 4$\,mol\,kg$^{-1}$) case, confirming 100\% convergence of the
+hierarchical stability and flash approach.
+The warm-started eCPA flash achieves a throughput of 14{,}270\,calls\,s$^{-1}$ and
+the CPA flash 8{,}840\,calls\,s$^{-1}$, with the flash accounting for 80--87\% of
+total step cost.
+Full details of the numerical scheme, simulation setup, spatial results, and
+performance metrics are provided in Appendix~\ref{sec:sim_table}.
+
+
+%% ============================================================
+\section{Conclusions}
+\label{sec:conclusions}
+
+This work presents the first complete phase stability and flash framework built on the
+eCPA equation of state of \citet{Coelho2025}, extending it from single-phase property
+evaluation to fully converged, production-ready VLE calculations for CO$_2$ + H$_2$O +
+NaCl mixtures across reservoir to hydrothermal conditions.
+
+The central algorithmic contribution is the tight integration of four independently
+novel elements: (i) fast inner Newton--Raphson solvers for the CPA and eCPA root-finding
+problems, based on analytical Jacobians derived in closed form, which reduce the
+per-evaluation overhead to only $\sim$3$\times$ that of a simple cubic EoS; (ii) a
+hierarchical outer flash algorithm combining Michelsen stability testing with six initial
+guesses, accelerated SSI, and optional Newton polish — achieving 100\% convergence over
+a comprehensive parameter-space scan; (iii) a precomputed three-dimensional
+$(T, P, m_s)$ solution table that provides warm starts reducing flash iterations by a
+factor of three relative to cold-start SSI; and (iv) a simplified flash that exploits
+the $y_{\text{H}_2\text{O}} \approx 0$ approximation to reduce the equilibrium problem
+to a single scalar equation, yielding errors below 2\% in dissolved CO$_2$ for
+$T \leq 80\,^\circ$C at essentially the same computational cost.
+Together, these enable warm-started eCPA flash at throughputs competitive with
+conventional cubic-EoS implementations, as demonstrated in a prototype IMPEC reservoir
+simulator.
+
+Validation against $>$1100 experimental data points shows AARE of 6.5\% for CO$_2$
+solubility under subsurface conditions, 6.6\% for CO$_2$ molality in NaCl brine, and
+0.76\% for aqueous-phase density without any volume-shift correction --- the last being
+a direct consequence of the CPA $a_0$/$b$ parameterization against pure-water liquid
+density.
+Extended comparison against the IAPWS-95 reference equation over 475 liquid conditions
+($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar) confirms an overall density AARE of 1.0\%,
+falling to 0.8\% for subsurface storage conditions.
+
+\section*{Future Work}
+\label{sec:future}
+
+The algorithms and validation presented here were implemented entirely in Python.
+While this facilitates rapid prototyping and transparent benchmarking, it means that
+the absolute throughput numbers reported are conservative relative to what a compiled
+implementation would achieve.
+The natural next step is to integrate the CPA and eCPA flash routines into a
+production-level compiled simulator that fully accounts for gravity-driven and
+density-driven flow, Fickian diffusion, capillarity, and explicitly resolved discrete
+fractures in three-dimensional unstructured grids (e.g.\
+\citealt{moortgat2011compositional, moortgat2011three, moortgat2013higher,
+moortgat2016mixed, moortgat2018reservoir, solovsky2025efficient, solovsky2026efficient}).
+Such an integration will enable high-fidelity simulation of CO$_2$ sequestration
+in saline aquifers at reservoir scale.
+
+A second, more fundamental extension is the generalization to brines containing
+multiple salts (e.g.\ NaCl + CaCl$_2$ + MgCl$_2$, as encountered in deep formation
+waters).
+In the single-salt eCPA framework the NaCl molality provides a single scalar
+coupling between phase amounts and phase compositions.
+For multi-salt brines the ionic interactions become more complex, and it will likely
+be necessary to shift from a molecular-species basis to an ionic basis, treating each
+cation and anion as an independent component with its own association and electrostatic
+parameters.
+Extending the eCPA framework in this direction represents a significant but tractable
+step toward a truly general thermodynamic engine for saline CO$_2$ storage.
+
+
+%% ============================================================
+\section*{Acknowledgements}
+
+%% TODO: fill in funding sources, data sources, HPC access, etc.
+The authors thank \ldots
+
+\newpage
+
+
+
+
+%% ============================================================
+\section*{Data and Code Availability}
+
+All source code implementing the CPA and eCPA equations of state,
+the phase stability and flash algorithms, the solution table construction,
+and the reservoir simulator described in this work is freely available at
+\url{https://github.com/XXX/ecpa-flash} ($^\ast$upon acceptance of paper).
+The repository includes the precomputed three-dimensional solution table,
+all experimental VLE data used for validation, and scripts to reproduce
+every figure and table in this paper.
+
+%% ============================================================
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+
+%% ============================================================
+%% SUPPLEMENTAL INFORMATION
+%% ============================================================
+\appendix
+\setcounter{section}{0}
+\setcounter{figure}{0}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thesubsection}{S\arabic{section}.\arabic{subsection}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+%% ============================================================
+\section{Nomenclature}
+\label{sec:nomenclature}
+
+\noindent Symbols are listed in alphabetical order within each group.
+Phase subscripts and superscripts are defined at the end of the table.
+
+\subsection*{Latin symbols}
+
+\begin{longtable}{@{}p{0.22\textwidth}p{0.60\textwidth}p{0.12\textwidth}@{}}
+  \toprule
+  Symbol & Description & Units \\
+  \midrule
+  \endfirsthead
+  \toprule
+  Symbol & Description & Units \\
+  \midrule
+  \endhead
+  \midrule
+  \multicolumn{3}{r}{\textit{continued on next page}} \\
+  \endfoot
+  \bottomrule
+  \endlastfoot
+  \multicolumn{3}{l}{\textit{Upper case}} \\[2pt]
+  $A$ & Dimensionless SRK attractive parameter, $A = a(T)P/(RT)^2$ & --- \\
+  $A^r$ & Residual Helmholtz energy per mole & J mol$^{-1}$ \\
+  $A^{\rm assoc}$ & Wertheim association term of $A^r$ & J mol$^{-1}$ \\
+  $A^{\rm Born}$ & Born solvation contribution to $A^r$ & J mol$^{-1}$ \\
+  $A^{\rm DH}$ & Debye--Hückel electrostatic contribution to $A^r$ & J mol$^{-1}$ \\
+  $A^{\rm SRK}$ & Soave--Redlich--Kwong contribution to $A^r$ & J mol$^{-1}$ \\
+  AARE & Average absolute relative error & \% \\
+  $B$ & Dimensionless SRK co-volume parameter, $B = bP/(RT)$ & --- \\
+  $D_c$ & CO$_2$ association denominator & --- \\
+  $D_w$ & H$_2$O association denominator & --- \\
+  $F_1, F_2, F_3$ & CPA inner-solve residuals in $(Z,\chi_w,\chi_c)$ & --- \\
+  $F_z$ & Molar fractional flow of CO$_2$ & --- \\
+  $G^{\rm res}$ & Residual Gibbs energy & J mol$^{-1}$ \\
+  $G_0, G_1, G_2$ & eCPA inner-solve residuals in $(Z_w,\varepsilon_r,\chi_w)$ & --- \\
+  $H_{ij}$ & Jacobian entries for the eCPA $(Z_w,\varepsilon_r,\chi_w)$ system & various \\
+  $J_{ij}$ & Jacobian entries for the CPA $(Z,\chi_w,\chi_c)$ system & various \\
+  $K$ & Isotropic permeability & mD \\
+  $K_i$ & Vapour--liquid K-value of species $i$, $K_i = y_i/x_i$ & --- \\
+  $K_i^W$ & Wilson K-value correlation & --- \\
+  $L$ & Step-size clipping limit in accelerated SSI & --- \\
+  $L_x, L_y, L_z$ & Reservoir domain dimensions & m \\
+  $M_w$ & Molar mass of water (0.018015\,kg\,mol$^{-1}$) & kg mol$^{-1}$ \\
+  $N_A$ & Avogadro number & mol$^{-1}$ \\
+  $N_x, N_y$ & Number of grid cells in $x$- and $y$-direction & --- \\
+  $P$ & Pressure & bar \\
+  $P_c$ & Critical pressure & bar \\
+  $P_{\rm BHP}$ & Bottom-hole pressure & bar \\
+  $P_{\rm sat}$ & Saturation pressure of pure H$_2$O & bar \\
+  $R$ & Universal gas constant & J mol$^{-1}$ K$^{-1}$ \\
+  $R_B$ & Born radius of ion & \AA \\
+  $S_g$ & CO$_2$-rich phase saturation & --- \\
+  $S_{cw}$ & CO$_2$--H$_2$O cross-association strength ratio & --- \\
+  $S_{gr}$ & Residual gas saturation (Corey) & --- \\
+  $S_{wc}$ & Connate water saturation (Corey) & --- \\
+  $T$ & Temperature & $^\circ$C or K \\
+  $T_c$ & Critical temperature & K \\
+  $\text{TPD}(\mathbf{W})$ & Tangent-plane distance function & --- \\
+  $V_g$ & Radial distribution function derivative with respect to $\eta$ & --- \\
+  $W$ & Second derivative of $V_g$; also unnormalized trial composition vector & --- \\
+  $Z$ & Compressibility factor, $Z = Pv/(RT)$ & --- \\
+  $Z_c$ & Compressibility factor of the CO$_2$-rich phase & --- \\
+  $Z_w$ & Compressibility factor of the aqueous phase & --- \\[4pt]
+  \multicolumn{3}{l}{\textit{Lower case}} \\[2pt]
+  $a(T)$ & Mixture SRK attractive parameter & J cm$^3$ mol$^{-2}$ \\
+  $a_{0i}$ & Pure-component reference attractive parameter & J cm$^3$ mol$^{-2}$ \\
+  $b$ & Mixture SRK co-volume parameter & cm$^3$ mol$^{-1}$ \\
+  $b_i$ & Pure-component co-volume & cm$^3$ mol$^{-1}$ \\
+  $c_i$ & Péneloux volume-shift parameter of species $i$ & cm$^3$ mol$^{-1}$ \\
+  $c_{1i}$ & Soave temperature-dependence coefficient of species $i$ & --- \\
+  $d_i$ & Reference chemical-potential offset in TPD, $\ln z_i + \ln\hat{\phi}_i(\mathbf{z})$ & --- \\
+  $g(\eta)$ & Carnahan--Starling radial distribution function & --- \\
+  $g_w$ & Kirkwood $g$-factor for water & --- \\
+  $\mathbf{g}^{(k)}$ & Fugacity-ratio residual vector at SSI iteration $k$ & --- \\
+  $k_{ij}$ & Binary interaction parameter between species $i$ and $j$ & --- \\
+  $k_B$ & Boltzmann constant & J K$^{-1}$ \\
+  $k_{rg}, k_{rw}$ & Corey relative permeabilities (CO$_2$-rich, aqueous) & --- \\
+  $m^{(k)}$ & Dominant-eigenvalue acceleration factor at iteration $k$ & --- \\
+  $m_c$ & CO$_2$ molality in the aqueous phase & mol kg$^{-1}$ \\
+  $m_{\rm feed}$ & NaCl feed molality & mol kg$^{-1}$ \\
+  $m_s$ & NaCl molality (feed; solution-table grid coordinate) & mol kg$^{-1}$ \\
+  $m_s^{\rm aq}$ & Self-consistent equilibrium NaCl molality in the aqueous phase & mol kg$^{-1}$ \\
+  $n_g, n_w$ & Corey exponents (CO$_2$-rich, aqueous) & --- \\
+  $q$ & Well volumetric flow rate & m$^3$ s$^{-1}$ \\
+  $r_w$ & Wellbore radius & m \\
+  $t$ & Time & yr \\
+  $v$ & Molar volume & cm$^3$ mol$^{-1}$ \\
+  $w_i$ & Normalised trial mole fractions in stability test & --- \\
+  $x_i$ & Mole fraction of species $i$ in the aqueous phase & --- \\
+  $x_{\rm CO_2}^{\rm sf}$ & CO$_2$ mole fraction on a salt-free basis & --- \\
+  $y_i$ & Mole fraction of species $i$ in the CO$_2$-rich phase & --- \\
+  $\mathbf{z}$ & Overall feed composition vector, $\mathbf{z} = (z_1, z_4)$ & --- \\
+  $z_1$ & Overall H$_2$O feed mole fraction, $z_1 = 1 - z_4$ & --- \\
+  $z_4$ & Overall CO$_2$ feed mole fraction & --- \\
+\end{longtable}
+
+\subsection*{Greek symbols}
+
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  Symbol & Description & Units \\
+  \midrule
+  $\alpha_{is}$ & NRTL non-randomness parameter (ion--solvent) & --- \\
+  $\beta$ & CO$_2$-rich phase molar fraction & --- \\
+  $\delta^{A_iB_j}$ & Association bonding volume between sites $A_i$ and $B_j$ & m$^3$ mol$^{-1}$ \\
+  $\Delta U_{is}$ & Ion--solvent interaction energy (eCPA NRTL term) & J mol$^{-1}$ \\
+  $\varepsilon/k_B$ & Association well depth (temperature units) & K \\
+  $\varepsilon_0$ & Vacuum permittivity & F m$^{-1}$ \\
+  $\varepsilon_\infty$ & High-frequency (optical) relative permittivity & --- \\
+  $\varepsilon_r$ & Static relative permittivity (dielectric constant) of water & --- \\
+  $\eta$ & Packing fraction, $\eta = b/(4v)$ & --- \\
+  $\hat{\phi}_i$ & Fugacity coefficient of species $i$ & --- \\
+  $\kappa$ & Association volume parameter in the Wertheim term & --- \\
+  $\mu_{0w}$ & Permanent dipole moment of water & C m \\
+  $\mu_g, \mu_w$ & Dynamic viscosity (CO$_2$-rich, aqueous) & Pa s \\
+  $\rho$ & Molar density & mol m$^{-3}$ \\
+  $\sigma$ & Collision diameter (ion hard-sphere radius) & \AA \\
+  $\tau, \tau_{\rm switch}$ & SSI convergence tolerance; Newton-polish switch threshold & --- \\
+  $\phi$ & Porosity & --- \\
+  $\chi^{A_i}$ & Fraction of molecules of species $i$ not bonded at site $A$ & --- \\
+  $\chi_w, \chi_c$ & Non-bonded fractions of H$_2$O and CO$_2$ (CPA) & --- \\
+  $\chi_{1w}, \chi_{1c}$ & Non-bonded fractions at site 1 (eCPA) & --- \\
+  $\omega_i$ & Acentric factor of species $i$ & --- \\
+  \bottomrule
+\end{tabular}
+
+\subsection*{Subscripts and superscripts}
+
+\begin{tabular}{@{}ll@{}}
+  \toprule
+  Symbol & Meaning \\
+  \midrule
+  $c$ & CO$_2$-rich phase; or CO$_2$ species \\
+  $w$ & Aqueous phase; or H$_2$O species \\
+  $i, j$ & Species index \\
+  1, 4 & Species index in K-value flash (CO$_2$ = 1, H$_2$O = 4) \\
+  aq & Aqueous phase \\
+  assoc & Association contribution \\
+  Born & Born solvation contribution \\
+  DH & Debye--Hückel electrostatic contribution \\
+  feed & Feed (overall) quantity \\
+  phys & Physical (SRK) contribution \\
+  res & Residual thermodynamic quantity \\
+  SRK & Soave--Redlich--Kwong reference fluid \\
+  $c, i$ & Critical property of species $i$ \\
+  \bottomrule
+\end{tabular}
+
+\bigskip
+\noindent\textit{Note on species indices.}
+In the K-value flash formulation (Section~\ref{sec:kv_flash}),
+species are indexed numerically: CO$_2$ = 1, H$_2$O = 4, Na$^+$ = 2, Cl$^-$ = 3.
+In the CPA flash formulation (Section~\ref{sec:ssi}),
+species are denoted by letters: $c$ (CO$_2$), $w$ (H$_2$O).
+
+\section{EoS Parameters}
+\label{sec:params}
+
+For completeness, Tables~\ref{tab:pure_params} and \ref{tab:binary_params} reproduce the
+key EoS parameters used in this work, all from \citet{Coelho2025}.
+
+\begin{table}[H]
+  \centering
+  \caption{Pure-component CPA/eCPA parameters \citep{Coelho2025}.
+           For ions, $a_0 = 0$. H$_2$O uses the 4C association scheme.}
+  \label{tab:pure_params}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Species & $a_0$ (J\,m$^3$\,mol$^{-2}$) & $c_1$ & $b$ (cm$^3$\,mol$^{-1}$) &
+              $\varepsilon/k_B$ (K) & $\kappa$ & $\sigma$ (\AA) & $R_B$ (\AA) \\
+    \midrule
+    H$_2$O & 0.1228 & 0.6736 & 14.52 & 2003 & $\kappa^*$ & ---   & ---   \\
+    CO$_2$  & 0.3508 & 0.7602 & 27.20 & ---  & ---        & ---   & ---   \\
+    Na$^+$  & 0      & ---    & 16.49 & ---  & ---        & 2.356 & 1.665 \\
+    Cl$^-$  & 0      & ---    & 40.83 & ---  & ---        & 3.187 & 1.828 \\
+    \bottomrule
+  \end{tabular}
+  \begin{flushleft}
+    \footnotesize $^*\kappa = \kappa_{\text{assoc}} \cdot b_{\text{H}_2\text{O}}$,
+    $\kappa_{\text{assoc}} = 69.2 \times 10^{-3}$.
+  \end{flushleft}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Temperature-dependent binary interaction parameters \citep{Coelho2025}.
+           $X = A_X(T/T_{c,c})^2 + B_X(T/T_{c,c}) + C_X$, $T_{c,c} = 31.3\,^\circ$C.}
+  \label{tab:binary_params}
+  \begin{tabular}{lrrr}
+    \toprule
+    Parameter & $A$ & $B$ & $C$ \\
+    \midrule
+    $k_{cw}$ (CO$_2$--H$_2$O binary interaction parameter) & $-0.492$ & $2.101$ & $-1.571$ \\
+    $S_{cw}$ (cross-assoc.\ strength) & $+0.192$ & $-0.173$ & $-0.009$ \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{6pt}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Ion--neutral pair & $\Delta U^{\text{ref}}$ (J\,mol$^{-1}$) & $\alpha$ (K) & $T^\alpha$ (K) & Source \\
+    \midrule
+    H$_2$O--NaCl ($\Delta U_{ws}$) & $-1858$ & 1573 & 340 & Maribo-Mogensen et al.\ (2015) \\
+    CO$_2$--NaCl ($\Delta U_{cs}$) & $+6056$ & 692  & 244 & \citet{Coelho2025} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+
+%% ============================================================
+\section{Analytical Jacobians for the Inner Newton Solvers}
+\label{sec:jacobians}
+
+Within each SSI iteration two distinct Newton systems are solved, one per phase.
+The CO$_2$-rich phase and both phases of the salt-free CPA binary use a
+$3\times 3$ system in $(Z,\chi_w,\chi_c)$ (Section~\ref{sec:jac_cpa}).
+The eCPA aqueous phase requires a different $3\times 3$ system in
+$(Z_w,\varepsilon_r,\chi_w)$, because the relative permittivity $\varepsilon_r$
+satisfies an additional Kirkwood self-consistency equation
+(Section~\ref{sec:jac_ecpa}).
+
+%% ----------------------------------------------------------------
+\subsection{CPA binary: Newton system for $(Z,\,\chi_w,\,\chi_c)$}
+\label{sec:jac_cpa}
+
+The three fixed-point residuals are
+\begin{align}
+  F_1 &= Z - \frac{Z}{Z-B} + \frac{A}{Z+B}
+         - G\bigl[x_w(\chi_w-1)+x_c(\chi_c-1)\bigr] = 0,
+         \label{eq:F1jac} \\
+  F_2 &= \chi_w - \frac{Z}{D_w} = 0,
+         \label{eq:F2jac} \\
+  F_3 &= \chi_c - \frac{Z}{D_c} = 0,
+         \label{eq:F3jac}
+\end{align}
+with the denominators
+\begin{equation}
+  D_w = Z + 2x_w\chi_w\Delta_w + 2x_c\chi_c\Delta_{cw}, \qquad
+  D_c = Z + 2x_w\chi_w\Delta_{cw},
+  \label{eq:DwDc}
+\end{equation}
+where $\Delta_w = g(\eta)\kappa_w[\exp(\varepsilon_w/k_BT)-1]P/(RT)$,
+$\Delta_{cw} = S_{cw}\Delta_w$, $\eta = B/(2Z)$,
+and $G = 1 + V_g$ with
+\begin{equation}
+  V_g \equiv \frac{\eta g'(\eta)}{g(\eta)} = \frac{\eta(5-2\eta)}{(1-\eta)(2-\eta)}, \qquad
+  W  \equiv \frac{\mathrm{d}V_g}{\mathrm{d}\eta} = \frac{10-8\eta+\eta^2}{(1-\eta)^2(2-\eta)^2},
+  \label{eq:VgW}
+\end{equation}
+for the Carnahan--Starling radial distribution function
+$g(\eta) = (2-\eta)/[2(1-\eta)^3]$.
+Because $\eta \propto Z^{-1}$, the key identity is
+\begin{equation}
+  Z\,\frac{\partial\Delta_w}{\partial Z} = -V_g\,\Delta_w,
+  \label{eq:dDeltadZ}
+\end{equation}
+from which all $Z$-derivatives of $D_w$ and $D_c$ follow.
+Setting $D = x_w(\chi_w-1)+x_c(\chi_c-1)$, the $3\times 3$ Jacobian
+$J_{ij} = \partial F_i/\partial v_j$ with $\mathbf{v}=(Z,\chi_w,\chi_c)^\top$ is:
+
+\paragraph{Row 1}
+\begin{align}
+  J_{11} &= 1 + \frac{B}{(Z-B)^2} - \frac{A}{(Z+B)^2} + \frac{D\,W\eta}{Z},
+             \label{eq:J11} \\
+  J_{12} &= -G\,x_w, \label{eq:J12} \\
+  J_{13} &= -G\,x_c. \label{eq:J13}
+\end{align}
+
+\paragraph{Row 2}
+Using $Z\partial D_w/\partial Z = Z - 2(x_w\chi_w + x_c\chi_c S_{cw})V_g\Delta_w$
+and $\chi_w = Z/D_w$:
+\begin{align}
+  J_{21} &= -\frac{2\Delta_w(1+V_g)(x_w\chi_w + x_c\chi_c S_{cw})}{D_w^2},
+             \label{eq:J21} \\
+  J_{22} &= 1 + \frac{2x_w\Delta_w\chi_w}{D_w}, \label{eq:J22} \\
+  J_{23} &= \frac{2x_c S_{cw}\Delta_w\chi_w}{D_w}. \label{eq:J23}
+\end{align}
+
+\paragraph{Row 3}
+Using $Z\partial D_c/\partial Z = Z - 2x_w\chi_w S_{cw} V_g\Delta_w$
+and $\chi_c = Z/D_c$:
+\begin{align}
+  J_{31} &= -\frac{2x_w\chi_w S_{cw}\Delta_w(1+V_g)}{D_c^2},
+             \label{eq:J31} \\
+  J_{32} &= \frac{2x_w S_{cw}\Delta_w\chi_c}{D_c}, \label{eq:J32} \\
+  J_{33} &= 1. \label{eq:J33}
+\end{align}
+Note $J_{33}=1$ because $D_c$ does not depend on $\chi_c$; Newton therefore
+has a direct update for $\chi_c$ at each step.
+The same Jacobian structure applies to the CO$_2$-rich phase with the
+CO$_2$-rich-phase compositions and parameters.
+
+%% ----------------------------------------------------------------
+\subsection{eCPA aqueous phase: Newton system for $(Z_w,\,\varepsilon_r,\,\chi_w)$}
+\label{sec:jac_ecpa}
+
+In the aqueous phase the relative permittivity $\varepsilon_r$ is an additional
+unknown satisfying the Kirkwood self-consistency equation~\eqref{eq:G1}.
+The CO$_2$ cross-association fraction $\chi_c$ is eliminated algebraically via
+$\chi_c = Z_w/D_c$ with $D_c = Z_w + 2x_w\chi_w S_{cw}\Delta_w$, reducing the
+system to three equations in $\mathbf{v}=(Z_w,\varepsilon_r,\chi_w)^\top$:
+\begin{align}
+  G_0 &= Z_w - Z_w^{\text{phys}} - Z_w^{\text{assoc}}
+              - Z_w^{\text{DH}} - Z_w^{\text{Perm}} = 0, \label{eq:G0} \\
+  G_1 &= T_1(\varepsilon_r,\varepsilon_\infty)
+        - T_2(Z_w,\chi_w) = 0, \label{eq:G1} \\
+  G_2 &= \chi_w - \frac{Z_w}{D_w} = 0, \label{eq:G2}
+\end{align}
+where $T_1$ and $T_2$ are the left- and right-hand sides of the
+Onsager--Kirkwood relative permittivity fixed-point equation \citep{Coelho2025},
+$D_w = Z_w + 2x_w\chi_w\Delta_w + 2x_c\chi_c S_{cw}\Delta_w$, and all
+$Z_w$-derivatives of $\Delta_w$ satisfy the same identity~\eqref{eq:dDeltadZ}
+(with $Z_w$ in place of $Z$).
+
+\paragraph{Row 2 (exact)}
+$G_2$ has the same structure as $F_2$~\eqref{eq:F2jac} with $\varepsilon_r$
+absent from $D_w$, so
+\begin{align}
+  H_{20} &= -\frac{2\Delta_w(1+V_g)(x_w\chi_w + x_c\chi_c S_{cw})}{D_w^2},
+             \label{eq:H20} \\
+  H_{21} &= 0, \label{eq:H21} \\
+  H_{22} &= 1 + \frac{2x_w\Delta_w\chi_w}{D_w}. \label{eq:H22}
+\end{align}
+
+\paragraph{Row 1 (exact)}
+$T_1 = F(\varepsilon_r,\varepsilon_\infty)$ (left-hand side of the Onsager--Kirkwood
+equation) and $$T_2 = (N_Ac/9\varepsilon_0k_BT)x_w g_w\mu_{0w}^2$$ depend on
+$(Z_w,\varepsilon_r,\chi_w)$ through $\varepsilon_\infty(Z_w)$, $\varepsilon_r$,
+and the Kirkwood g-factor $g_w(\chi_w)$, respectively:
+\begin{align}
+  H_{10} &= \left(\frac{\partial F}{\partial\varepsilon_\infty}\right)
+             \frac{V(\partial\varepsilon_\infty/\partial V)}{Z_w}
+           - \frac{N_A\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_w
+             \left(-\frac{\rho}{Z_w}\,g_w
+                   + \rho\,\frac{\partial g_w}{\partial Z_w}\right),
+             \label{eq:H10} \\
+  H_{11} &= \frac{\partial F}{\partial\varepsilon_r}
+           = \frac{2\varepsilon_r^2+\varepsilon_\infty^2}
+                  {\varepsilon_r^2(\varepsilon_\infty+2)^2},
+             \label{eq:H11} \\
+  H_{12} &= -\frac{N_A\rho\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_w\,
+              \frac{\partial g_w}{\partial\chi_w},
+             \label{eq:H12}
+\end{align}
+where $\rho = P/(Z_wRT)$, $V(\partial\varepsilon_\infty/\partial V)$ follows
+from the Clausius--Mossotti relation for $\varepsilon_\infty$ \citep{Coelho2025},
+and $\partial g_w/\partial Z_w$ and $\partial g_w/\partial\chi_w$ follow from
+differentiating the Kirkwood g-factor \citep{Coelho2025} through
+$\mathcal{P}_{ww}$ and $\mathcal{P}_{wc}$
+using Eq.~\eqref{eq:dDeltadZ} for $\partial\delta_w/\partial Z_w$ and
+$\partial\chi_c/\partial\chi_w = -Z_w\cdot 2x_wS_{cw}\Delta_w/D_c^2$,
+respectively.
+
+\paragraph{Row 0 (partially approximate)}
+The Debye screening length satisfies
+\begin{equation}
+  \frac{\partial\kappa}{\partial Z_w} = -\frac{\kappa}{2Z_w}, \qquad
+  \frac{\partial\kappa}{\partial\varepsilon_r} = -\frac{\kappa}{2\varepsilon_r}.
+  \label{eq:dkappa_jac}
+\end{equation}
+The $\varepsilon_r$-column entry combines DH and permittivity contributions,
+\begin{equation}
+  H_{01} = -\frac{\partial Z_w^{\text{DH}}}{\partial\varepsilon_r}
+           - \frac{\partial Z_w^{\text{Perm}}}{\partial\varepsilon_r},
+  \label{eq:H01}
+\end{equation}
+where $\partial Z_w^{\text{DH}}/\partial\varepsilon_r$ is obtained from the
+DH compressibility expression \citep{Coelho2025} through $\kappa(\varepsilon_r)$
+using Eq.~\eqref{eq:dkappa_jac}, and $\partial Z_w^{\text{Perm}}/\partial\varepsilon_r$
+requires differentiating $Z_w^{\text{Perm}} = -a_{\varepsilon_r}V(\partial\varepsilon_r/\partial V)$
+with respect to $\varepsilon_r$ through $\kappa$ and through $V(\partial\varepsilon_r/\partial V)$,
+using the second-order $F$-derivatives
+\begin{equation}
+  \frac{\partial^2 F}{\partial\varepsilon_r^2}
+    = -\frac{2\varepsilon_\infty^2}{\varepsilon_r^3(\varepsilon_\infty+2)^2}, \qquad
+  \frac{\partial^2 F}{\partial\varepsilon_r\,\partial\varepsilon_\infty}
+    = \frac{4(\varepsilon_\infty - \varepsilon_r^2)}{\varepsilon_r^2(\varepsilon_\infty+2)^3}.
+  \label{eq:d2F_jac}
+\end{equation}
+The $\chi_w$-column entry is
+\begin{equation}
+  H_{02} = -\frac{\partial Z_w^{\text{assoc}}}{\partial\chi_w}
+           - \frac{\partial Z_w^{\text{Perm}}}{\partial\chi_w},
+  \label{eq:H02}
+\end{equation}
+where $\partial Z_w^{\text{assoc}}/\partial\chi_w$ follows from the
+Wertheim association compressibility \citep{Coelho2025} through $\chi_c(\chi_w)$, and
+$\partial Z_w^{\text{Perm}}/\partial\chi_w$ is obtained by differentiating
+the chi cross-derivative system with respect to $\chi_w$ and propagating
+through $\mathcal{P}_{ww}$, $\mathcal{P}_{wc}$, $g_w$, and $V(\partial F/\partial V)$.
+The $Z_w$-column entry $H_{00}$ approximates
+$\partial(Z_w^{\text{phys}}+Z_w^{\text{assoc}}+Z_w^{\text{DH}}+Z_w^{\text{Perm}})/\partial Z_w$
+by omitting the implicit $Z_w$-dependence of $V(\partial\chi_w/\partial V)$ and
+$V(\partial\chi_c/\partial V)$ through the chi cross-derivative system.
+Comparison with centered finite differences confirms this approximation
+incurs a 1--2\,\% error in $H_{00}$ at typical conditions, which does not
+impair Newton convergence from warm starts (the other eight entries are exact
+to machine precision).
+
+\section{Additional Validation Figures}
+\label{sec:si}
+
+%% --- SI Figure S1: all CO2+H2O panels ---
+\begin{figure}[H]
+  \centering
+  \newcommand{\swsi}{0.235\textwidth}%
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1a.png}\caption{$0\,^\circ$C\,(273\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1b.png}\caption{$5\,^\circ$C\,(278\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1c.png}\caption{$10\,^\circ$C\,(283\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1d.png}\caption{$15\,^\circ$C\,(288\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1e.png}\caption{$20\,^\circ$C\,(293\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1f.png}\caption{$31\,^\circ$C\,(304\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1g.png}\caption{$35\,^\circ$C\,(308\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1h.png}\caption{$40\,^\circ$C\,(313\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1i.png}\caption{$45\,^\circ$C\,(318\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1j.png}\caption{$60\,^\circ$C\,(333\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1k.png}\caption{$75\,^\circ$C\,(348\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1l.png}\caption{$80\,^\circ$C\,(353\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1m.png}\caption{$110\,^\circ$C\,(383\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1n.png}\caption{$120\,^\circ$C\,(393\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1o.png}\caption{$140\,^\circ$C\,(413\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1p.png}\caption{$160\,^\circ$C\,(433\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1q.png}\caption{$175\,^\circ$C\,(448\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1r.png}\caption{$180\,^\circ$C\,(453\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1s.png}\caption{$220\,^\circ$C\,(493\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1t.png}\caption{$240\,^\circ$C\,(513\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1u.png}\caption{$260\,^\circ$C\,(533\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1v.png}\caption{$265\,^\circ$C\,(538\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1w.png}\caption{$268\,^\circ$C\,(541\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1x.png}\caption{$270\,^\circ$C\,(543\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1y.png}\caption{$275\,^\circ$C\,(548\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1z.png}\caption{$280\,^\circ$C\,(553\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1aa.png}\caption{$300\,^\circ$C\,(573\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1ab.png}\caption{$325\,^\circ$C\,(598\,K)}\end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{\swsi}\includegraphics[width=\textwidth]{fig_S1ac.png}\caption{$350\,^\circ$C\,(623\,K)}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\phantom{\includegraphics[width=\textwidth]{fig_S1a.png}}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\phantom{\includegraphics[width=\textwidth]{fig_S1a.png}}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\swsi}\phantom{\includegraphics[width=\textwidth]{fig_S1a.png}}\end{subfigure}
+  \caption{CO$_2$ + H$_2$O phase equilibria at all 29 temperatures not shown in Fig.~\ref{fig:co2h2o_Tpanel}
+           ($0$--$350\,^\circ$C), 4 panels per row.
+           Each panel shows the CO$_2$ mole fraction in the aqueous phase ($x_{\text{CO}_2}$, left sub-panel)
+           and H$_2$O mole fraction in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$, right sub-panel) vs.\ pressure.
+           Open symbols: experimental data \citep{Coelho2025}; black solid line: CPA (salt-free);
+           rainbow-colored filled bands: eCPA spanning $m_s = 0$--$6$\,mol\,kg$^{-1}$ (violet to red),
+           with discrete molality contours overlaid.}
+  \label{fig:co2h2o_Tpanel_SI}
+\end{figure}
+
+%% --- SI Figure S2: remaining single-panel CO2+NaCl panels ---
+\begin{figure}[H]
+  \centering
+  \newcommand{\snwsi}{0.30\textwidth}%
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2a.png}\caption{$5\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2b.png}\caption{$10\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2c.png}\caption{$15\,^\circ$C}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2d.png}\caption{$20\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2e.png}\caption{$45\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2f.png}\caption{$60\,^\circ$C}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2g.png}\caption{$140\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2h.png}\caption{$160\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwsi}\includegraphics[width=\textwidth]{fig_S2i.png}\caption{$200\,^\circ$C}\end{subfigure}
+  \caption{CO$_2$ solubility in NaCl brine at nine representative temperatures not shown in
+           Fig.~\ref{fig:co2nacl_Tpanel} ($5$--$200\,^\circ$C), including data at high NaCl molalities
+           up to $m_s = 6$\,mol\,kg$^{-1}$ from multiple sources.
+           Each panel shows CO$_2$ molality $m_c$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
+           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Bando2003,
+           Chabab2020, Liu2021, Liu2011b, Nighswander1989, Takenouchi1965, Yan2011};
+           discrete lines with markers: eCPA at the experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions across
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}).}
+  \label{fig:co2nacl_Tpanel_SI}
+\end{figure}
+
+%% --- SI Figure S3: high-T CO2+NaCl panels (T=573K, 623K) ---
+\begin{figure}[H]
+  \centering
+  \newcommand{\snwhighT}{0.46\textwidth}%
+  \begin{subfigure}[t]{\snwhighT}\includegraphics[width=\textwidth]{fig_S3a.png}\caption{$300\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snwhighT}\includegraphics[width=\textwidth]{fig_S3b.png}\caption{$350\,^\circ$C}\end{subfigure}
+  \caption{CO$_2$ solubility in NaCl brine at hydrothermal temperatures
+           (a) $T = 300\,^\circ$C, (b) $T = 350\,^\circ$C.
+           Each panel shows CO$_2$ molality $m_c$ [mol\,kg$^{-1}$] vs.\ pressure.
+           Open symbols: experimental data \citep{Takenouchi1965}; lines with markers:
+           eCPA predictions at the experimental NaCl molalities.
+           At $T \geq 400\,^\circ$C, eCPA predicts single-phase (fully miscible) behavior
+           for all available experimental pressures (300--900\,bar).}
+  \label{fig:co2nacl_highT_SI}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_S4.png}
+  \caption{Heatmap of absolute relative error (AARE, \%) for the CO$_2$ + NaCl
+           validation dataset ($T = 5$--$350\,^\circ$C), showing all individual NaCl
+           molalities present in the experimental data.
+           Color scale is diverging at 5\%: green $\leq 5\%$, red $\geq 10\%$.
+           Empty cells indicate no experimental data at that $(T, m_s)$ combination.}
+  \label{fig:co2nacl_heatmap}
+\end{figure}
+
+\subsection{Aqueous-phase density: extended validation}
+\label{sec:density_si}
+
+\paragraph{Comparison with CO$_2$-saturation experiments}
+Figure~\ref{fig:density} shows the eCPA parity plot against 37 CO$_2$-saturated
+aqueous-density measurements from \citet{King1992} and \citet{Nighswander1989}
+($T = 15$--$200\,^\circ$C), reproducing the 0.76\% AARE of \citet{Coelho2025}
+without any Péneloux volume shift for H$_2$O.
+CPA results at $m_s = 0$ are indistinguishable from eCPA and are omitted for clarity.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.55\textwidth]{fig_S5.png}
+  \caption{Aqueous-phase density of CO$_2$-saturated water ($m_s = 0$) predicted by
+           eCPA versus experimental data from \citet{King1992} and
+           \citet{Nighswander1989} (37 points, $T = 15$--$200\,^\circ$C).
+           Points are colored by temperature; shaded bands show $\pm$1\% and
+           $\pm$2\% deviations.
+           No Péneloux volume shift is applied to H$_2$O; the 0.76\% AARE reflects
+           the liquid-density accuracy intrinsic to the CPA parameterization.}
+  \label{fig:density}
+\end{figure}
+
+\paragraph{Comparison with IAPWS-95 over the full paper range}
+Because CO$_2$-saturation density measurements cover only a limited $(T, P)$ window,
+we extend the density validation by comparing pure-water ($m_s = 0$) eCPA predictions
+against the IAPWS-95 reference equation \citep{IAPWS2016} over a systematic grid of
+26 temperatures ($T = 0$--$350\,^\circ$C) and 20 pressures ($P = 1$--$2\,000$\,bar),
+restricted to conditions where IAPWS-95 classifies water as liquid or compressed liquid
+(475 points total; vapour conditions are excluded as the aqueous-phase EoS is not
+intended for steam).
+The eCPA density is computed from the converged aqueous-phase compressibility
+$Z_w$ as $\rho = M_{\text{H}_2\text{O}}\,/\,(Z_w RT/P)$, with no Péneloux correction.
+
+The signed error surface (Fig.~\ref{fig:density_surface}) reveals a smooth, small-amplitude
+pattern: eCPA slightly over-predicts density near 0\,$^\circ$C (+0.7\%), crosses zero near
+15\,$^\circ$C, under-predicts by up to $-1.6\%$ in the 50--150\,$^\circ$C range, and
+recovers toward zero at high $T$ and high $P$.
+The one outlying feature is a positive spike reaching 5\% near the liquid--vapour
+boundary at $T \approx 350\,^\circ$C and moderate pressures, where liquid water
+becomes highly compressible and the SRK backbone is most challenged.
+Overall statistics: AARE = 1.0\%, bias = $-$0.7\%, maximum ARE = 5.0\%
+(475 liquid conditions).
+For subsurface CO$_2$ storage conditions ($T \leq 120\,^\circ$C,
+$P = 75$--$600$\,bar, $N = 136$), the AARE reduces to 0.8\%.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_S5b.png}
+  \caption{Signed relative error of eCPA pure-water density predictions versus
+           the IAPWS-95 reference equation \citep{IAPWS2016} over
+           $T = 0$--$350\,^\circ$C and $P = 1$--$2\,000$\,bar
+           (475 liquid/compressed-water conditions; vapour excluded).
+           The $P$-axis is logarithmic.
+           The transparent grey plane marks zero error.
+           Blue regions indicate conditions where eCPA slightly over-predicts density
+           (near 0\,$^\circ$C); red regions where it slightly under-predicts
+           (50--150\,$^\circ$C); the narrow red spike near 350\,$^\circ$C at
+           moderate pressures corresponds to the highly compressible near-saturation
+           liquid where cubic-EoS predictions are least accurate.}
+  \label{fig:density_surface}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_S6.png}
+  \caption{Absolute relative error of eCPA predictions for the CO$_2$ + H$_2$O binary
+           as a function of temperature and pressure.
+           Left: CO$_2$ solubility in the aqueous phase ($x_{\text{CO}_2}$).
+           Right: H$_2$O content in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$).
+           Marker color indicates error magnitude (green $< 5\%$, yellow $\approx 10\%$,
+           red $> 30\%$); crosses mark points flagged as outliers by cross-reference
+           consistency analysis.
+           The blue shaded band highlights the pressure range most relevant to
+           subsurface CO$_2$ storage ($P = 50$--$600$\,bar).}
+  \label{fig:error_heatmap_SI}
+\end{figure}
+
+\subsection{Simplified flash: detailed accuracy and efficiency}
+\label{sec:simplified_si}
+
+Table~\ref{tab:simplified_accuracy} reports the AARE in dissolved CO$_2$ molality
+$m_c$ and the mean $y_{\text{H}_2\text{O}}$ in the CO$_2$-rich phase from the full
+flash as a function of temperature, evaluated over 3{,}285 two-phase conditions
+spanning $P = 25$--$800$\,bar, $z_{\text{CO}_2} = 0.01$--$0.70$, and
+$m_s = 1$--$6$\,mol\,kg$^{-1}$.
+The two quantities track each other closely: the simplified flash introduces an error
+in $m_c$ that equals, to a good approximation, the water content it neglects.
+
+\begin{table}[H]
+  \centering
+  \caption{Accuracy of the simplified flash ($y_{\text{H}_2\text{O}} = 0$) relative to
+           the full K-value SSI flash, evaluated over 3{,}285 two-phase conditions
+           spanning $P = 25$--$800$\,bar, $z_{\text{CO}_2} = 0.01$--$0.70$, and
+           $m_s = 1$--$6$\,mol\,kg$^{-1}$.
+           AARE: average absolute relative error in CO$_2$ molality $m_c$;
+           $\langle y_{\text{H}_2\text{O}}\rangle$: mean H$_2$O mole fraction in the
+           CO$_2$-rich phase from the full flash (proxy for the assumption error).}
+  \label{tab:simplified_accuracy}
+  \small
+  \begin{tabular}{rrlrr}
+    \toprule
+    $T$ (K) & $T$ ($^\circ$C) & $N$ & AARE in $m_c$ (\%) & $\langle y_{\text{H}_2\text{O}}\rangle$ (mol\%) \\
+    \midrule
+    283 &  10 & 239 & 0.03 & 0.02 \\
+    298 &  25 & 239 & 0.11 & 0.08 \\
+    313 &  40 & 240 & 0.37 & 0.27 \\
+    323 &  50 & 240 & 0.62 & 0.45 \\
+    333 &  60 & 240 & 0.93 & 0.68 \\
+    348 &  75 & 239 & 1.55 & 1.15 \\
+    353 &  80 & 240 & 1.80 & 1.34 \\
+    373 & 100 & 238 & 3.16 & 2.35 \\
+    393 & 120 & 239 & 5.37 & 3.91 \\
+    413 & 140 & 237 & 8.95 & 6.19 \\
+    423 & 150 & 237 &11.67 & 7.72 \\
+    453 & 180 & 235 &25.49 &14.01 \\
+    473 & 200 & 231 &45.85 &19.79 \\
+    523 & 250 & 191 &121.28&33.51 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Figure~\ref{fig:simplified_accuracy} summarises the AARE in $m_c$, the mean
+$y_{\text{H}_2\text{O}}$ from the full flash, and the wall-time speedup as functions of
+temperature.
+Figure~\ref{fig:simplified_by_ms} breaks the AARE down by NaCl molality; the error
+curves for all salinities are nearly coincident, confirming that the accuracy of the
+$y_{\text{H}_2\text{O}} = 0$ approximation is controlled entirely by temperature.
+
+The mean wall time is essentially identical to the full flash (speedup $0.8\times$):
+Brent root-finding requires on average 11.3 inner Newton evaluations, whereas the full
+SSI needs 6.4 outer iterations each involving at most two inner solves.
+The inner Newton cost per call is similar in both paths, so the Brent overhead offsets
+the gain from eliminating the outer salt iteration.
+The principal benefits of the simplified flash are therefore conceptual — the
+equilibrium reduces to a single scalar CO$_2$-solubility equation — and robustness
+in salt-free settings where the ternary outer salt loop is absent by construction.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_11.png}
+  \caption{Simplified flash benchmark over 3{,}285 two-phase conditions
+           ($P = 25$--$800$\,bar; $z_{\text{CO}_2} = 0.01$--$0.70$;
+           $m_s = 1$--$6$\,mol\,kg$^{-1}$).
+           \textbf{Left}: AARE in dissolved CO$_2$ molality $m_c$ as a function
+           of temperature; the dashed line marks 5\%.
+           \textbf{Middle}: mean H$_2$O mole fraction in the CO$_2$-rich phase
+           from the full flash, which directly quantifies the magnitude of the
+           $y_{\text{H}_2\text{O}} = 0$ assumption; dashed line at 1\,mol\%.
+           \textbf{Right}: ratio of mean full-flash wall time to simplified-flash
+           wall time; the two methods are essentially iso-cost across all temperatures.}
+  \label{fig:simplified_accuracy}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.65\textwidth]{fig_12.png}
+  \caption{AARE in dissolved CO$_2$ molality $m_c$ of the simplified flash versus the
+           full K-value SSI, broken down by NaCl molality ($m_s = 1$--$6$\,mol\,kg$^{-1}$).
+           The error curves for different salinities are nearly coincident, confirming
+           that the accuracy of the $y_{\text{H}_2\text{O}} = 0$ approximation is
+           controlled entirely by temperature and is insensitive to brine salinity.
+           The dashed line marks 5\%.}
+  \label{fig:simplified_by_ms}
+\end{figure}
+
+
+\section{Computational Performance Figures}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_S7.png}
+  \caption{SSI + Newton polish iteration breakdown and wall-time ratio across the
+           parameter-space scan (9{,}825 two-phase points, averaged over
+           $z_{\text{CO}_2}$).
+           \emph{Left}: mean SSI iteration count before Newton polish is triggered
+           ($\|\mathbf{g}\| < 10^{-4}$); the near-CO$_2$-critical region
+           ($T \approx 7$--$57\,^\circ$C) requires the most SSI iterations even with
+           table warm-start.
+           \emph{Center}: mean Newton iteration count; most of the domain converges in
+           2--3 Newton steps after 1--5 SSI steps, while the critical region (blue)
+           often reverts to SSI before Newton is beneficial.
+           \emph{Right}: wall-time ratio (SSI-only / SSI+Newton); values $>1$ (green)
+           indicate that Newton polish is faster; values $<1$ (red) indicate that the
+           SSI-only path is faster (primarily near the CO$_2$ critical point where Newton
+           reversion adds overhead).}
+  \label{fig:newton_heatmap_SI}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_S8.png}
+  \caption{CPA flash strategy comparison across all 9{,}825 two-phase conditions
+           of the salt-free CO$_2$ + H$_2$O parameter-space scan
+           ($T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar,
+           $z_4 = 0.001$--$0.999$).
+           (a) Convergence rate; (b) mean total iterations (converged points only).
+           Strategies are ordered from simplest cold-start (standard SSI with Wilson K)
+           to the most optimized (table warm-start with SSI and Newton polish).
+           The final strategy achieves a 73\% reduction in mean iterations relative to
+           the standard cold-start baseline.}
+  \label{fig:strategy_comparison_SI}
+\end{figure}
+
+\section{Reservoir Simulation Details}
+\label{sec:sim_table}
+
+\subsection*{Numerical scheme}
+
+Pressure is solved implicitly at each time step on a uniform Cartesian grid using either
+a two-point flux approximation (TPFA, \citealt{Aavatsmark2003}) or a lowest-order
+mixed finite element (MFE, RT$_0$) scheme \citep{chaventjaffre}.
+Both were implemented and tested; results shown here use MFE, which avoids the
+pronounced grid-orientation artefacts of TPFA on Cartesian grids while remaining
+computationally inexpensive \citep{moortgat2011compositional,moortgat2013higher,moortgat2016mixed}.
+The solved pressure field yields Darcy velocities that drive explicit first-order upwind
+advection of the overall CO$_2$ mole fraction $z_4$.
+The transport sub-step size is constrained by a CFL condition based on the maximum
+slope of the molar fractional flow $\partial F / \partial z_4$, estimated by a
+one-dimensional scan at startup.
+Production wells are controlled by a fixed bottom-hole pressure (BHP); the injector
+delivers a fixed volumetric rate.
+
+At each time step, the full Michelsen stability test followed by the two-phase flash
+is called at every grid cell, using the cell pressure from the previous time step
+(standard IMPES lagged-pressure).
+For the eCPA case ($m_s > 0$) the warm-started K-value flash with hierarchical stability
+fallback is used (Section~\ref{sec:fast_flash}); for the salt-free case ($m_s = 0$) the
+CPA warm-started flash is used.
+NaCl is non-volatile; the equilibrium aqueous molality $m_s^\mathrm{aq}$ returned by the
+flash reflects local salting-out and is used directly in the saturation calculation.
+
+We deliberately replace the true compressible volume-rate divergence by the
+incompressible constraint $\nabla\cdot\mathbf{u} = q$.
+This neglects buoyancy, compressibility, and the density difference between injected and
+displaced fluid.
+We state this limitation explicitly because neglecting it removes the main physical driver
+of CO$_2$ plume geometry in real aquifer storage, and readers should not interpret the
+results as quantitative predictions.
+The purpose is solely to confirm that the stability and flash routines converge reliably
+and efficiently at every cell of a $50{\times}50$ grid over 300 time steps spanning
+5 years.
+
+\subsection*{Simulation setup}
+
+Two simulations are run on identical grids with identical flow parameters, differing only
+in brine salinity:
+\begin{itemize}
+  \item \textbf{Case A (CPA):} salt-free brine, $m_s = 0$\,mol\,kg$^{-1}$
+  \item \textbf{Case B (eCPA):} saline brine, $m_s = 4$\,mol\,kg$^{-1}$ NaCl
+\end{itemize}
+The domain is a $100\times100$\,m$^2$ square of 10\,m thickness discretized onto a
+$50\times50$ Cartesian grid ($N = 2500$ cells) with homogeneous permeability of 100\,mD
+and porosity $\phi = 0.20$.
+A five-spot well pattern is used: a CO$_2$ injector at the domain center and four
+BHP-controlled producers at the corners (BHP $= 150$\,bar).
+CO$_2$ is injected at 20\% of total pore volume per year.
+The simulation runs for 5 years ($T = 77\,^\circ$C) with 300 pressure time steps.
+Full simulation parameters are listed in Table~\ref{tab:sim_setup}.
+
+\begin{table}[H]
+  \centering
+  \caption{Reservoir simulation parameters used in Section~\ref{sec:simulator}.}
+  \label{tab:sim_setup}
+  \begin{tabular}{llr}
+    \toprule
+    Parameter & Symbol & Value \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Grid and geometry}} \\
+    Domain size (x, y)                 & $L_x \times L_y$ & $100 \times 100$\,m \\
+    Domain thickness                   & $L_z$            & 10\,m \\
+    Grid cells (x, y)                  & $N_x \times N_y$ & $50 \times 50$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Rock properties}} \\
+    Permeability (isotropic, uniform)  & $K$              & 100\,mD \\
+    Porosity                           & $\phi$           & 0.20 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Relative permeability (Corey)}} \\
+    Connate water saturation           & $S_{wc}$         & 0.15 \\
+    Residual gas saturation            & $S_{gr}$         & 0.05 \\
+    End-point $k_{rg}$                 & $k_{rg}^0$       & 0.80 \\
+    End-point $k_{rw}$                 & $k_{rw}^0$       & 1.00 \\
+    Corey exponent (CO$_2$-rich phase) & $n_g$            & 2.0  \\
+    Corey exponent (aqueous phase)     & $n_w$            & 2.5  \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Fluid properties}} \\
+    Temperature (isothermal)           & $T$              & $77\,^\circ$C (350\,K) \\
+    CO$_2$-rich phase viscosity        & $\mu_g$          & $5\times10^{-5}$\,Pa\,s \\
+    Aqueous phase viscosity            & $\mu_w$          & $4.5\times10^{-4}$\,Pa\,s \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Well and injection parameters}} \\
+    Well pattern                       & ---              & five-spot \\
+    Injector location                  & ---              & domain center \\
+    Producer locations                 & ---              & four corners \\
+    Wellbore radius                    & $r_w$            & 0.10\,m \\
+    Producer BHP                       & $P_\mathrm{BHP}$ & 150\,bar \\
+    Injection rate                     & ---              & 20\% PVI\,yr$^{-1}$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Simulation control}} \\
+    Total simulation time              & $t_\mathrm{max}$ & 5\,yr \\
+    Number of pressure time steps      & $N_t$            & 300 \\
+    Pressure solver                    & ---              & MFE (RT$_0$) \\
+    Transport scheme                   & ---              & first-order upwind, CFL-limited \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Cases}} \\
+    Case A (CPA)                       & $m_s$            & $0$\,mol\,kg$^{-1}$ (salt-free) \\
+    Case B (eCPA)                      & $m_s$            & $4$\,mol\,kg$^{-1}$ NaCl \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection*{Results}
+
+Fig.~\ref{fig:sim_comparison} shows the final-time ($t = 5$\,yr) spatial fields for
+both cases: the CO$_2$-rich saturation $S_g$ (top row), the dissolved CO$_2$ molality
+$m_c$ in the aqueous phase (middle row), and the pressure field (bottom row).
+The CO$_2$ saturation maps are strikingly similar between the two cases.
+This is physically expected: at a high injection rate of 20\% PVI\,yr$^{-1}$, advection
+strongly dominates over dissolution-driven transport.
+The CO$_2$ displacement front is governed primarily by the mobility ratio and the
+imposed pressure gradient, not by whether the equilibrium CO$_2$ solubility in the
+aqueous phase is slightly reduced by salt.
+Given that CO$_2$ solubility in water is already low---on the order of
+1--2\,mol\,kg$^{-1}$ under typical storage conditions---the further reduction from
+salting-out has negligible impact on the high-rate displacement dynamics on these
+time scales.
+
+The dissolved CO$_2$ maps (middle row) tell a different story.
+Inside the plume the aqueous phase is everywhere CO$_2$-saturated at the local
+equilibrium value: $m_c \approx 1.25$\,mol\,kg$^{-1}$ for the salt-free case
+and only $m_c \approx 0.63$\,mol\,kg$^{-1}$ at $m_s = 4$\,mol\,kg$^{-1}$---a
+reduction of approximately a factor of two, consistent with the salting-out effect
+seen in the validation data (Section~\ref{sec:co2nacl}).
+The white region around the central injector marks cells where the brine has been fully
+expelled into the CO$_2$-rich phase (complete drying out, $S_g \to 1$), despite a 15\%
+connate/residual water saturation.
+Correctly capturing this drying-out regime requires a robust stability and flash model
+that fully captures the mutual solubilities of CO$_2$ and H$_2$O.
+
+No flash failures were recorded in either simulation across all 300 time steps and
+all 2500 grid cells, confirming the reliability of the hierarchical stability and flash
+approach.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_10.png}
+  \caption{Final-state ($t = 5$\,yr) spatial fields for the salt-free CPA case
+           ($m_s = 0$, left column) and the saline eCPA case
+           ($m_s = 4$\,mol\,kg$^{-1}$ NaCl, right column).
+           \emph{Top row}: CO$_2$-rich phase saturation $S_g$.
+           The plumes are nearly identical, reflecting advection-dominated displacement
+           at 20\% PVI\,yr$^{-1}$.
+           \emph{Middle row}: dissolved CO$_2$ molality $m_c$ in the aqueous phase.
+           Inside the plume the aqueous phase is CO$_2$-saturated at the eCPA
+           equilibrium value: ${\approx}1.25$\,mol\,kg$^{-1}$ (salt-free) vs.\
+           ${\approx}0.63$\,mol\,kg$^{-1}$ ($m_s = 4$\,mol\,kg$^{-1}$), a factor-of-two
+           reduction from the salting-out effect.
+           The white region near the central injector (white star) marks cells where
+           brine has been completely expelled into the CO$_2$-rich phase (drying-out).
+           \emph{Bottom row}: pressure field; the ${\approx}0.15$\,bar gradient across
+           the 100\,m domain reflects the small pressure drop required to drive
+           20\% PVI\,yr$^{-1}$ through 100\,mD rock with BHP-controlled producers at
+           150\,bar.
+           Black triangles: producers.}
+  \label{fig:sim_comparison}
+\end{figure}
+
+While the saturation fields are similar, the implications for long-term CO$_2$ storage
+are markedly different.
+Solubility trapping---the dissolution of CO$_2$ into the formation brine---is a key
+mechanism for storage permanence, because dissolved CO$_2$ cannot escape as a
+buoyant supercritical phase.
+Fig.~\ref{fig:sim_trapping} shows the fraction of the in-situ CO$_2$ inventory that
+is dissolved in brine (solubility trapping, solid lines) versus residing in the
+CO$_2$-rich phase (structural trapping, dashed lines) as a function of time for both
+cases.
+The gap between the CPA and eCPA curves is clear and persistent throughout: at $t = 5$\,yr
+the solubility trapping fraction is roughly a factor of two lower for the saline case,
+directly reflecting the reduction in equilibrium CO$_2$ solubility from the salting-out
+effect.
+This demonstrates that brine salinity has a quantitatively significant impact on
+long-term storage permanence even when the short-term displacement dynamics appear
+unaffected.
+
+\subsection*{Flash performance in the simulator}
+
+At every time step, the stability test and flash are called at each of the $N = 2500$
+grid cells.
+Cells identified as trivially single-phase bypass the flash entirely; the remaining
+two-phase candidates are dispatched in parallel across all available CPU cores.
+As the plume grows, an increasing fraction of the domain becomes two-phase until
+essentially all cells require a flash call (peak ${\approx}2500$ calls per step).
+Performance numbers for both simulations are summarized in Table~\ref{tab:sim_perf};
+the flash accounts for the dominant fraction of total step cost throughout both runs,
+confirming that the algorithmic efficiency of the warm-started flash directly governs
+simulation throughput.
+Interestingly, the eCPA flash achieves a higher throughput than CPA (14{,}270 vs.\
+8{,}840\,calls\,s$^{-1}$), even though the eCPA EoS involves more unknowns and is
+inherently more expensive per iteration.
+While one would expect CPA to be the faster of the two in general, the solution-table
+warm start appears to provide particularly accurate initial guesses for the eCPA system
+at the temperature, pressure, and salinity conditions of these simulations
+($T = 77\,^\circ$C, $P \approx 150$\,bar, $m_s = 4$\,mol\,kg$^{-1}$), resulting in
+fewer SSI iterations to convergence than for the salt-free CPA case at otherwise
+identical conditions.
+
+\begin{table}[H]
+  \centering
+  \caption{Aggregate flash performance for the 5-year simulations
+           ($50\times50$ grid, $T = 77\,^\circ$C, $P \approx 150$\,bar, 300 time steps,
+           48 CPU cores). Total wall time: 91\,s (CPA) and 63\,s (eCPA).}
+  \label{tab:sim_perf}
+  \begin{tabular}{lrr}
+    \toprule
+    Metric & CPA ($m_s = 0$) & eCPA ($m_s = 4$) \\
+    \midrule
+    Grid cells                          & 2500       & 2500       \\
+    Time steps                          & 300        & 300        \\
+    Mean two-phase cells / step         & 2219 (max 2479) & 2213 (max 2479) \\
+    Mean flash wall time / step (s)     & 0.247      & 0.151      \\
+    Flash fraction of step cost         & 87\%       & 80\%       \\
+    Flash throughput (calls\,s$^{-1}$)  & 8{,}840    & 14{,}270   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.80\textwidth]{fig_S9.png}
+  \caption{Fraction of total in-situ CO$_2$ inventory undergoing solubility trapping
+           (dissolved in the aqueous phase, solid lines) versus structural trapping
+           (residing in the CO$_2$-rich phase, dashed lines) as a function of time.
+           Blue: salt-free brine (CPA, $m_s = 0$);
+           red: saline brine (eCPA, $m_s = 4$\,mol\,kg$^{-1}$ NaCl).
+           The persistent factor-of-two gap in solubility trapping between the two cases
+           reflects the reduction in equilibrium CO$_2$ solubility due to the
+           salting-out effect, which has negligible impact on short-term displacement
+           dynamics but is critical for long-term storage permanence.}
+  \label{fig:sim_trapping}
+\end{figure}
+
+\end{document}
