@@ -5,10 +5,10 @@ Compare eCPA pure-water (m_s → 0) density predictions against the IAPWS-95
 reference equation over the full (T, P) range explored in the paper.
 
 IAPWS-95 (International Association for the Properties of Water and Steam,
-Revised Release 2016) is the fundamental scientific reference equation for
-water properties, valid up to 1000 MPa (10,000 bar) and 1273 K.  It is
-more accurate than the industrial formulation IAPWS-IF97 and covers the
-full 1–2000 bar pressure range of the paper.
+Revised Release 2016) is the international standard for water properties,
+fitted to a comprehensive body of experimental measurements and valid up to
+1000 MPa (10,000 bar) and 1273 K.  It covers the full 1–2000 bar pressure
+range of the paper.
 
 Outputs
 -------
@@ -34,10 +34,9 @@ os.makedirs('results', exist_ok=True)
 
 from iapws import IAPWS95
 from ecpa.stability import _lnphi_aq_inner
-from ecpa.constants import Peneloux_H2O, Mw as M_H2O  # M_H2O in kg/mol
+from ecpa.constants import peneloux_h2o, Mw as M_H2O  # M_H2O in kg/mol
 
 R_bar_cm3 = 83.14           # bar·cm³/(mol·K)
-Pen_cm3   = Peneloux_H2O * 1e6   # m³/mol → cm³/mol  (= 0.1105 cm³/mol)
 M_H2O_g   = M_H2O * 1000         # kg/mol → g/mol     (= 18.015 g/mol)
 
 
@@ -71,8 +70,8 @@ def ecpa_pure_water_density(T: float, P_bar: float, x0=None):
         Zw = float(sol[0])
         if not (np.isfinite(Zw) and 0.0 < Zw < 20.0):
             return np.nan, None
-        Vm      = Zw * R_bar_cm3 * T / P_bar   # cm³/mol (EoS volume)
-        Vm_corr = Vm + Pen_cm3                  # Péneloux-corrected
+        Vm      = Zw * R_bar_cm3 * T / P_bar          # cm³/mol (EoS volume)
+        Vm_corr = Vm + peneloux_h2o(T) * 1e6          # Péneloux-corrected [cm³/mol]
         if Vm_corr <= 0:
             return np.nan, None
         rho = (M_H2O_g / Vm_corr) * 1000.0     # kg/m³
@@ -152,16 +151,25 @@ for T, g in ok.groupby('T_K'):
 
 
 # ── Figure 1: parity plot (liquid phase only vs all) ─────────────────────────
-fig, axes = plt.subplots(1, 2, figsize=(11, 5.2))
+fig = plt.figure(figsize=(12, 5.4))
+gs  = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.05],
+                        left=0.08, right=0.93, top=0.93, bottom=0.13,
+                        wspace=0.38)
+ax_left  = fig.add_subplot(gs[0, 0])
+ax_right = fig.add_subplot(gs[0, 1])
+cax      = fig.add_subplot(gs[0, 2])
+axes = [ax_left, ax_right]
+
 cmap = plt.cm.plasma
 T_unique = sorted(ok['T_K'].unique())
 norm = plt.Normalize(vmin=min(T_unique)-273.15, vmax=max(T_unique)-273.15)
 
+P_max_all = int(ok['P_bar'].max())
 for ax, mask, title_suffix in zip(
         axes,
         [ok['P_bar'] <= 300,
          pd.Series(True, index=ok.index)],
-        ['$P$ ≤ 300 bar', 'All liquid conditions ($P$ up to 2000 bar)']):
+        ['$P$ ≤ 300 bar', f'All liquid conditions ($P$ up to {P_max_all} bar)']):
     sub = ok[mask]
     if sub.empty:
         ax.set_visible(False)
@@ -179,20 +187,22 @@ for ax, mask, title_suffix in zip(
     ax.fill_between(lv, lv*0.99, lv*1.01, color='green',  alpha=0.15, label='±1%')
     ax.fill_between(lv, lv*0.98, lv*1.02, color='orange', alpha=0.12, label='±2%')
     aare_sub = sub['are_pct'].mean()
-    ax.set_xlabel(r'IAPWS-95 $\rho$ [kg m$^{-3}$]', fontsize=12)
-    ax.set_ylabel(r'eCPA $\rho$ [kg m$^{-3}$]', fontsize=12)
-    ax.set_title(f'{title_suffix}\nAAR = {aare_sub:.2f}%', fontsize=11)
-    ax.legend(fontsize=8, loc='upper left')
+    ax.set_xlabel(r'IAPWS-95 $\rho$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
+    ax.set_ylabel(r'eCPA $\rho$ [kg m$^{-3}$]', fontsize=12, fontweight='bold')
+    ax.set_title(f'{title_suffix}\nAARE = {aare_sub:.2f}%', fontsize=11, fontweight='bold')
+    ax.legend(fontsize=9, loc='upper left', prop={'size': 9, 'weight': 'bold'})
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect('equal')
+    for tick in ax.get_xticklabels() + ax.get_yticklabels():
+        tick.set_fontweight('bold')
 
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 sm.set_array([])
-cbar = fig.colorbar(sm, ax=axes, label='$T$ (°C)', shrink=0.75, pad=0.02,
-                    location='right')
+cbar = fig.colorbar(sm, cax=cax, label='$T$ (°C)')
 cbar.ax.tick_params(labelsize=9)
-fig.suptitle('Pure water density — eCPA vs IAPWS-95', fontsize=12, y=1.01)
-fig.tight_layout()
+cbar.set_label('$T$ (°C)', fontsize=11, fontweight='bold')
+for tick in cbar.ax.get_yticklabels():
+    tick.set_fontweight('bold')
 fig.savefig('figures/density/iapws_parity.png', dpi=150, bbox_inches='tight')
 plt.close(fig)
 print("\nSaved figures/density/iapws_parity.png")
@@ -218,18 +228,25 @@ pcm = ax.pcolormesh(T_C_arr, P_arr, err_grid,
                     cmap='RdBu_r', vmin=-vmax, vmax=vmax, shading='nearest')
 cbar = fig.colorbar(pcm, ax=ax, extend='both',
                     label='Signed error  (eCPA − IAPWS-95) / IAPWS-95  (%)')
+cbar.set_label('Signed error  (eCPA − IAPWS-95) / IAPWS-95  (%)',
+               fontsize=11, fontweight='bold')
 cbar.ax.tick_params(labelsize=9)
+for t in cbar.ax.get_yticklabels():
+    t.set_fontweight('bold')
 ax.set_yscale('log')
 ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
 ax.yaxis.set_minor_formatter(mticker.NullFormatter())
 ax.set_yticks([1, 10, 100, 1000])
-ax.set_xlabel('$T$ (°C)', fontsize=13)
-ax.set_ylabel('$P$ (bar)', fontsize=13)
+ax.set_xlabel('$T$ (°C)', fontsize=13, fontweight='bold')
+ax.set_ylabel('$P$ (bar)', fontsize=13, fontweight='bold')
 ax.set_title('eCPA pure-water density error vs IAPWS-95  '
-             r'(blue = eCPA denser, red = eCPA lighter)', fontsize=11)
+             r'(blue = eCPA denser, red = eCPA lighter)',
+             fontsize=11, fontweight='bold')
 ax.axvline(100.0, color='white', lw=1.0, ls='--', alpha=0.6, label='100°C')
-ax.legend(fontsize=9)
+ax.legend(fontsize=9, prop={'weight': 'bold'})
 ax.grid(True, which='major', ls=':', alpha=0.25, color='white')
+for t in ax.get_xticklabels() + ax.get_yticklabels():
+    t.set_fontweight('bold')
 fig.tight_layout()
 fig.savefig('figures/density/iapws_error_map.png', dpi=150, bbox_inches='tight')
 plt.close(fig)
