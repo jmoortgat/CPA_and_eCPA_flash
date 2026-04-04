@@ -566,7 +566,6 @@ def plot_validation_T(results_df, save_path=None, T_max=523, ms_max=3.5):
                ncol=2, fontsize=9, frameon=True,
                bbox_to_anchor=(0.5, -0.01))
 
-    fig.suptitle("eCPA vs Experimental CO₂ Solubility in NaCl Brine", fontsize=12)
     fig.tight_layout()
     _save(fig, save_path)
     return fig
@@ -628,7 +627,6 @@ def plot_validation_parity(results_df, save_path=None):
         cbar = fig.colorbar(sc, ax=ax, shrink=0.85)
         cbar.set_label("T [K]", fontsize=8)
 
-    fig.suptitle("eCPA Parity: Predicted vs Experimental CO₂–NaCl", fontsize=11)
     fig.tight_layout()
     _save(fig, save_path)
     return fig
@@ -886,9 +884,10 @@ def plot_error_heatmap(results_df, save_path=None):
                    norm=mcolors.TwoSlopeNorm(vcenter=5, vmin=0, vmax=30))
 
     ax.set_xticks(range(len(T_vals)))
-    ax.set_xticklabels([str(int(T)) for T in T_vals], rotation=45, ha="right", fontsize=8)
+    ax.set_xticklabels([str(int(T)) for T in T_vals], rotation=45, ha="right",
+                       fontsize=8, fontweight='bold')
     ax.set_yticks(range(len(ms_vals)))
-    ax.set_yticklabels([f"{v:.2g}" for v in ms_vals], fontsize=8)
+    ax.set_yticklabels([f"{v:.2g}" for v in ms_vals], fontsize=8, fontweight='bold')
     ax.set_xlabel("T [K]", fontsize=11, fontweight='bold')
     ax.set_ylabel(r"$m_s$ [mol kg$^{-1}$]", fontsize=11, fontweight='bold')
 
@@ -897,9 +896,13 @@ def plot_error_heatmap(results_df, save_path=None):
         for j in range(len(T_vals)):
             if not np.isnan(aare_grid[i, j]):
                 txt = f"{aare_grid[i,j]:.1f}"
-                ax.text(j, i, txt, ha="center", va="center", fontsize=6.5)
+                ax.text(j, i, txt, ha="center", va="center", fontsize=6.5,
+                        fontweight='bold')
 
-    fig.colorbar(im, ax=ax, label="AARE [%]", shrink=0.8)
+    cb = fig.colorbar(im, ax=ax, label="AARE [%]", shrink=0.8)
+    cb.set_label("AARE [%]", fontsize=11, fontweight='bold')
+    for t in cb.ax.get_yticklabels():
+        t.set_fontweight('bold')
     fig.tight_layout()
     _save(fig, save_path)
     return fig

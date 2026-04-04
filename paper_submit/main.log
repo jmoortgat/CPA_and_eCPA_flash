@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  29 MAR 2026 12:29
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  3 APR 2026 20:12
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -767,658 +767,677 @@ r/m/n/12 1000bar), and salin-i-ties from fresh wa-ter to near-saturation ($\OML
 
 [12]
 
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 894.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 894.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 894.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 894.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 894.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 894.
-
-
-
 [13]
-<fig_1a.png, id=497, 903.375pt x 348.3414pt>
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 972.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 972.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 972.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 972.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 972.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 972.
+
+<fig_1a.png, id=503, 903.375pt x 348.3414pt>
 File: fig_1a.png Graphic file (type png)
 <use fig_1a.png>
-Package pdftex.def Info: fig_1a.png  used on input line 948.
-(pdftex.def)             Requested size: 273.46251pt x 105.44934pt.
-
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 948--948
-[][] 
- []
-
-<fig_1b.png, id=499, 903.8568pt x 348.3414pt>
-File: fig_1b.png Graphic file (type png)
-<use fig_1b.png>
-Package pdftex.def Info: fig_1b.png  used on input line 949.
-(pdftex.def)             Requested size: 273.46251pt x 105.39087pt.
-
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 949--949
-[][] 
- []
-
-<fig_1c.png, id=500, 903.8568pt x 348.3414pt>
-File: fig_1c.png Graphic file (type png)
-<use fig_1c.png>
-Package pdftex.def Info: fig_1c.png  used on input line 950.
-(pdftex.def)             Requested size: 273.46251pt x 105.39087pt.
-
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 950--950
-[][] 
- []
-
-<fig_1d.png, id=501, 903.8568pt x 348.3414pt>
+Package pdftex.def Info: fig_1a.png  used on input line 1018.
+(pdftex.def)             Requested size: 449.59946pt x 173.36766pt.
+<fig_1d.png, id=505, 903.8568pt x 348.3414pt>
 File: fig_1d.png Graphic file (type png)
 <use fig_1d.png>
-Package pdftex.def Info: fig_1d.png  used on input line 951.
-(pdftex.def)             Requested size: 273.46251pt x 105.39087pt.
-
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 951--951
-[][] 
- []
-
-<fig_1e.png, id=502, 903.8568pt x 348.3414pt>
-File: fig_1e.png Graphic file (type png)
-<use fig_1e.png>
-Package pdftex.def Info: fig_1e.png  used on input line 952.
-(pdftex.def)             Requested size: 273.46251pt x 105.39087pt.
-
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 952--952
-[][] 
- []
-
-<fig_1f.png, id=503, 903.375pt x 348.3414pt>
+Package pdftex.def Info: fig_1d.png  used on input line 1019.
+(pdftex.def)             Requested size: 449.59946pt x 173.27199pt.
+<fig_1f.png, id=506, 903.375pt x 348.3414pt>
 File: fig_1f.png Graphic file (type png)
 <use fig_1f.png>
-Package pdftex.def Info: fig_1f.png  used on input line 953.
-(pdftex.def)             Requested size: 273.46251pt x 105.44934pt.
+Package pdftex.def Info: fig_1f.png  used on input line 1020.
+(pdftex.def)             Requested size: 449.59946pt x 173.36766pt.
 
-Overfull \hbox (24.8616pt too wide) in paragraph at lines 953--953
-[][] 
+
+[14]
+Overfull \vbox (9.80104pt too high) has occurred while \output is active []
+
+
+
+[15 <./fig_1a.png> <./fig_1d.png> <./fig_1f.png>]
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1095.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 1095.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1095.
+
+
+
+[16]
+<fig_2b.png, id=606, 449.5194pt x 341.1144pt>
+File: fig_2b.png Graphic file (type png)
+<use fig_2b.png>
+Package pdftex.def Info: fig_2b.png  used on input line 1124.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_2c.png, id=607, 449.5194pt x 341.1144pt>
+File: fig_2c.png Graphic file (type png)
+<use fig_2c.png>
+Package pdftex.def Info: fig_2c.png  used on input line 1125.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_2d.png, id=608, 449.5194pt x 341.1144pt>
+File: fig_2d.png Graphic file (type png)
+<use fig_2d.png>
+Package pdftex.def Info: fig_2d.png  used on input line 1126.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_2f.png, id=609, 449.5194pt x 341.1144pt>
+File: fig_2f.png Graphic file (type png)
+<use fig_2f.png>
+Package pdftex.def Info: fig_2f.png  used on input line 1127.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+
+
+[17 <./fig_2b.png> <./fig_2c.png> <./fig_2d.png> <./fig_2f.png>]
+<fig_3a.png, id=666, 919.2744pt x 341.1144pt>
+File: fig_3a.png Graphic file (type png)
+<use fig_3a.png>
+Package pdftex.def Info: fig_3a.png  used on input line 1160.
+(pdftex.def)             Requested size: 476.03984pt x 176.64659pt.
+<fig_3c.png, id=667, 919.2744pt x 341.1144pt>
+File: fig_3c.png Graphic file (type png)
+<use fig_3c.png>
+Package pdftex.def Info: fig_3c.png  used on input line 1161.
+(pdftex.def)             Requested size: 476.03984pt x 176.64659pt.
+
+
+[18 <./fig_3a.png> <./fig_3c.png>]
+<fig_4.png, id=732, 707.2824pt x 569.4876pt>
+File: fig_4.png Graphic file (type png)
+<use fig_4.png>
+Package pdftex.def Info: fig_4.png  used on input line 1273.
+(pdftex.def)             Requested size: 528.93675pt x 425.89809pt.
+
+
+[19]
+
+[20 <./fig_4.png>]
+Overfull \hbox (26.08258pt too wide) in paragraph at lines 1316--1332
+\T1/cmr/m/n/12 1273K, with a doc-u-mented un-cer-tainty in liquid-water den-sit
+y of $\OMS/cmsy/m/n/12 ^^F\OT1/cmr/m/n/12 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 00
+1$\T1/cmr/m/n/12 --$\OT1/cmr/m/n/12 0\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 02%$\T1/
+cmr/m/n/12 . Over 475 liquid/compressed-
  []
 
 
 
-[14 <./fig_1a.png> <./fig_1b.png> <./fig_1c.png> <./fig_1d.png> <./fig_1e.png> 
-<./fig_1f.png>]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1019.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 1019.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1019.
-
-<fig_2a.png, id=563, 449.5194pt x 341.1144pt>
-File: fig_2a.png Graphic file (type png)
-<use fig_2a.png>
-Package pdftex.def Info: fig_2a.png  used on input line 1066.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_2b.png, id=564, 449.5194pt x 341.1144pt>
-File: fig_2b.png Graphic file (type png)
-<use fig_2b.png>
-Package pdftex.def Info: fig_2b.png  used on input line 1067.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_2c.png, id=565, 449.5194pt x 341.1144pt>
-File: fig_2c.png Graphic file (type png)
-<use fig_2c.png>
-Package pdftex.def Info: fig_2c.png  used on input line 1068.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_2d.png, id=566, 449.5194pt x 341.1144pt>
-File: fig_2d.png Graphic file (type png)
-<use fig_2d.png>
-Package pdftex.def Info: fig_2d.png  used on input line 1069.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_2e.png, id=567, 449.5194pt x 341.1144pt>
-File: fig_2e.png Graphic file (type png)
-<use fig_2e.png>
-Package pdftex.def Info: fig_2e.png  used on input line 1070.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_2f.png, id=568, 449.5194pt x 341.1144pt>
-File: fig_2f.png Graphic file (type png)
-<use fig_2f.png>
-Package pdftex.def Info: fig_2f.png  used on input line 1071.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-
-
-[15]
-
-[16 <./fig_2a.png> <./fig_2b.png> <./fig_2c.png> <./fig_2d.png> <./fig_2e.png> 
-<./fig_2f.png>]
-<fig_3a.png, id=655, 919.2744pt x 341.1144pt>
-File: fig_3a.png Graphic file (type png)
-<use fig_3a.png>
-Package pdftex.def Info: fig_3a.png  used on input line 1118.
-(pdftex.def)             Requested size: 423.151pt x 157.01862pt.
-<fig_3b.png, id=656, 919.2744pt x 341.1144pt>
-File: fig_3b.png Graphic file (type png)
-<use fig_3b.png>
-Package pdftex.def Info: fig_3b.png  used on input line 1119.
-(pdftex.def)             Requested size: 423.151pt x 157.01862pt.
-<fig_3c.png, id=657, 919.2744pt x 341.1144pt>
-File: fig_3c.png Graphic file (type png)
-<use fig_3c.png>
-Package pdftex.def Info: fig_3c.png  used on input line 1120.
-(pdftex.def)             Requested size: 423.151pt x 157.01862pt.
-
-
-[17 <./fig_3a.png> <./fig_3b.png> <./fig_3c.png>]
-<fig_4.png, id=715, 706.3188pt x 569.0058pt>
-File: fig_4.png Graphic file (type png)
-<use fig_4.png>
-Package pdftex.def Info: fig_4.png  used on input line 1190.
-(pdftex.def)             Requested size: 528.93675pt x 426.10213pt.
-
-
-[18]
-
-[19 <./fig_4.png>]
-
-[20]
-<fig_5.png, id=748, 882.1758pt x 293.4162pt>
+[21]
+<fig_5.png, id=762, 889.8846pt x 298.716pt>
 File: fig_5.png Graphic file (type png)
 <use fig_5.png>
-Package pdftex.def Info: fig_5.png  used on input line 1361.
-(pdftex.def)             Requested size: 528.93675pt x 175.93466pt.
-
-
-[21 <./fig_5.png>]
-<fig_6a.png, id=757, 389.7762pt x 278.9622pt>
+Package pdftex.def Info: fig_5.png  used on input line 1441.
+(pdftex.def)             Requested size: 528.93675pt x 177.55362pt.
+<fig_6a.png, id=765, 397.485pt x 280.4076pt>
 File: fig_6a.png Graphic file (type png)
 <use fig_6a.png>
-Package pdftex.def Info: fig_6a.png  used on input line 1390.
-(pdftex.def)             Requested size: 253.88737pt x 181.71063pt.
-<fig_6b.png, id=758, 389.2944pt x 281.853pt>
+Package pdftex.def Info: fig_6a.png  used on input line 1470.
+(pdftex.def)             Requested size: 253.88737pt x 179.10939pt.
+<fig_6b.png, id=766, 498.663pt x 281.3712pt>
 File: fig_6b.png Graphic file (type png)
 <use fig_6b.png>
-Package pdftex.def Info: fig_6b.png  used on input line 1395.
-(pdftex.def)             Requested size: 253.88737pt x 183.82158pt.
+Package pdftex.def Info: fig_6b.png  used on input line 1475.
+(pdftex.def)             Requested size: 253.88737pt x 143.25697pt.
 
 
-[22 <./fig_6a.png> <./fig_6b.png>]
-<fig_7.pdf, id=771, 1123.39352pt x 278.6248pt>
+[22]
+
+[23 <./fig_5.png> <./fig_6a.png> <./fig_6b.png>]
+<fig_7.pdf, id=786, 724.68991pt x 276.9281pt>
 File: fig_7.pdf Graphic file (type pdf)
 <use fig_7.pdf>
-Package pdftex.def Info: fig_7.pdf  used on input line 1475.
-(pdftex.def)             Requested size: 528.93675pt x 131.18748pt.
+Package pdftex.def Info: fig_7.pdf  used on input line 1555.
+(pdftex.def)             Requested size: 528.93675pt x 202.12201pt.
 
 
-[23 <./fig_7.pdf>]
-<fig_8.pdf, id=848, 1123.39352pt x 278.6248pt>
+[24]
+<fig_8.pdf, id=801, 724.68991pt x 276.9281pt>
 File: fig_8.pdf Graphic file (type pdf)
 <use fig_8.pdf>
-Package pdftex.def Info: fig_8.pdf  used on input line 1543.
-(pdftex.def)             Requested size: 528.93675pt x 131.18748pt.
-<fig_9.pdf, id=853, 981.37367pt x 278.6248pt>
+Package pdftex.def Info: fig_8.pdf  used on input line 1623.
+(pdftex.def)             Requested size: 528.93675pt x 202.12201pt.
+
+
+[25 <./fig_7.pdf>]
+<fig_9.pdf, id=868, 717.30295pt x 276.9281pt>
 File: fig_9.pdf Graphic file (type pdf)
 <use fig_9.pdf>
-Package pdftex.def Info: fig_9.pdf  used on input line 1578.
-(pdftex.def)             Requested size: 528.93675pt x 150.17879pt.
+Package pdftex.def Info: fig_9.pdf  used on input line 1658.
+(pdftex.def)             Requested size: 528.93675pt x 204.2179pt.
 
 
-[24 <./fig_8.pdf>]
+[26 <./fig_8.pdf>]
 
-[25 <./fig_9.pdf>]
-
-[26]
-
-[27] (./main.bbl
+[27 <./fig_9.pdf>]
 
 [28]
 
-[29]
+[29] (./main.bbl
 
-[30]) [31] [32]
+[30]
 
-[33]
+[31]
 
-[34]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.95827pt
-(hyperref)                removed on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\chi' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.95827pt
-(hyperref)                removed on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\chi' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 2035.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 2035.
-
-
+[32]) [33] [34]
 
 [35]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.95827pt
-(hyperref)                removed on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\varepsilon' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.95827pt
-(hyperref)                removed on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\chi' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `subscript' on input line 2106.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 2106.
-
-
 
 [36]
 
 [37]
-<fig_S1a.png, id=1191, 903.375pt x 348.3414pt>
-File: fig_S1a.png Graphic file (type png)
-<use fig_S1a.png>
-Package pdftex.def Info: fig_S1a.png  used on input line 2219.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1b.png, id=1192, 903.375pt x 348.3414pt>
-File: fig_S1b.png Graphic file (type png)
-<use fig_S1b.png>
-Package pdftex.def Info: fig_S1b.png  used on input line 2220.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1c.png, id=1193, 903.375pt x 348.3414pt>
-File: fig_S1c.png Graphic file (type png)
-<use fig_S1c.png>
-Package pdftex.def Info: fig_S1c.png  used on input line 2221.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1d.png, id=1194, 903.375pt x 348.3414pt>
-File: fig_S1d.png Graphic file (type png)
-<use fig_S1d.png>
-Package pdftex.def Info: fig_S1d.png  used on input line 2222.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1e.png, id=1195, 903.375pt x 348.3414pt>
-File: fig_S1e.png Graphic file (type png)
-<use fig_S1e.png>
-Package pdftex.def Info: fig_S1e.png  used on input line 2223.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1f.png, id=1196, 903.375pt x 348.3414pt>
-File: fig_S1f.png Graphic file (type png)
-<use fig_S1f.png>
-Package pdftex.def Info: fig_S1f.png  used on input line 2224.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1g.png, id=1197, 903.375pt x 348.3414pt>
-File: fig_S1g.png Graphic file (type png)
-<use fig_S1g.png>
-Package pdftex.def Info: fig_S1g.png  used on input line 2225.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1h.png, id=1198, 903.8568pt x 348.3414pt>
-File: fig_S1h.png Graphic file (type png)
-<use fig_S1h.png>
-Package pdftex.def Info: fig_S1h.png  used on input line 2226.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1i.png, id=1199, 903.8568pt x 348.3414pt>
-File: fig_S1i.png Graphic file (type png)
-<use fig_S1i.png>
-Package pdftex.def Info: fig_S1i.png  used on input line 2227.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1j.png, id=1200, 903.8568pt x 348.3414pt>
-File: fig_S1j.png Graphic file (type png)
-<use fig_S1j.png>
-Package pdftex.def Info: fig_S1j.png  used on input line 2228.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1k.png, id=1201, 903.8568pt x 348.3414pt>
-File: fig_S1k.png Graphic file (type png)
-<use fig_S1k.png>
-Package pdftex.def Info: fig_S1k.png  used on input line 2229.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1l.png, id=1202, 903.8568pt x 348.3414pt>
-File: fig_S1l.png Graphic file (type png)
-<use fig_S1l.png>
-Package pdftex.def Info: fig_S1l.png  used on input line 2230.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1m.png, id=1203, 903.8568pt x 348.3414pt>
-File: fig_S1m.png Graphic file (type png)
-<use fig_S1m.png>
-Package pdftex.def Info: fig_S1m.png  used on input line 2231.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1n.png, id=1204, 903.8568pt x 348.3414pt>
-File: fig_S1n.png Graphic file (type png)
-<use fig_S1n.png>
-Package pdftex.def Info: fig_S1n.png  used on input line 2232.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1o.png, id=1205, 903.8568pt x 348.3414pt>
-File: fig_S1o.png Graphic file (type png)
-<use fig_S1o.png>
-Package pdftex.def Info: fig_S1o.png  used on input line 2233.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1p.png, id=1206, 903.8568pt x 348.3414pt>
-File: fig_S1p.png Graphic file (type png)
-<use fig_S1p.png>
-Package pdftex.def Info: fig_S1p.png  used on input line 2234.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1q.png, id=1207, 903.8568pt x 348.3414pt>
-File: fig_S1q.png Graphic file (type png)
-<use fig_S1q.png>
-Package pdftex.def Info: fig_S1q.png  used on input line 2235.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1r.png, id=1208, 903.8568pt x 348.3414pt>
-File: fig_S1r.png Graphic file (type png)
-<use fig_S1r.png>
-Package pdftex.def Info: fig_S1r.png  used on input line 2236.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1s.png, id=1209, 903.8568pt x 348.3414pt>
-File: fig_S1s.png Graphic file (type png)
-<use fig_S1s.png>
-Package pdftex.def Info: fig_S1s.png  used on input line 2237.
-(pdftex.def)             Requested size: 124.30045pt x 47.90106pt.
-<fig_S1t.png, id=1210, 903.375pt x 348.3414pt>
-File: fig_S1t.png Graphic file (type png)
-<use fig_S1t.png>
-Package pdftex.def Info: fig_S1t.png  used on input line 2238.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1u.png, id=1211, 903.375pt x 348.3414pt>
-File: fig_S1u.png Graphic file (type png)
-<use fig_S1u.png>
-Package pdftex.def Info: fig_S1u.png  used on input line 2239.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1v.png, id=1212, 903.375pt x 348.3414pt>
-File: fig_S1v.png Graphic file (type png)
-<use fig_S1v.png>
-Package pdftex.def Info: fig_S1v.png  used on input line 2240.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1w.png, id=1213, 903.375pt x 348.3414pt>
-File: fig_S1w.png Graphic file (type png)
-<use fig_S1w.png>
-Package pdftex.def Info: fig_S1w.png  used on input line 2241.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1x.png, id=1214, 903.375pt x 348.3414pt>
-File: fig_S1x.png Graphic file (type png)
-<use fig_S1x.png>
-Package pdftex.def Info: fig_S1x.png  used on input line 2242.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1y.png, id=1215, 903.375pt x 348.3414pt>
-File: fig_S1y.png Graphic file (type png)
-<use fig_S1y.png>
-Package pdftex.def Info: fig_S1y.png  used on input line 2243.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1z.png, id=1216, 903.375pt x 348.3414pt>
-File: fig_S1z.png Graphic file (type png)
-<use fig_S1z.png>
-Package pdftex.def Info: fig_S1z.png  used on input line 2244.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1aa.png, id=1217, 903.375pt x 348.3414pt>
-File: fig_S1aa.png Graphic file (type png)
-<use fig_S1aa.png>
-Package pdftex.def Info: fig_S1aa.png  used on input line 2245.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1ab.png, id=1218, 903.375pt x 348.3414pt>
-File: fig_S1ab.png Graphic file (type png)
-<use fig_S1ab.png>
-Package pdftex.def Info: fig_S1ab.png  used on input line 2246.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-<fig_S1ac.png, id=1219, 903.375pt x 348.3414pt>
-File: fig_S1ac.png Graphic file (type png)
-<use fig_S1ac.png>
-Package pdftex.def Info: fig_S1ac.png  used on input line 2247.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-File: fig_S1a.png Graphic file (type png)
-<use fig_S1a.png>
-Package pdftex.def Info: fig_S1a.png  used on input line 2248.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-File: fig_S1a.png Graphic file (type png)
-<use fig_S1a.png>
-Package pdftex.def Info: fig_S1a.png  used on input line 2249.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
-File: fig_S1a.png Graphic file (type png)
-<use fig_S1a.png>
-Package pdftex.def Info: fig_S1a.png  used on input line 2250.
-(pdftex.def)             Requested size: 124.30045pt x 47.92764pt.
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.95827pt
+(hyperref)                removed on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\chi' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.95827pt
+(hyperref)                removed on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\chi' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2127.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 2127.
+
 
 
 [38]
-<fig_S2a.png, id=1232, 449.5194pt x 341.1144pt>
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `superscript' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.95827pt
+(hyperref)                removed on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\varepsilon' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.95827pt
+(hyperref)                removed on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\chi' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 2199.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 2199.
+
+
+Overfull \hbox (12.1907pt too wide) in paragraph at lines 2249--2258
+[]\T1/cmr/m/n/12 2025[]) through $\OMS/cmsy/m/n/12 P[]$ \T1/cmr/m/n/12 and $\OM
+S/cmsy/m/n/12 P[]$ \T1/cmr/m/n/12 us-ing Eq. [] for $\OML/cmm/m/it/12 @^^N[]=@Z
+[]$ \T1/cmr/m/n/12 and $\OML/cmm/m/it/12 @^^_[]=@^^_[] \OT1/cmr/m/n/12 = \OMS/c
+msy/m/n/12 ^^@\OML/cmm/m/it/12 Z[] \OMS/cmsy/m/n/12 ^^A \OT1/cmr/m/n/12 2\OML/c
+mm/m/it/12 x[]S[]\OT1/cmr/m/n/12 ^^A[]\OML/cmm/m/it/12 =D[]$\T1/cmr/m/n/12 ,
+ []
+
+
+
+[39]
+<fig_S1a.png, id=1185, 903.375pt x 348.3414pt>
+File: fig_S1a.png Graphic file (type png)
+<use fig_S1a.png>
+Package pdftex.def Info: fig_S1a.png  used on input line 2312.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1b.png, id=1186, 903.375pt x 348.3414pt>
+File: fig_S1b.png Graphic file (type png)
+<use fig_S1b.png>
+Package pdftex.def Info: fig_S1b.png  used on input line 2313.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1c.png, id=1187, 903.375pt x 348.3414pt>
+File: fig_S1c.png Graphic file (type png)
+<use fig_S1c.png>
+Package pdftex.def Info: fig_S1c.png  used on input line 2314.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[40]
+<fig_S1d.png, id=1203, 903.375pt x 348.3414pt>
+File: fig_S1d.png Graphic file (type png)
+<use fig_S1d.png>
+Package pdftex.def Info: fig_S1d.png  used on input line 2329.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1e.png, id=1204, 903.375pt x 348.3414pt>
+File: fig_S1e.png Graphic file (type png)
+<use fig_S1e.png>
+Package pdftex.def Info: fig_S1e.png  used on input line 2330.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1f.png, id=1205, 903.375pt x 348.3414pt>
+File: fig_S1f.png Graphic file (type png)
+<use fig_S1f.png>
+Package pdftex.def Info: fig_S1f.png  used on input line 2331.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[41 <./fig_S1a.png> <./fig_S1b.png> <./fig_S1c.png>]
+<fig_S1g.png, id=1213, 903.375pt x 348.3414pt>
+File: fig_S1g.png Graphic file (type png)
+<use fig_S1g.png>
+Package pdftex.def Info: fig_S1g.png  used on input line 2338.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1h.png, id=1214, 903.8568pt x 348.3414pt>
+File: fig_S1h.png Graphic file (type png)
+<use fig_S1h.png>
+Package pdftex.def Info: fig_S1h.png  used on input line 2339.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1i.png, id=1215, 903.8568pt x 348.3414pt>
+File: fig_S1i.png Graphic file (type png)
+<use fig_S1i.png>
+Package pdftex.def Info: fig_S1i.png  used on input line 2340.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+
+
+[42 <./fig_S1d.png> <./fig_S1e.png> <./fig_S1f.png>]
+<fig_1b.png, id=1224, 903.8568pt x 348.3414pt>
+File: fig_1b.png Graphic file (type png)
+<use fig_1b.png>
+Package pdftex.def Info: fig_1b.png  used on input line 2347.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1j.png, id=1225, 903.8568pt x 348.3414pt>
+File: fig_S1j.png Graphic file (type png)
+<use fig_S1j.png>
+Package pdftex.def Info: fig_S1j.png  used on input line 2348.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1k.png, id=1226, 903.8568pt x 348.3414pt>
+File: fig_S1k.png Graphic file (type png)
+<use fig_S1k.png>
+Package pdftex.def Info: fig_S1k.png  used on input line 2349.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+
+
+[43 <./fig_S1g.png> <./fig_S1h.png> <./fig_S1i.png>]
+<fig_S1l.png, id=1236, 903.8568pt x 348.3414pt>
+File: fig_S1l.png Graphic file (type png)
+<use fig_S1l.png>
+Package pdftex.def Info: fig_S1l.png  used on input line 2356.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_1c.png, id=1237, 903.8568pt x 348.3414pt>
+File: fig_1c.png Graphic file (type png)
+<use fig_1c.png>
+Package pdftex.def Info: fig_1c.png  used on input line 2357.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1m.png, id=1238, 903.8568pt x 348.3414pt>
+File: fig_S1m.png Graphic file (type png)
+<use fig_S1m.png>
+Package pdftex.def Info: fig_S1m.png  used on input line 2358.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+
+
+[44 <./fig_1b.png> <./fig_S1j.png> <./fig_S1k.png>]
+<fig_S1n.png, id=1247, 903.8568pt x 348.3414pt>
+File: fig_S1n.png Graphic file (type png)
+<use fig_S1n.png>
+Package pdftex.def Info: fig_S1n.png  used on input line 2365.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1o.png, id=1248, 903.8568pt x 348.3414pt>
+File: fig_S1o.png Graphic file (type png)
+<use fig_S1o.png>
+Package pdftex.def Info: fig_S1o.png  used on input line 2366.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1p.png, id=1249, 903.8568pt x 348.3414pt>
+File: fig_S1p.png Graphic file (type png)
+<use fig_S1p.png>
+Package pdftex.def Info: fig_S1p.png  used on input line 2367.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+
+
+[45 <./fig_S1l.png> <./fig_1c.png> <./fig_S1m.png>]
+<fig_S1q.png, id=1258, 903.8568pt x 348.3414pt>
+File: fig_S1q.png Graphic file (type png)
+<use fig_S1q.png>
+Package pdftex.def Info: fig_S1q.png  used on input line 2374.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1r.png, id=1259, 903.8568pt x 348.3414pt>
+File: fig_S1r.png Graphic file (type png)
+<use fig_S1r.png>
+Package pdftex.def Info: fig_S1r.png  used on input line 2375.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_1e.png, id=1260, 903.8568pt x 348.3414pt>
+File: fig_1e.png Graphic file (type png)
+<use fig_1e.png>
+Package pdftex.def Info: fig_1e.png  used on input line 2376.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+
+
+[46 <./fig_S1n.png> <./fig_S1o.png> <./fig_S1p.png>]
+<fig_S1s.png, id=1269, 903.8568pt x 348.3414pt>
+File: fig_S1s.png Graphic file (type png)
+<use fig_S1s.png>
+Package pdftex.def Info: fig_S1s.png  used on input line 2383.
+(pdftex.def)             Requested size: 423.151pt x 163.07733pt.
+<fig_S1t.png, id=1270, 903.375pt x 348.3414pt>
+File: fig_S1t.png Graphic file (type png)
+<use fig_S1t.png>
+Package pdftex.def Info: fig_S1t.png  used on input line 2384.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1u.png, id=1271, 903.375pt x 348.3414pt>
+File: fig_S1u.png Graphic file (type png)
+<use fig_S1u.png>
+Package pdftex.def Info: fig_S1u.png  used on input line 2385.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[47 <./fig_S1q.png> <./fig_S1r.png> <./fig_1e.png>]
+<fig_S1v.png, id=1280, 903.375pt x 348.3414pt>
+File: fig_S1v.png Graphic file (type png)
+<use fig_S1v.png>
+Package pdftex.def Info: fig_S1v.png  used on input line 2392.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1w.png, id=1281, 903.375pt x 348.3414pt>
+File: fig_S1w.png Graphic file (type png)
+<use fig_S1w.png>
+Package pdftex.def Info: fig_S1w.png  used on input line 2393.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1x.png, id=1282, 903.375pt x 348.3414pt>
+File: fig_S1x.png Graphic file (type png)
+<use fig_S1x.png>
+Package pdftex.def Info: fig_S1x.png  used on input line 2394.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[48 <./fig_S1s.png> <./fig_S1t.png> <./fig_S1u.png>]
+<fig_S1y.png, id=1291, 903.375pt x 348.3414pt>
+File: fig_S1y.png Graphic file (type png)
+<use fig_S1y.png>
+Package pdftex.def Info: fig_S1y.png  used on input line 2401.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1z.png, id=1292, 903.375pt x 348.3414pt>
+File: fig_S1z.png Graphic file (type png)
+<use fig_S1z.png>
+Package pdftex.def Info: fig_S1z.png  used on input line 2402.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1aa.png, id=1293, 903.375pt x 348.3414pt>
+File: fig_S1aa.png Graphic file (type png)
+<use fig_S1aa.png>
+Package pdftex.def Info: fig_S1aa.png  used on input line 2403.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[49 <./fig_S1v.png> <./fig_S1w.png> <./fig_S1x.png>]
+<fig_S1ab.png, id=1303, 903.375pt x 348.3414pt>
+File: fig_S1ab.png Graphic file (type png)
+<use fig_S1ab.png>
+Package pdftex.def Info: fig_S1ab.png  used on input line 2410.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+<fig_S1ac.png, id=1304, 903.375pt x 348.3414pt>
+File: fig_S1ac.png Graphic file (type png)
+<use fig_S1ac.png>
+Package pdftex.def Info: fig_S1ac.png  used on input line 2411.
+(pdftex.def)             Requested size: 423.151pt x 163.1677pt.
+
+
+[50 <./fig_S1y.png> <./fig_S1z.png> <./fig_S1aa.png>]
+<fig_S2a.png, id=1313, 449.5194pt x 341.1144pt>
 File: fig_S2a.png Graphic file (type png)
 <use fig_S2a.png>
-Package pdftex.def Info: fig_S2a.png  used on input line 2265.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2b.png, id=1233, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2a.png  used on input line 2420.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+<fig_S2b.png, id=1314, 449.5194pt x 341.1144pt>
 File: fig_S2b.png Graphic file (type png)
 <use fig_S2b.png>
-Package pdftex.def Info: fig_S2b.png  used on input line 2266.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2c.png, id=1234, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2b.png  used on input line 2421.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+<fig_S2c.png, id=1315, 449.5194pt x 341.1144pt>
 File: fig_S2c.png Graphic file (type png)
 <use fig_S2c.png>
-Package pdftex.def Info: fig_S2c.png  used on input line 2267.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2d.png, id=1235, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2c.png  used on input line 2422.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+<fig_S2d.png, id=1316, 449.5194pt x 341.1144pt>
 File: fig_S2d.png Graphic file (type png)
 <use fig_S2d.png>
-Package pdftex.def Info: fig_S2d.png  used on input line 2268.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2e.png, id=1236, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2d.png  used on input line 2423.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+<fig_2a.png, id=1317, 449.5194pt x 341.1144pt>
+File: fig_2a.png Graphic file (type png)
+<use fig_2a.png>
+Package pdftex.def Info: fig_2a.png  used on input line 2424.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+<fig_S2e.png, id=1318, 449.5194pt x 341.1144pt>
 File: fig_S2e.png Graphic file (type png)
 <use fig_S2e.png>
-Package pdftex.def Info: fig_S2e.png  used on input line 2269.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2f.png, id=1237, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2e.png  used on input line 2425.
+(pdftex.def)             Requested size: 223.73929pt x 169.78122pt.
+
+
+[51 <./fig_S1ab.png> <./fig_S1ac.png>]
+Overfull \vbox (11.13739pt too high) has occurred while \output is active []
+
+
+
+[52 <./fig_S2a.png> <./fig_S2b.png> <./fig_S2c.png> <./fig_S2d.png> <./fig_2a.p
+ng> <./fig_S2e.png>]
+<fig_S2f.png, id=1376, 449.5194pt x 341.1144pt>
 File: fig_S2f.png Graphic file (type png)
 <use fig_S2f.png>
-Package pdftex.def Info: fig_S2f.png  used on input line 2270.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2g.png, id=1238, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2f.png  used on input line 2444.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_S2g.png, id=1377, 449.5194pt x 341.1144pt>
 File: fig_S2g.png Graphic file (type png)
 <use fig_S2g.png>
-Package pdftex.def Info: fig_S2g.png  used on input line 2271.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2h.png, id=1239, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2g.png  used on input line 2445.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_S2h.png, id=1378, 449.5194pt x 341.1144pt>
 File: fig_S2h.png Graphic file (type png)
 <use fig_S2h.png>
-Package pdftex.def Info: fig_S2h.png  used on input line 2272.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-<fig_S2i.png, id=1240, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2h.png  used on input line 2446.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_2e.png, id=1379, 449.5194pt x 341.1144pt>
+File: fig_2e.png Graphic file (type png)
+<use fig_2e.png>
+Package pdftex.def Info: fig_2e.png  used on input line 2447.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_S2i.png, id=1380, 449.5194pt x 341.1144pt>
 File: fig_S2i.png Graphic file (type png)
 <use fig_S2i.png>
-Package pdftex.def Info: fig_S2i.png  used on input line 2273.
-(pdftex.def)             Requested size: 158.68263pt x 120.41199pt.
-
-
-[39 <./fig_S1a.png> <./fig_S1b.png> <./fig_S1c.png> <./fig_S1d.png> <./fig_S1e.
-png> <./fig_S1f.png> <./fig_S1g.png> <./fig_S1h.png> <./fig_S1i.png> <./fig_S1j
-.png> <./fig_S1k.png> <./fig_S1l.png> <./fig_S1m.png> <./fig_S1n.png> <./fig_S1
-o.png> <./fig_S1p.png> <./fig_S1q.png> <./fig_S1r.png> <./fig_S1s.png> <./fig_S
-1t.png> <./fig_S1u.png> <./fig_S1v.png> <./fig_S1w.png> <./fig_S1x.png> <./fig_
-S1y.png> <./fig_S1z.png> <./fig_S1aa.png> <./fig_S1ab.png> <./fig_S1ac.png>]
-<fig_S3a.png, id=1312, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S2i.png  used on input line 2448.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_S3a.png, id=1381, 449.5194pt x 341.1144pt>
 File: fig_S3a.png Graphic file (type png)
 <use fig_S3a.png>
-Package pdftex.def Info: fig_S3a.png  used on input line 2290.
-(pdftex.def)             Requested size: 243.31445pt x 184.63623pt.
-<fig_S3b.png, id=1313, 449.5194pt x 341.1144pt>
+Package pdftex.def Info: fig_S3a.png  used on input line 2456.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
+<fig_S3b.png, id=1382, 449.5194pt x 341.1144pt>
 File: fig_S3b.png Graphic file (type png)
 <use fig_S3b.png>
-Package pdftex.def Info: fig_S3b.png  used on input line 2291.
-(pdftex.def)             Requested size: 243.31445pt x 184.63623pt.
+Package pdftex.def Info: fig_S3b.png  used on input line 2457.
+(pdftex.def)             Requested size: 248.6009pt x 188.64928pt.
 
 
-[40 <./fig_S2a.png> <./fig_S2b.png> <./fig_S2c.png> <./fig_S2d.png> <./fig_S2e.
-png> <./fig_S2f.png> <./fig_S2g.png> <./fig_S2h.png> <./fig_S2i.png>]
-<fig_S4.png, id=1332, 890.8482pt x 498.663pt>
+[53 <./fig_S2f.png> <./fig_S2g.png> <./fig_S2h.png> <./fig_2e.png> <./fig_S2i.p
+ng>]
+<fig_3b.png, id=1393, 919.2744pt x 341.1144pt>
+File: fig_3b.png Graphic file (type png)
+<use fig_3b.png>
+Package pdftex.def Info: fig_3b.png  used on input line 2464.
+(pdftex.def)             Requested size: 476.03984pt x 176.64659pt.
+<fig_S4.png, id=1440, 892.2936pt x 488.0634pt>
 File: fig_S4.png Graphic file (type png)
 <use fig_S4.png>
-Package pdftex.def Info: fig_S4.png  used on input line 2304.
-(pdftex.def)             Requested size: 502.4883pt x 281.27336pt.
+Package pdftex.def Info: fig_S4.png  used on input line 2479.
+(pdftex.def)             Requested size: 502.4883pt x 274.84776pt.
 
 
-[41 <./fig_S3a.png> <./fig_S3b.png> <./fig_S4.png>]
-<fig_S5.png, id=1347, 387.849pt x 329.5512pt>
+[54 <./fig_S3a.png> <./fig_S3b.png> <./fig_3b.png>]
+<fig_S5.png, id=1459, 847.968pt x 366.6498pt>
 File: fig_S5.png Graphic file (type png)
 <use fig_S5.png>
-Package pdftex.def Info: fig_S5.png  used on input line 2325.
-(pdftex.def)             Requested size: 290.91682pt x 247.18791pt.
-<fig_S5b.png, id=1359, 495.2904pt x 367.1316pt>
+Package pdftex.def Info: fig_S5.png  used on input line 2511.
+(pdftex.def)             Requested size: 528.93675pt x 228.70798pt.
+
+
+[55 <./fig_S4.png>]
+<fig_S5b.png, id=1474, 738.5994pt x 352.6776pt>
 File: fig_S5b.png Graphic file (type png)
 <use fig_S5b.png>
-Package pdftex.def Info: fig_S5b.png  used on input line 2361.
-(pdftex.def)             Requested size: 449.59946pt x 333.26677pt.
-
-
-[42 <./fig_S5.png>]
-<fig_S6.png, id=1373, 817.6146pt x 367.1316pt>
+Package pdftex.def Info: fig_S5b.png  used on input line 2524.
+(pdftex.def)             Requested size: 476.03984pt x 227.30579pt.
+<fig_S6.png, id=1477, 781.9614pt x 368.0952pt>
 File: fig_S6.png Graphic file (type png)
 <use fig_S6.png>
-Package pdftex.def Info: fig_S6.png  used on input line 2378.
-(pdftex.def)             Requested size: 502.4883pt x 225.63612pt.
+Package pdftex.def Info: fig_S6.png  used on input line 2537.
+(pdftex.def)             Requested size: 502.4883pt x 236.54056pt.
 
 
-[43 <./fig_S5b.png>]
+[56 <./fig_S5.png> <./fig_S5b.png>]
 
-[44 <./fig_S6.png>]
-<fig_11.png, id=1391, 930.8376pt x 280.8894pt>
+[57 <./fig_S6.png>]
+<fig_11.png, id=1493, 930.8376pt x 280.8894pt>
 File: fig_11.png Graphic file (type png)
 <use fig_11.png>
-Package pdftex.def Info: fig_11.png  used on input line 2453.
+Package pdftex.def Info: fig_11.png  used on input line 2612.
 (pdftex.def)             Requested size: 528.93675pt x 159.61572pt.
 
 
-[45]
-<fig_12.png, id=1399, 497.2176pt x 281.3712pt>
+[58]
+<fig_12.png, id=1501, 497.2176pt x 281.3712pt>
 File: fig_12.png Graphic file (type png)
 <use fig_12.png>
-Package pdftex.def Info: fig_12.png  used on input line 2469.
+Package pdftex.def Info: fig_12.png  used on input line 2628.
 (pdftex.def)             Requested size: 343.80565pt x 194.56708pt.
-<fig_S7.png, id=1400, 1085.4954pt x 322.3242pt>
+<fig_S7.png, id=1502, 1096.5768pt x 327.624pt>
 File: fig_S7.png Graphic file (type png)
 <use fig_S7.png>
-Package pdftex.def Info: fig_S7.png  used on input line 2484.
-(pdftex.def)             Requested size: 528.93675pt x 157.06479pt.
+Package pdftex.def Info: fig_S7.png  used on input line 2643.
+(pdftex.def)             Requested size: 528.93675pt x 158.02759pt.
 
 
-[46 <./fig_11.png> <./fig_12.png>]
-<fig_S8.png, id=1408, 931.3194pt x 317.988pt>
+[59 <./fig_11.png> <./fig_12.png>]
+<fig_S8.png, id=1510, 931.8012pt x 317.5062pt>
 File: fig_S8.png Graphic file (type png)
 <use fig_S8.png>
-Package pdftex.def Info: fig_S8.png  used on input line 2504.
-(pdftex.def)             Requested size: 528.93675pt x 180.6pt.
+Package pdftex.def Info: fig_S8.png  used on input line 2663.
+(pdftex.def)             Requested size: 528.93675pt x 180.23915pt.
 
 
-[47 <./fig_S7.png> <./fig_S8.png>]
+[60 <./fig_S7.png> <./fig_S8.png>]
 
-[48]
+[61]
 
-[49]
-<fig_10.png, id=1444, 833.514pt x 711.1368pt>
+[62]
+<fig_10.png, id=1547, 827.7324pt x 716.9184pt>
 File: fig_10.png Graphic file (type png)
 <use fig_10.png>
-Package pdftex.def Info: fig_10.png  used on input line 2658.
-(pdftex.def)             Requested size: 528.93675pt x 451.27386pt.
+Package pdftex.def Info: fig_10.png  used on input line 2817.
+(pdftex.def)             Requested size: 528.93675pt x 458.14796pt.
 
 
-[50]
+[63]
 
-[51 <./fig_10.png>]
-<fig_S9.png, id=1457, 498.663pt x 317.5062pt>
+[64 <./fig_10.png>]
+<fig_S9.png, id=1560, 498.663pt x 317.5062pt>
 File: fig_S9.png Graphic file (type png)
 <use fig_S9.png>
-Package pdftex.def Info: fig_S9.png  used on input line 2741.
+Package pdftex.def Info: fig_S9.png  used on input line 2900.
 (pdftex.def)             Requested size: 423.151pt x 269.42612pt.
 
 
-[52]
+[65]
 
-[53 <./fig_S9.png>] (./main.aux)
+[66 <./fig_S9.png>] (./main.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: F80D0783BA57D50AEF41DE13602BB72F;8781.
+(rerunfilecheck)             Checksum: 482CC55DD3A18FDB73A68510D15A1794;9101.
  ) 
 Here is how much of TeX's memory you used:
- 20372 strings out of 473190
- 385585 string characters out of 5715801
- 823828 words of memory out of 5000000
- 43086 multiletter control sequences out of 15000+600000
+ 20412 strings out of 473190
+ 386206 string characters out of 5715801
+ 825831 words of memory out of 5000000
+ 43096 multiletter control sequences out of 15000+600000
  585387 words of font info for 107 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,13n,79p,1213b,1249s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,13n,79p,1227b,1249s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></
@@ -1455,10 +1474,10 @@ ic/cm-super/sfti0800.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public
 m-super/sfti1200.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-
 super/sftt1000.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-su
 per/sftt1200.pfb>
-Output written on main.pdf (53 pages, 11588855 bytes).
+Output written on main.pdf (66 pages, 11490272 bytes).
 PDF statistics:
- 1687 PDF objects out of 1728 (max. 8388607)
- 1190 compressed objects within 12 object streams
- 289 named destinations out of 1000 (max. 500000)
- 665 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1795 PDF objects out of 2073 (max. 8388607)
+ 1279 compressed objects within 13 object streams
+ 319 named destinations out of 1000 (max. 500000)
+ 673 words of extra memory for PDF output out of 10000 (max. 10000000)
 
