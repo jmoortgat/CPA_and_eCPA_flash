@@ -1345,8 +1345,7 @@ For typical subsurface CO$_2$ storage conditions ($T \leq 120\,^\circ$C,
 $P = 75$--$600$\,bar), the AARE is \textbf{0.12\%}.
 We note that IAPWS-95 is itself a 56-parameter empirical Helmholtz free energy fit
 with no molecular basis, optimized specifically to reproduce water data.
-Achieving 0.30\% with a physics-based association EoS (CPA/eCPA) that was
-not parameterized for density is therefore a strong result.
+Achieving 0.30\% with a physics-based association EoS (CPA/eCPA) is therefore a strong result.
 Full details, the parity plot, and the signed-error surface are provided in
 Appendix~\ref{sec:density_si}.
 
@@ -1404,9 +1403,15 @@ all neighbors are correctly identified as single-phase.
 The accelerated SSI reduces the mean iteration count from 25.4 to 13.7
 (a 46\% reduction, or $1.9\times$ speedup) compared to standard SSI with the same
 Wilson K initialization (Figs.~\ref{fig:scan_summary}a and \ref{fig:strategy_comparison_SI}).
-The speedup is most pronounced near the CO$_2$ critical point and at extreme
-compositions, where standard SSI requires many iterations to converge
-(Fig.~\ref{fig:ssi_heatmap}).
+The speedup is most pronounced near the CO$_2$ critical point ($T \approx 31\,^\circ$C,
+$P \approx 74$\,bar) and at extreme compositions, where standard SSI requires many
+iterations to converge (Fig.~\ref{fig:ssi_heatmap}).
+Elevated iteration counts at the lowest temperatures in the scan ($T \lesssim 12\,^\circ$C)
+are also noteworthy: these conditions fall within the CO$_2$ hydrate stability zone,
+where eCPA --- which computes fluid-phase VLE only --- returns a metastable fluid equilibrium
+that may be physically unrealizable.
+The additional iterations in this regime likely reflect the difficulty of converging
+a fluid-phase flash at conditions where the true equilibrium involves a solid hydrate phase.
 Using K-values from the stability test as the flash initial guess provides a further
 8\% reduction in iterations (13.7 to 12.6) on average.
 
@@ -1466,7 +1471,10 @@ most sensitive to initial guesses.
            Right: accelerated SSI with stability-test K.
            The accelerated SSI substantially reduces iteration counts across the
            entire parameter space, with the largest improvements near the CO$_2$
-           critical point ($T \approx 31\,^\circ$C, $P \approx 74$\,bar).}
+           critical point ($T \approx 31\,^\circ$C, $P \approx 74$\,bar).
+           Elevated counts at the lowest temperatures ($T \lesssim 12\,^\circ$C) also
+           reflect conditions within the CO$_2$ hydrate stability zone, where eCPA
+           computes a metastable fluid-phase equilibrium.}
   \label{fig:ssi_heatmap}
 \end{figure}
 
