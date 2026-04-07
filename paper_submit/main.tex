@@ -1824,17 +1824,21 @@ evaluation to fully converged, production-ready VLE calculations for CO$_2$ + H$
 NaCl mixtures across reservoir to hydrothermal conditions.
 
 The central algorithmic contribution is the tight integration of four independently
-novel elements: (i) fast inner Newton--Raphson solvers for the CPA and eCPA root-finding
-problems, based on analytical Jacobians derived in closed form, which reduce the
-per-evaluation overhead to only $\sim$3$\times$ that of a simple cubic EoS; (ii) a
-hierarchical outer flash algorithm combining Michelsen stability testing with six initial
-guesses, accelerated SSI, and optional Newton polish — achieving 100\% convergence over
-a comprehensive parameter-space scan; (iii) a precomputed three-dimensional
-$(T, P, m_s)$ solution table that provides warm starts reducing flash iterations by a
-factor of three relative to cold-start SSI; and (iv) a simplified flash that exploits
-the $y_{\text{H}_2\text{O}} \approx 0$ approximation to reduce the equilibrium problem
-to a single scalar equation, yielding errors below 2\% in dissolved CO$_2$ for
-$T \leq 80\,^\circ$C at essentially the same computational cost.
+novel elements:
+\begin{itemize}
+  \item Fast inner Newton--Raphson solvers for the CPA and eCPA root-finding problems,
+        based on analytical Jacobians derived in closed form, which reduce the
+        per-evaluation overhead to only $\sim$3$\times$ that of a simple cubic EoS.
+  \item A hierarchical outer flash algorithm combining Michelsen stability testing with
+        six initial guesses, accelerated SSI, and optional Newton polish --- achieving
+        100\% convergence over a comprehensive parameter-space scan.
+  \item A precomputed three-dimensional $(T, P, m_s)$ solution table that provides warm
+        starts reducing flash iterations by a factor of three relative to cold-start SSI.
+  \item A simplified flash that exploits the $y_{\text{H}_2\text{O}} \approx 0$
+        approximation to reduce the equilibrium problem to a single scalar equation,
+        yielding errors below 2\% in dissolved CO$_2$ for $T \leq 80\,^\circ$C at
+        essentially the same computational cost.
+\end{itemize}
 Together, these enable warm-started eCPA flash at throughputs competitive with
 conventional cubic-EoS implementations, as demonstrated in a prototype IMPEC reservoir
 simulator.
