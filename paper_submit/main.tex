@@ -625,10 +625,22 @@ conditions in the parameter-space scan, Section~\ref{sec:convergence}) and effic
 (stability-informed K-values reduce flash iterations by an additional 8\% compared to
 Wilson initialization).
 
-For cold-start SSI (without a table guess), a damping factor $\omega = 0.7$ is used
-in the standard (non-accelerated) variant to avoid divergence; warm-started SSI
-(from a table guess with state-vector error $\lesssim 0.01$) converges reliably with
-$\omega = 1.0$ in 3--4 iterations.
+For cold-start SSI (without a table guess), the full unit step in Eq.~\eqref{eq:ssi}
+($m^{(k)}=1$) can overshoot near difficult conditions such as the CO$_2$ critical region,
+causing oscillation or slow divergence.
+The non-accelerated fallback path therefore applies \emph{under-relaxation}: each K-value
+update is multiplied by a damping factor $\omega = 0.7$,
+\begin{equation*}
+  \ln K_i^{(k+1)} = \ln K_i^{(k)} - \omega\, g_i^{(k)},
+\end{equation*}
+reducing each step to 70\% of the standard correction.
+This is conceptually the opposite of the Jex extrapolation factor $m^{(k)} \geq 1$
+(Eq.~\eqref{eq:accel_m}), which \emph{amplifies} the update to accelerate convergence
+when the iteration is already on a smooth trajectory toward the solution;
+the damping factor $\omega < 1$ instead \emph{stabilizes} the iteration when the starting
+point is far from the solution.
+Warm-started SSI (from a table guess) begins already close to the converged state and
+converges reliably with the full step ($\omega = 1.0$) in 3--4 iterations.
 
 \paragraph{Inner Newton--Raphson solve for $Z$ and $\chi$ (CPA)}
 Within each SSI iteration, the CPA fugacity coefficients require simultaneous solution of
