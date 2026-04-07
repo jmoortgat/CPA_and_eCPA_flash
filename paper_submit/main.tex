@@ -761,7 +761,7 @@ reducing the aqueous inner problem to three coupled equations:
        \label{eq:G0main} \\
   G_1 &= \frac{(\varepsilon_r - \varepsilon_\infty)(2\varepsilon_r + \varepsilon_\infty)}
               {\varepsilon_r(\varepsilon_\infty + 2)^2}
-       - \frac{N_A\rho\,\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_{\rm H_2O}\,g_w(\chi_{\rm H_2O}) = 0,
+       - \frac{N_A\rho_N\,\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_{\rm H_2O}\,g_w(\chi_{\rm H_2O}) = 0,
        \label{eq:G1main} \\
   G_2 &= \chi_{\rm H_2O}
        - \frac{Z^{\rm aq}}{Z^{\rm aq} + 2x_{\rm H_2O}\chi_{\rm H_2O}\Delta_w + 2x_{\rm CO_2}\chi_{\rm CO_2} S_{{\rm CO_2},{\rm H_2O}}\Delta_w} = 0.
@@ -774,7 +774,8 @@ correction $Z^{{\rm aq},\text{Perm}}$ \citep{Coelho2025}, both of which depend o
 Equation~\eqref{eq:G1main} is the Onsager--Kirkwood self-consistency condition:
 its left-hand side is the Onsager dielectric function of $\varepsilon_r$ and
 $\varepsilon_\infty(Z^{\rm aq})$ (the high-frequency permittivity from the Clausius--Mossotti
-relation), while the right-hand side couples the H$_2$O molar density $\rho$
+relation), while the right-hand side couples the total mixture molar density
+$\rho_N = P/(Z^{\rm aq}RT)$ and H$_2$O mole fraction $x_{\rm H_2O}$
 to the Kirkwood g-factor $g_w(\chi_{\rm H_2O})$ through the permanent dipole moment
 $\mu_{0w}$ \citep{Coelho2025}.
 Equation~\eqref{eq:G2main} is the self-consistency condition for the H$_2$O bonding
@@ -2085,7 +2086,8 @@ Within each group, symbols are listed in alphabetical order.
   $\kappa$ & Association volume parameter in the Wertheim term & --- \\
   $\mu_{0w}$ & Permanent dipole moment of water & C m \\
   $\mu_g, \mu_w$ & Dynamic viscosity (CO$_2$-rich, aqueous) & Pa s \\
-  $\rho$ & Molar density & mol m$^{-3}$ \\
+  $\rho$ & Mass density & kg m$^{-3}$ \\
+  $\rho_N$ & Molar density (mixture), $\rho_N = P/(ZRT)$ & mol m$^{-3}$ \\
   $\sigma$ & Collision diameter (ion hard-sphere radius) & \AA \\
   $\tau, \tau_{\rm switch}$ & SSI convergence tolerance; Newton-polish switch threshold & --- \\
   $\phi$ & Porosity & --- \\
@@ -2336,18 +2338,18 @@ and the Kirkwood g-factor $g_w(\chi_{\rm H_2O})$, respectively:
   H_{10} &= \left(\frac{\partial F}{\partial\varepsilon_\infty}\right)
              \frac{V(\partial\varepsilon_\infty/\partial V)}{Z^{\rm aq}}
            - \frac{N_A\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_{\rm H_2O}
-             \left(-\frac{\rho}{Z^{\rm aq}}\,g_w
-                   + \rho\,\frac{\partial g_w}{\partial Z^{\rm aq}}\right),
+             \left(-\frac{\rho_N}{Z^{\rm aq}}\,g_w
+                   + \rho_N\,\frac{\partial g_w}{\partial Z^{\rm aq}}\right),
              \label{eq:H10} \\
   H_{11} &= \frac{\partial F}{\partial\varepsilon_r}
            = \frac{2\varepsilon_r^2+\varepsilon_\infty^2}
                   {\varepsilon_r^2(\varepsilon_\infty+2)^2},
              \label{eq:H11} \\
-  H_{12} &= -\frac{N_A\rho\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_{\rm H_2O}\,
+  H_{12} &= -\frac{N_A\rho_N\mu_{0w}^2}{9\varepsilon_0 k_BT}\,x_{\rm H_2O}\,
               \frac{\partial g_w}{\partial\chi_{\rm H_2O}},
              \label{eq:H12}
 \end{align}
-where $\rho = P/(Z^{\rm aq}RT)$, $V(\partial\varepsilon_\infty/\partial V)$ follows
+where $\rho_N = P/(Z^{\rm aq}RT)$, $V(\partial\varepsilon_\infty/\partial V)$ follows
 from the Clausius--Mossotti relation for $\varepsilon_\infty$ \citep{Coelho2025},
 and $\partial g_w/\partial Z^{\rm aq}$ and $\partial g_w/\partial\chi_{\rm H_2O}$ follow from
 differentiating the Kirkwood g-factor \citep{Coelho2025} through
