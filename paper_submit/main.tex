@@ -2179,20 +2179,22 @@ Table~\ref{tab:peneloux_coeffs}.
 \subsection*{Temperature-dependent Péneloux shift for H$_2$O}
 \label{sec:peneloux_coeffs}
 
-The H$_2$O volume shift uses a degree-4 polynomial in the reduced temperature
-$T_R = T / T_{c,\text{H}_2\text{O}}$ ($T_{c,\text{H}_2\text{O}} = 647.29$\,K):
+A temperature-dependent volume shift for H$_2$O is introduced in this work.
+We fit a degree-4 polynomial in the reduced temperature
+$T_R = T / T_{c,\text{H}_2\text{O}}$ ($T_{c,\text{H}_2\text{O}} = 647.29$\,K)
+to 455 IAPWS-95 liquid/compressed-water conditions
+($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar):
 \begin{equation}
   c_{\text{H}_2\text{O}}(T) = a_4 T_R^4 + a_3 T_R^3 + a_2 T_R^2 + a_1 T_R + a_0
-  \quad [\text{cm}^3\,\text{mol}^{-1}],
+  \quad [\text{cm}^3\,\text{mol}^{-1}].
   \label{eq:peneloux_poly}
 \end{equation}
-with coefficients fitted to 455 IAPWS-95 liquid/compressed water conditions
-($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar) given in Table~\ref{tab:peneloux_coeffs}.
+The fitted coefficients are given in Table~\ref{tab:peneloux_coeffs}.
 
 \begin{table}[H]
   \centering
   \caption{Coefficients of the degree-4 Péneloux volume shift polynomial for H$_2$O
-           (Eq.~\ref{eq:peneloux_poly}), fitted to 455 IAPWS-95 liquid/compressed-water
+           (Eq.~\ref{eq:peneloux_poly}), fitted in this work to 455 IAPWS-95 liquid/compressed-water
            conditions ($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar).}
   \label{tab:peneloux_coeffs}
   \begin{tabular}{cr}
