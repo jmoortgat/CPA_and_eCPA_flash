@@ -33,10 +33,9 @@
        Using the Electrolyte Cubic-Plus-Association Equation of State}
 
 \author[ohio]{Joachim Moortgat\corref{cor1}}
-\ead{moortgat.1@osu.edu}
 \author[uga]{Felipe Mour\~{a}o Coelho}
-\author[rice]{Abbas Firoozabadi}
-\cortext[cor1]{Corresponding author}
+\author[rice]{Abbas Firoozabadi\corref{cor1}}
+\cortext[cor1]{Corresponding authors. Email addresses: moortgat.1@osu.edu (J.\ Moortgat), af25@rice.edu (A.\ Firoozabadi).}
 \affiliation[ohio]{organization={School of Earth Sciences, The Ohio State University},
              addressline={125 South Oval Mall},
              city={Columbus},
@@ -232,7 +231,7 @@ outer Newton--Raphson solvers and the warm-start speedup.
 Section~\ref{sec:simulator} demonstrates the flash routines within a minimal
 IMPEC reservoir simulator.
 Conclusions are given in Section~\ref{sec:conclusions}.
-Some additional technical details and supporting figures are provided in Supplemental Information. 
+Additional technical details and supporting figures are provided in Supplemental Information. 
 
 %% ============================================================
 \section{Thermodynamic Framework}
@@ -1007,6 +1006,12 @@ However, these headline numbers are inflated by three challenging regimes:
         outside the solution-table range.  The sole data source at $P > 2000$\,bar
         \citep{Todheide1963} cannot be independently cross-validated, and errors in this
         regime reach 78\% AARE for $y_{\text{H}_2\text{O}}$.
+  \item \emph{Near-freezing conditions} ($T \lesssim 12\,^\circ$C): these conditions overlap
+        with the CO$_2$ hydrate stability zone, where solid CO$_2$ clathrates can form in
+        preference to a liquid--vapor equilibrium.  The eCPA EoS is not parameterized for
+        hydrate formation and computes fluid-phase VLE only; experimental data in this regime
+        may therefore reflect conditions where hydrate formation partially controls the
+        observed CO$_2$ solubility.
 \end{enumerate}
 For conditions most relevant to subsurface CO$_2$ storage ($T = 30$--$150\,^\circ$C,
 $P = 50$--$600$\,bar), the AARE improves to \textbf{6.5\%} for $x_{\text{CO}_2}$ ($N = 137$).
@@ -1182,6 +1187,9 @@ in the model.
 Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
 (AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
 the freezing point where eCPA is not specifically parameterized.
+These conditions furthermore fall within the CO$_2$ hydrate stability zone, where solid
+CO$_2$ clathrates can form; the eCPA EoS computes fluid-phase VLE only and does not
+model hydrate formation explicitly.
 Figure~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
 across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
 ($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
