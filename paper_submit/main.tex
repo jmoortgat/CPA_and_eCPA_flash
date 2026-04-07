@@ -367,8 +367,8 @@ with the corrected density $\rho = M_{\text{mix}}/v^{\text{corr}}$.
 \citet{Coelho2025} apply a shift $c_s = -53.5$\,cm$^3$\,mol$^{-1}$ to the NaCl species
 to correct brine density but that work did not consider a shift for H$_2$O.
 In this work, we also fitted a temperature-dependent Péneloux volume shift for H$_2$O to IAPWS-95 pure-water data (Section~\ref{sec:density}):
- $c_{\text{H}_2\text{O}}(T) = \sum_k a_k T_R^k$ (degree 4, $T_R = T/T_{c,\text{H}_2\text{O}}$ with
-coefficients listed in Appendix~\ref{sec:params}).
+ $c_{\text{H}_2\text{O}}(T) = \sum_k a_k T_R^k$ (degree 4, $T_R = T/T_{c,\text{H}_2\text{O}}$) with
+coefficients listed in Table~\ref{tab:peneloux_coeffs} (Appendix~\ref{sec:params}).
 No volume shift is applied to CO$_2$.
 
 
@@ -1888,8 +1888,8 @@ The following material is provided as Supplementary Information.
 
   \item \textbf{Section~S2 (EoS Parameters):}
         Tables of pure-component and binary interaction parameters for the CPA/eCPA
-        model (Tables~S1--S2), and coefficients for the temperature-dependent
-        Péneloux volume shift for H$_2$O (Eq.~S1).
+        model (Tables~S2--S3), and coefficients for the temperature-dependent
+        Péneloux volume shift for H$_2$O (Table~S4; Eq.~S1).
 
   \item \textbf{Section~S3 (Analytical Jacobians):}
         Closed-form Jacobian matrices for the two inner Newton--Raphson systems:
@@ -1903,7 +1903,7 @@ The following material is provided as Supplementary Information.
         (Figs.~S2--S3); AARE heatmaps for CO$_2$+NaCl (Fig.~S4) and
         CO$_2$+H$_2$O (Fig.~S7); extended validation of aqueous density against the
         IAPWS-95 standard (Figs.~S5--S6); and accuracy and efficiency assessment
-        of the simplified flash (Table~S3; Figs.~S8--S9).
+        of the simplified flash (Table~S5; Figs.~S8--S9).
 
   \item \textbf{Section~S5 (Computational Performance Figures):}
         Supplementary figures on SSI+Newton iteration breakdown (Fig.~S10) and
@@ -1912,7 +1912,7 @@ The following material is provided as Supplementary Information.
 
   \item \textbf{Section~S6 (Reservoir Simulation Details):}
         Full description of the numerical scheme and simulation parameters
-        (Table~S4; Figs.~S12--S13; Table~S5), supplementing
+        (Table~S6; Figs.~S12--S13; Table~S7), supplementing
         Section~\ref{sec:simulator}.
 \end{itemize}
 
@@ -2096,8 +2096,9 @@ Within each group, symbols are listed in alphabetical order.
 This section supplements Section~\ref{sec:eos} of the main text.
 For completeness, Tables~\ref{tab:pure_params} and \ref{tab:binary_params} reproduce the
 key EoS parameters used in this work, all from \citet{Coelho2025}.
-The temperature-dependent Péneloux volume shift for H$_2$O (Section~\ref{sec:peneloux}) is
-parameterized by the polynomial coefficients given below.
+The coefficients of the temperature-dependent Péneloux volume shift for H$_2$O
+(Section~\ref{sec:peneloux}; Eq.~\ref{eq:peneloux_poly}) are given in
+Table~\ref{tab:peneloux_coeffs}.
 
 \begin{table}[H]
   \centering
@@ -2158,20 +2159,26 @@ $T_R = T / T_{c,\text{H}_2\text{O}}$ ($T_{c,\text{H}_2\text{O}} = 647.29$\,K):
   \label{eq:peneloux_poly}
 \end{equation}
 with coefficients fitted to 455 IAPWS-95 liquid/compressed water conditions
-($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar):
-\begin{center}
-\begin{tabular}{cr}
-  \toprule
-  Coefficient & Value \\
-  \midrule
-  $a_4$ & $+32.862$ \\
-  $a_3$ & $-96.052$ \\
-  $a_2$ & $+110.954$ \\
-  $a_1$ & $-58.111$ \\
-  $a_0$ & $+11.233$ \\
-  \bottomrule
-\end{tabular}
-\end{center}
+($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar) given in Table~\ref{tab:peneloux_coeffs}.
+
+\begin{table}[H]
+  \centering
+  \caption{Coefficients of the degree-4 Péneloux volume shift polynomial for H$_2$O
+           (Eq.~\ref{eq:peneloux_poly}), fitted to 455 IAPWS-95 liquid/compressed-water
+           conditions ($T = 0$--$350\,^\circ$C, $P = 1$--$2000$\,bar).}
+  \label{tab:peneloux_coeffs}
+  \begin{tabular}{cr}
+    \toprule
+    Coefficient & Value \\
+    \midrule
+    $a_4$ & $+32.862$ \\
+    $a_3$ & $-96.052$ \\
+    $a_2$ & $+110.954$ \\
+    $a_1$ & $-58.111$ \\
+    $a_0$ & $+11.233$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 %% ============================================================
 \section{Analytical Jacobians for the Inner Newton Solvers}
@@ -2377,7 +2384,7 @@ Figures~S1--S4 and~S7 provide complete coverage of the CO$_2$+H$_2$O and CO$_2$+
 validation datasets at all temperatures and salinities considered.
 Figures~S5--S6 present the extended aqueous density validation against IAPWS-95.
 The accuracy and efficiency of the simplified flash (Section~\ref{sec:simplified_flash}
-and~\ref{sec:simplified_perf}) are further characterized in Table~S3 and Figs.~S8--S9.
+and~\ref{sec:simplified_perf}) are further characterized in Table~S5 and Figs.~S8--S9.
 
 %% --- SI Figure S1: all CO2+H2O panels (1-column, 3 per page, multi-page) ---
 %% Page 1: 0–10°C
@@ -2759,8 +2766,8 @@ in terms of convergence rate and mean iteration count.
 
 This section supplements Section~\ref{sec:simulator} of the main text, providing full
 details of the numerical scheme (pressure solver, transport discretization, well model),
-the complete simulation parameter set (Table~S4), spatial results and flash performance
-at $t = 5$\,yr (Figs.~S12--S13; Table~S5).
+the complete simulation parameter set (Table~S6), spatial results and flash performance
+at $t = 5$\,yr (Figs.~S12--S13; Table~S7).
 
 \subsection*{Numerical scheme}
 
