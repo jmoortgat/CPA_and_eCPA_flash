@@ -366,7 +366,7 @@ phase compositions (it is isofugacity-preserving):
 with the corrected density $\rho = M_{\text{mix}}/v^{\text{corr}}$.
 \citet{Coelho2025} apply a shift $c_s = -53.5$\,cm$^3$\,mol$^{-1}$ to the NaCl species
 to correct brine density but that work did not consider a shift for H$_2$O.
-In this work, we also fitted a temperature-dependent Péneloux volume shift for H$_2$O to IAPWS-95 pure-water data (Section~\ref{sec:density}):
+In this work, we also fit a temperature-dependent Péneloux volume shift for H$_2$O to IAPWS-95 pure-water data (Section~\ref{sec:density}):
  $c_{\text{H}_2\text{O}}(T) = \sum_k a_k T_R^k$ (degree 4, $T_R = T/T_{c,\text{H}_2\text{O}}$) with
 coefficients listed in Table~\ref{tab:peneloux_coeffs} (Appendix~\ref{sec:params}).
 No volume shift is applied to CO$_2$.
@@ -450,7 +450,7 @@ However, each evaluation of $R(m_s^{\rm aq})$ requires nested Newton solves
 for $(Z^{\rm aq},\,\varepsilon_r,\,\chi_{\rm H_2O})$, making the outer loop expensive and
 ill-suited to the large number of evaluations required in a parameter-space scan
 or a production reservoir simulator.
-This motivated the development of the direct SSI approach described below.
+This motivates the development of the direct SSI approach described below.
 
 \subsection{Michelsen tangent-plane distance stability test}
 \label{sec:stability}
@@ -857,14 +857,14 @@ This gives $361 \times 100 \times 14 = 505{,}400$ grid cells.
 Note that $m_s$ (no superscript) is the feed molality, which differs from the
 equilibrium aqueous molality $m_s^{\rm aq} \geq m_s$ due to the salting-out effect.
 The overall CO$_2$ feed fraction $z_{\rm CO_2}$ is not included as a table dimension.
-All table entries were computed at a representative feed fraction $z_{\rm CO_2} = 0.5$;
+All table entries are computed at a representative feed fraction $z_{\rm CO_2} = 0.5$;
 the equilibrium quantities stored (K-values, $Z$, $\chi$, $m_s^{\rm aq}$)
 depend weakly on $z_{\rm CO_2}$ for fixed $(T, P, m_s)$.
 This dependence is primarily through the salting-out effect: a larger CO$_2$
 feed fraction partitions more water into the CO$_2$-rich phase, concentrating
 the brine and raising $m_s^{\rm aq}$, which in turn slightly shifts the
 K-values.
-We verified numerically that at typical subsurface conditions ($T = 50\,^\circ$C,
+We verify numerically that at typical subsurface conditions ($T = 50\,^\circ$C,
 $P = 100$\,bar, $m_s = 1$\,mol\,kg$^{-1}$) the spread of K-values across the
 full two-phase $z_{\rm CO_2}$ range is less than 0.15\%, confirming that the table
 provides adequate warm-start quality across the full feed composition range.
@@ -1364,7 +1364,7 @@ multi-guess stability test, we perform a comprehensive parameter-space scan over
 $86 \times 18 \times 19 = 29{,}412$ conditions spanning
 $T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar, and
 $z_{\rm CO_2} = 0.001$--$0.999$ (Table~\ref{tab:scan_grid}).
-At each $(T, P, z_{\rm CO_2})$ point, we ran the stability test with all six initial guesses,
+At each $(T, P, z_{\rm CO_2})$ point, we run the stability test with all six initial guesses,
 followed by four independent flash strategies:
 standard SSI with Wilson K initialization (``Std+Wilson''),
 accelerated SSI with Wilson K (``Acc+Wilson''),
@@ -1548,7 +1548,7 @@ Table~\ref{tab:ecpa_scan_grid}.
   \end{tabular}
 \end{table}
 
-Each grid point was evaluated with the full hierarchical stability+flash algorithm: the Michelsen
+Each grid point is evaluated with the full hierarchical stability+flash algorithm: the Michelsen
 stability test (six trial compositions) is performed first; only genuinely unstable
 conditions proceed to the K-value SSI flash.
 The CO$_2$ feed fraction $z_{\rm CO_2}$ is not a table dimension; a representative value
@@ -1762,9 +1762,9 @@ evaluations and costs $\approx$1.5\,ms per call: a \textbf{6$\times$} overhead.
 
 \paragraph{Computational cost of CPA and eCPA versus a cubic EOS}
 To quantify the per-iteration overhead of the association terms relative to a plain
-cubic EoS, we timed each component of a single SSI iteration across 871 two-phase
+cubic EoS, we time each component of a single SSI iteration across 871 two-phase
 $(T, P)$ conditions sampled from the CO$_2$--H$_2$O parameter space.
-CPA (with the Newton $Z$/$\chi$ solve) was compared against a notional SRK reference
+CPA (with the Newton $Z$/$\chi$ solve) is compared against a notional SRK reference
 (same EoS parameter computation and fugacity evaluation, but $Z$ found by direct
 solution of the cubic and $\chi \equiv 1$).
 The per-iteration median wall times were 98\,\textmu{}s (CPA) versus 32\,\textmu{}s
@@ -1853,20 +1853,7 @@ subsurface storage conditions.
 \section*{Future Work}
 \label{sec:future}
 
-The algorithms and validation presented here were implemented entirely in Python.
-While this facilitates rapid prototyping and transparent benchmarking, it means that
-the absolute throughput numbers reported are conservative relative to what a compiled
-implementation would achieve.
-The natural next step is to integrate the CPA and eCPA flash routines into a
-production-level compiled simulator that fully accounts for gravity-driven and
-density-driven flow, Fickian diffusion, capillarity, and explicitly resolved discrete
-fractures in three-dimensional unstructured grids (e.g.\
-\citealt{moortgat2011compositional, moortgat2011three, moortgat2013higher,
-moortgat2016mixed, moortgat2018reservoir, solovsky2025efficient, solovsky2026efficient}).
-Such an integration will enable high-fidelity simulation of CO$_2$ sequestration
-in saline aquifers at reservoir scale.
-
-A second, more fundamental extension is the generalization to brines containing
+A fundamental extension is the generalization to brines containing
 multiple salts (e.g.\ NaCl + CaCl$_2$ + MgCl$_2$, as encountered in deep formation
 waters).
 In the single-salt eCPA framework the NaCl molality provides a single scalar
@@ -1878,11 +1865,26 @@ parameters.
 Extending the eCPA framework in this direction represents a significant but tractable
 step toward a truly general thermodynamic engine for saline CO$_2$ storage.
 
+The algorithms and validation presented here are implemented entirely in Python.
+While this facilitates rapid prototyping and transparent benchmarking, it means that
+the absolute throughput numbers reported are conservative relative to what a compiled
+implementation would achieve.
+A natural next step is to integrate the CPA and eCPA flash routines into a
+production-level compiled simulator that fully accounts for gravity-driven and
+density-driven flow, Fickian diffusion, capillarity, and explicitly resolved discrete
+fractures in three-dimensional unstructured grids (e.g.\
+\citealt{moortgat2011compositional, moortgat2011three, moortgat2013higher,
+moortgat2016mixed, moortgat2018reservoir, solovsky2025efficient, solovsky2026efficient}).
+Such an integration will enable high-fidelity simulation of CO$_2$ sequestration
+in saline aquifers at reservoir scale.
+
+
+
 
 %% ============================================================
 \section*{Acknowledgements}
 
-Abbas Firoozabadi was partially supported by the member companies of the Reservoir Engineering Research Institute. 
+Abbas Firoozabadi was supported by the member companies of the Reservoir Engineering Research Institute. 
 
 \newpage
 
