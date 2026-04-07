@@ -1877,6 +1877,46 @@ all experimental VLE data used for validation, and scripts to reproduce
 every figure and table in this paper.
 
 %% ============================================================
+\section*{Supplementary Information}
+
+The following material is provided as Supplementary Information.
+
+\begin{itemize}
+  \item \textbf{Section~S1 (Nomenclature):}
+        Complete listing of all mathematical symbols used throughout the paper,
+        organized by type (Latin, Greek, subscripts, and superscripts).
+
+  \item \textbf{Section~S2 (EoS Parameters):}
+        Tables of pure-component and binary interaction parameters for the CPA/eCPA
+        model (Tables~S1--S2), and coefficients for the temperature-dependent
+        Péneloux volume shift for H$_2$O (Eq.~S1).
+
+  \item \textbf{Section~S3 (Analytical Jacobians):}
+        Closed-form Jacobian matrices for the two inner Newton--Raphson systems:
+        the $3\times 3$ CPA system in $(Z,\chi_{\rm H_2O},\chi_{\rm CO_2})$
+        and the $3\times 3$ eCPA aqueous-phase system in
+        $(Z^{\rm aq},\varepsilon_r,\chi_{\rm H_2O})$ (Eqs.~S2--S29).
+
+  \item \textbf{Section~S4 (Additional Validation Figures):}
+        CO$_2$+H$_2$O phase equilibria at all 35 temperatures not shown in the main
+        text (Fig.~S1); CO$_2$+NaCl phase equilibria at 18 temperatures
+        (Figs.~S2--S3); AARE heatmaps for CO$_2$+NaCl (Fig.~S4) and
+        CO$_2$+H$_2$O (Fig.~S7); extended validation of aqueous density against the
+        IAPWS-95 standard (Figs.~S5--S6); and accuracy and efficiency assessment
+        of the simplified flash (Table~S3; Figs.~S8--S9).
+
+  \item \textbf{Section~S5 (Computational Performance Figures):}
+        Supplementary figures on SSI+Newton iteration breakdown (Fig.~S10) and
+        flash strategy comparison (Fig.~S11), supplementing the convergence and
+        efficiency analysis of Section~\ref{sec:performance}.
+
+  \item \textbf{Section~S6 (Reservoir Simulation Details):}
+        Full description of the numerical scheme and simulation parameters
+        (Table~S4; Figs.~S12--S13; Table~S5), supplementing
+        Section~\ref{sec:simulator}.
+\end{itemize}
+
+%% ============================================================
 \bibliographystyle{elsarticle-harv}
 \bibliography{refs}
 
@@ -1887,15 +1927,20 @@ every figure and table in this paper.
 \appendix
 \setcounter{section}{0}
 \setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{equation}{0}
 \renewcommand{\thesection}{S\arabic{section}}
 \renewcommand{\thesubsection}{S\arabic{section}.\arabic{subsection}}
 \renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\theequation}{S\arabic{equation}}
 
 %% ============================================================
 \section{Nomenclature}
 \label{sec:nomenclature}
 
-\noindent Symbols are listed in alphabetical order within each group.
+\noindent This section provides a complete listing of all mathematical symbols used throughout the paper.
+Symbols are listed in alphabetical order within each group.
 Phase subscripts and superscripts are defined at the end of the table.
 
 \subsection*{Latin symbols}
@@ -2042,8 +2087,11 @@ Phase subscripts and superscripts are defined at the end of the table.
 \section{EoS Parameters}
 \label{sec:params}
 
+This section supplements Section~\ref{sec:eos} of the main text.
 For completeness, Tables~\ref{tab:pure_params} and \ref{tab:binary_params} reproduce the
 key EoS parameters used in this work, all from \citet{Coelho2025}.
+The temperature-dependent Péneloux volume shift for H$_2$O (Section~\ref{sec:peneloux}) is
+parameterized by the polynomial coefficients given below.
 
 \begin{table}[H]
   \centering
@@ -2123,6 +2171,11 @@ with coefficients fitted to 455 IAPWS-95 liquid/compressed water conditions
 \section{Analytical Jacobians for the Inner Newton Solvers}
 \label{sec:jacobians}
 
+This section supplements Sections~\ref{sec:ssi} and~\ref{sec:kv_flash} of the main text,
+which describe the inner Newton--Raphson solvers used at each SSI iteration to evaluate
+the CPA and eCPA phase fugacities.
+Here we derive the full analytical Jacobian matrices that make those Newton steps
+computationally efficient.
 Within each SSI iteration two distinct Newton systems are solved, one per phase.
 The CO$_2$-rich phase and both phases of the salt-free CPA binary use a
 $3\times 3$ system in $(Z,\chi_{\rm H_2O},\chi_{\rm CO_2})$ (Section~\ref{sec:jac_cpa}).
@@ -2312,6 +2365,13 @@ to machine precision).
 
 \section{Additional Validation Figures}
 \label{sec:si}
+
+This section supplements Sections~\ref{sec:co2h2o} and~\ref{sec:co2nacl} of the main text.
+Figures~S1--S4 and~S7 provide complete coverage of the CO$_2$+H$_2$O and CO$_2$+NaCl
+validation datasets at all temperatures and salinities considered.
+Figures~S5--S6 present the extended aqueous density validation against IAPWS-95.
+The accuracy and efficiency of the simplified flash (Section~\ref{sec:simplified_flash}
+and~\ref{sec:simplified_perf}) are further characterized in Table~S3 and Figs.~S8--S9.
 
 %% --- SI Figure S1: all CO2+H2O panels (1-column, 3 per page, multi-page) ---
 %% Page 1: 0–10°C
@@ -2645,6 +2705,13 @@ in salt-free settings where the ternary outer salt loop is absent by constructio
 
 
 \section{Computational Performance Figures}
+\label{sec:perf_figs_si}
+
+This section supplements the convergence and efficiency analysis of
+Section~\ref{sec:performance} of the main text.
+Figure~S10 shows the SSI+Newton iteration breakdown and wall-time ratio across the
+full parameter-space scan, and Fig.~S11 compares all flash initialization strategies
+in terms of convergence rate and mean iteration count.
 
 \begin{figure}[H]
   \centering
@@ -2683,6 +2750,11 @@ in salt-free settings where the ternary outer salt loop is absent by constructio
 
 \section{Reservoir Simulation Details}
 \label{sec:sim_table}
+
+This section supplements Section~\ref{sec:simulator} of the main text, providing full
+details of the numerical scheme (pressure solver, transport discretization, well model),
+the complete simulation parameter set (Table~S4), spatial results and flash performance
+at $t = 5$\,yr (Figs.~S12--S13; Table~S5).
 
 \subsection*{Numerical scheme}
 
