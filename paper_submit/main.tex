@@ -1439,7 +1439,7 @@ Using K-values from the stability test as the flash initial guess provides a fur
     Std SSI + Wilson K           & 9{,}756 & 99.3\%  & 25.4 & 17 \\
     Acc SSI + Wilson K           & 9{,}775 & 99.5\%  & 13.7 &  9 \\
     Acc SSI + Stability K        & 9{,}793 & 99.7\%  & 12.6 &  9 \\
-    \shortstack[l]{Acc SSI + Stability K\\+ Wilson K} & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
+    \shortstack[l]{Acc SSI + Stability K\\+ Wilson K fall-back} & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
     \midrule
     Acc SSI + Table K            & 9{,}818 & 99.9\%  &  9.8 &  6 \\
     Acc SSI + Table K + Newton   & 9{,}808 & 99.8\%  &  \textbf{6.9} &  5 \\
@@ -1537,6 +1537,15 @@ relevant to geological CO$_2$ storage and geothermal energy production, we compu
 described in Section~\ref{sec:table}, covering the grid summarized in
 Table~\ref{tab:ecpa_scan_grid}.
 
+Each grid point is evaluated with the full hierarchical stability+flash algorithm: the Michelsen
+stability test (six trial compositions) is performed first; only genuinely unstable
+conditions proceed to the K-value SSI flash.
+The CO$_2$ feed fraction $z_{\rm CO_2}$ is not a table dimension; a representative value
+$z_{\rm CO_2} = 0.5$ is used for the stability call (K-values and tie-line endpoints are
+only weakly $z_{\rm CO_2}$-dependent, as discussed in Section~\ref{sec:table}).
+Of the 505{,}400 grid points, 36{,}100 use the CPA sub-model ($m_s = 0$, no
+electrostatic terms); the eCPA model covers the remaining 469{,}300 points.
+
 \begin{table}[H]
   \centering
   \caption{Parameter grid for the eCPA ternary solution table
@@ -1553,14 +1562,7 @@ Table~\ref{tab:ecpa_scan_grid}.
   \end{tabular}
 \end{table}
 
-Each grid point is evaluated with the full hierarchical stability+flash algorithm: the Michelsen
-stability test (six trial compositions) is performed first; only genuinely unstable
-conditions proceed to the K-value SSI flash.
-The CO$_2$ feed fraction $z_{\rm CO_2}$ is not a table dimension; a representative value
-$z_{\rm CO_2} = 0.5$ is used for the stability call (K-values and tie-line endpoints are
-only weakly $z_{\rm CO_2}$-dependent, as discussed in Section~\ref{sec:table}).
-Of the 505{,}400 grid points, 36{,}100 use the CPA sub-model ($m_s = 0$, no
-electrostatic terms); the eCPA model covers the remaining 469{,}300 points.
+
 
 Table~\ref{tab:ecpa_scan_convergence} reports the outcome of all evaluations.
 Every grid point is classified---100\% convergence is achieved over the
@@ -1712,11 +1714,11 @@ experimental validation datasets used in Sections~\ref{sec:co2h2o}--\ref{sec:co2
   \label{tab:convergence}
   \begin{tabular}{llrrrrl}
     \toprule
-    System & Method & $N$ calls & Mean iter & Median & Max & Median time/call \\
+    System & Method & \shortstack{$N$\\calls} & \shortstack{Mean\\iter} & Median & Max & \shortstack{Median\\time/call} \\
     \midrule
     CO$_2$+H$_2$O  & CPA (cold, accel.)   & 29{,}412 &  6.3 &  6 & 272 & $\sim$215\,ms \\
     CO$_2$+H$_2$O  & CPA (warm SSI)       &    626   &  6.2 &  6 &  40 & $\sim$2\,ms   \\
-    CO$_2$+H$_2$O  & eCPA (warm SSI, $m_s\!\approx\!0$) &    631   &  5.9 &  6 &  10 & $\sim$2\,ms   \\
+    CO$_2$+H$_2$O  & \shortstack[l]{eCPA (warm SSI,\\$m_s\!\approx\!0$)} &    631   &  5.9 &  6 &  10 & $\sim$2\,ms   \\
     CO$_2$+NaCl    & eCPA (warm SSI)      &    686   &  5.8 &  6 &  16 & $\sim$2\,ms   \\
     \bottomrule
   \end{tabular}
