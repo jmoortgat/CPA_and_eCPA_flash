@@ -124,7 +124,7 @@ interactions (hydrogen bonding in water), CO$_2$--water cross-association, and e
 effects of dissolved ions.
 
 Cubic-Plus-Association (CPA) equations of state \citep{Kontogeorgis1996} successfully combine
-a cubic (Soave--Redlich--Kwong, SRK) repulsive/dispersion term with a Wertheim association
+a cubic (Soave--Redlich--Kwong, SRK) repulsive / dispersion term with a Wertheim association
 term \citep{Wertheim1984} and have been widely applied to systems with hydrogen-bonding fluids.
 Considering the \textit{cross}-association between CO$_2$ and H$_2$O molecules further improved the predictive powers of CPA considerably \citep{LiFiroozabadi2009}.
 The electrolyte CPA (eCPA) extension \citep{MaribMogensen2015} adds Debye--Hückel and Born
@@ -752,10 +752,10 @@ $\chi_{\rm CO_2} = Z^{\rm aq}/D_c$ with $D_c = Z^{\rm aq} + 2x_{\rm H_2O}\chi_{\
 reducing the aqueous inner problem to three coupled equations:
 \begin{align}
   G_0 &= Z^{\rm aq}
-       - \frac{Z^{\rm aq}}{Z^{\rm aq} - B^{\rm aq}} + \frac{A^{\rm aq}}{Z^{\rm aq} + B^{\rm aq}}
-       - \!\left(1 + \frac{\eta}{g_w}\frac{\mathrm{d}g_w}{\mathrm{d}\eta}\right)
-         \bigl[x_{\rm H_2O}(\chi_{\rm H_2O}-1) + x_{\rm CO_2}(\chi_{\rm CO_2}-1)\bigr] \nonumber \\
-       &\quad - Z^{{\rm aq},\text{DH}} - Z^{{\rm aq},\text{Perm}} = 0,
+       - \frac{Z^{\rm aq}}{Z^{\rm aq} - B^{\rm aq}} + \frac{A^{\rm aq}}{Z^{\rm aq} + B^{\rm aq}} - Z^{{\rm aq},\text{DH}} - Z^{{\rm aq},\text{Perm}} 
+        \nonumber \\
+       &\quad  - \!\left(1 + \frac{\eta}{g_w}\frac{\mathrm{d}g_w}{\mathrm{d}\eta}\right)
+         \bigl[x_{\rm H_2O}(\chi_{\rm H_2O}-1) + x_{\rm CO_2}(\chi_{\rm CO_2}-1)\bigr] = 0,
        \label{eq:G0main} \\
   G_1 &= \frac{(\varepsilon_r - \varepsilon_\infty)(2\varepsilon_r + \varepsilon_\infty)}
               {\varepsilon_r(\varepsilon_\infty + 2)^2}
@@ -1055,28 +1055,6 @@ After excluding flagged outlier references (92 of 631 points, see
 Fig.~S7), the overall $y_{\text{H}_2\text{O}}$ AARE decreases from
 24.4\% to 17.4\%.
 
-These model errors should be interpreted in the context of the experimental
-uncertainty in the compiled dataset.
-Two independent estimates of measurement scatter can be obtained directly from the data.
-First, at the 76 ($T$, $P$) conditions where at least two independent references overlap
-(matched within $\pm 2.5$\,bar), the coefficient of variation between reported values
-averages 4.0\% for $x_{\text{CO}_2}$ and 11.1\% for $y_{\text{H}_2\text{O}}$.
-Second, the Gasser--Sroka--Jennen-Steinmetz (GSJS) difference-based variance
-estimator \citep{Gasser1986}, which estimates measurement noise from the
-scatter of consecutive data points around a locally interpolated trend within each
-isothermal series, yields a median relative noise of 2.4\% for $x_{\text{CO}_2}$ and
-4.7\% for $y_{\text{H}_2\text{O}}$.
-Taken together, these estimates suggest an intrinsic experimental uncertainty
-of roughly 2--4\% for $x_{\text{CO}_2}$ and 5--11\% for $y_{\text{H}_2\text{O}}$,
-so the model AARE of 6.5\% (subsurface) to 9.6\% (global) for $x_{\text{CO}_2}$
-are close to the measurement noise.
-
-Moreover, relative errors can be misleading when mole fractions span several orders of
-magnitude: a 35\% AARE for $y_{\text{H}_2\text{O}} < 0.005$ (101 points) corresponds to an
-average absolute error (AAE) of only 0.1 mol\%---negligible for reservoir
-simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
-3.5 mol\% for $y_{\text{H}_2\text{O}}$; under subsurface conditions these drop to
-0.13 and 0.68 mol\%, respectively.
 
 \begin{table}[H]
   \centering
@@ -1104,12 +1082,57 @@ simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
   \end{tabular}
 \end{table}
 
+These model errors should be interpreted in the context of the experimental
+uncertainty in the compiled dataset.
+Two independent estimates of measurement scatter can be obtained directly from the data.
+First, at the 76 ($T$, $P$) conditions where at least two independent references overlap
+(matched within $\pm 2.5$\,bar), the coefficient of variation between reported values
+averages 4.0\% for $x_{\text{CO}_2}$ and 11.1\% for $y_{\text{H}_2\text{O}}$.
+Second, the Gasser--Sroka--Jennen-Steinmetz (GSJS) difference-based variance
+estimator \citep{Gasser1986}, which estimates measurement noise from the
+scatter of consecutive data points around a locally interpolated trend within each
+isothermal series, yields a median relative noise of 2.4\% for $x_{\text{CO}_2}$ and
+4.7\% for $y_{\text{H}_2\text{O}}$.
+Taken together, these estimates suggest an intrinsic experimental uncertainty
+of roughly 2--4\% for $x_{\text{CO}_2}$ and 5--11\% for $y_{\text{H}_2\text{O}}$,
+so the model AARE of 6.5\% (subsurface) to 9.6\% (global) for $x_{\text{CO}_2}$
+are close to the measurement noise.
+
+Moreover, relative errors can be misleading when mole fractions span several orders of
+magnitude: a 35\% AARE for $y_{\text{H}_2\text{O}} < 0.005$ (101 points) corresponds to an
+average absolute error (AAE) of only 0.1 mol\%---negligible for reservoir
+simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
+3.5 mol\% for $y_{\text{H}_2\text{O}}$; under subsurface conditions these drop to
+0.13 and 0.68 mol\%, respectively.
+
+
 
 
 
 
 \subsection{CO$_2$ + NaCl brine}
 \label{sec:co2nacl}
+
+\begin{figure}[H]
+  \centering
+  \newcommand{\snw}{0.47\textwidth}%
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2b.png}\caption{$40\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2c.png}\caption{$80\,^\circ$C}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2d.png}\caption{$120\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2f.png}\caption{$250\,^\circ$C}\end{subfigure}
+  \caption{CO$_2$ solubility in NaCl brine at four representative temperatures ($40$, $80$, $120$, and $250\,^\circ$C).
+           Each panel shows CO$_2$ molality $m_{\text{CO}_2}$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
+           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Kiepe2002,
+           Nighswander1989, Bando2003, Liu2021, Takenouchi1965}; discrete lines
+           with markers: eCPA at the experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions spanning
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
+           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
+           Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
+           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~S2 and~S3.}
+  \label{fig:co2nacl_Tpanel}
+\end{figure}
+
 
 Figure~\ref{fig:co2h2o_Tpanel} also illustrates the effect of brine salinity on the equilibrium compositions by including predictions for the full molality range considered in this work. 
 We further validate the eCPA ternary flash against all available experimental data from the
@@ -1134,25 +1157,6 @@ before comparison.
 
 
 
-\begin{figure}[H]
-  \centering
-  \newcommand{\snw}{0.47\textwidth}%
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2b.png}\caption{$40\,^\circ$C}\end{subfigure}\hfill
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2c.png}\caption{$80\,^\circ$C}\end{subfigure}\\[6pt]
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2d.png}\caption{$120\,^\circ$C}\end{subfigure}\hfill
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2f.png}\caption{$250\,^\circ$C}\end{subfigure}
-  \caption{CO$_2$ solubility in NaCl brine at four representative temperatures ($40$, $80$, $120$, and $250\,^\circ$C).
-           Each panel shows CO$_2$ molality $m_{\text{CO}_2}$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
-           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Kiepe2002,
-           Nighswander1989, Bando2003, Liu2021, Takenouchi1965}; discrete lines
-           with markers: eCPA at the experimental NaCl molalities.
-           Rainbow-colored background bands: continuous eCPA predictions spanning
-           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
-           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
-           Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
-           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~S2 and~S3.}
-  \label{fig:co2nacl_Tpanel}
-\end{figure}
 
 
 All experimental results and eCPA predictions are illustrated in Figs.~\ref{fig:co2nacl_Tpanel}, \ref{fig:co2nacl_2panel}, S2, and~S3.
@@ -1171,23 +1175,6 @@ reported by \citet{Coelho2025} using the original eCPA parameterization.
 The CO$_2$-rich phase composition $y_{\text{CO}_2}$ is reproduced to within 0.4\% AARE, reflecting the
 near-purity of the CO$_2$-rich phase and its weak dependence on salinity.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.9\textwidth]{fig_3a.png}\\[6pt]
-  \includegraphics[width=0.9\textwidth]{fig_3c.png}
-  \caption{CO$_2$ + NaCl brine phase equilibria at temperatures for which both CO$_2$ molality
-           ($m_{\text{CO}_2}$, left panel) and CO$_2$ mole fraction in the CO$_2$-rich phase ($y_{\text{CO}_2}$, right panel)
-           data are available: (top) $50\,^\circ$C, (bottom) $150\,^\circ$C
-           (see also Fig.~S3 for $100\,^\circ$C).
-           Open symbols: experimental data \citep{Bando2003, Chabab2020, Guo2015,
-           Hou2013, Koschel2006, Liu2021, Messabeb2016, Savary2012, Takenouchi1965,
-           Yan2011, Zhao2015}; discrete lines with markers: eCPA at the
-           experimental NaCl molalities.
-           Rainbow-colored background bands: continuous eCPA predictions across
-           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}).}
-  \label{fig:co2nacl_2panel}
-\end{figure}
-
 At hydrothermal temperatures, AARE for $m_{\text{CO}_2}$ rises to 14.0\% at $T = 300\,^\circ$C and
 12.8\% at $T = 350\,^\circ$C, reflecting reduced eCPA accuracy at conditions beyond the
 conventional reservoir temperature range.
@@ -1205,6 +1192,25 @@ Fig.~S4 provides a comprehensive view of the error distribution
 across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
 ($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
 systematically at the boundaries of the validated range.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{fig_3a.png}\\[6pt]
+  \includegraphics[width=0.9\textwidth]{fig_3c.png}
+  \caption{CO$_2$ + NaCl brine phase equilibria at temperatures for which both CO$_2$ molality
+           ($m_{\text{CO}_2}$, left panel) and CO$_2$ mole fraction in the CO$_2$-rich phase ($y_{\text{CO}_2}$, right panel)
+           data are available: (top) $50\,^\circ$C, (bottom) $150\,^\circ$C
+           (see also Fig.~S3 for $100\,^\circ$C).
+           Open symbols: experimental data \citep{Bando2003, Chabab2020, Guo2015,
+           Hou2013, Koschel2006, Liu2021, Messabeb2016, Savary2012, Takenouchi1965,
+           Yan2011, Zhao2015}; discrete lines with markers: eCPA at the
+           experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions across
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}).}
+  \label{fig:co2nacl_2panel}
+\end{figure}
+
+
 
 \begin{table}[H]
   \centering
@@ -1428,12 +1434,12 @@ Using K-values from the stability test as the flash initial guess provides a fur
   \label{tab:accel_comparison}
   \begin{tabular}{lrrrr}
     \toprule
-    Strategy & Converged & Conv.\ rate & Mean iters & Median iters \\
+    Strategy & Converged & Conv.\ rate & \shortstack{Mean\\iters} & \shortstack{Median\\iters} \\
     \midrule
     Std SSI + Wilson K           & 9{,}756 & 99.3\%  & 25.4 & 17 \\
     Acc SSI + Wilson K           & 9{,}775 & 99.5\%  & 13.7 &  9 \\
     Acc SSI + Stability K        & 9{,}793 & 99.7\%  & 12.6 &  9 \\
-    Acc SSI + Stability K + Wilson K fall-back        & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
+    \shortstack[l]{Acc SSI + Stability K\\+ Wilson K} & 9{,}825 & \textbf{100\%} & 13.0 &  9 \\
     \midrule
     Acc SSI + Table K            & 9{,}818 & 99.9\%  &  9.8 &  6 \\
     Acc SSI + Table K + Newton   & 9{,}808 & 99.8\%  &  \textbf{6.9} &  5 \\
