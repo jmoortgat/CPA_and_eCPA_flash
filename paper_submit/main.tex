@@ -307,7 +307,7 @@ The CO$_2$--H$_2$O cross-association strength is proportional to water self-asso
 \end{equation}
 where $S_{{\rm CO_2},{\rm H_2O}}(T)$ and the binary interaction parameter $k_{{\rm CO_2},{\rm H_2O}}(T)$ both follow quadratic
 polynomials in $T/T_{c,{\rm CO_2}}$ ($T_{c,{\rm CO_2}} = 31.3\,^\circ$C, the CO$_2$ critical temperature), with
-coefficients from \citet{Coelho2025} (Table~\ref{tab:binary_params}).
+coefficients from \citet{Coelho2025} (Table~S3 of the Supplemental Information).
 
 The temperature dependence of both $k_{{\rm CO_2},{\rm H_2O}}$ and $S_{{\rm CO_2},{\rm H_2O}}$ is essential because the CO$_2$+H$_2$O
 system spans qualitatively different regimes across the validated temperature range.
@@ -348,7 +348,7 @@ parameters $\Delta U_{is}$ of the Non-Random Two-Liquid (NRTL) type with a tempe
 where $\Delta U_{is}^{\text{ref}}$ is a reference interaction energy, $\alpha_{is}$ is the
 NRTL non-randomness parameter, $T_{is}^\alpha$ is a characteristic temperature, and
 $T_{\text{ref}} = 25\,^\circ$C; all parameters are from \citet{Coelho2025}.
-All EoS parameters are listed in Tables~\ref{tab:pure_params} and \ref{tab:binary_params}.
+All EoS parameters are listed in Tables~S2 and~S3 of the Supplemental Information.
 
 \subsection{Density and Péneloux volume correction}
 \label{sec:peneloux}
@@ -366,7 +366,7 @@ with the corrected density $\rho = M_{\text{mix}}/v^{\text{corr}}$.
 to correct brine density but that work did not consider a shift for H$_2$O.
 In this work, we also fit a temperature-dependent Péneloux volume shift for H$_2$O to IAPWS-95 pure-water data (Section~\ref{sec:density}):
  $c_{\text{H}_2\text{O}}(T) = \sum_k a_k T_R^k$ (degree 4, $T_R = T/T_{c,\text{H}_2\text{O}}$) with
-coefficients listed in Table~\ref{tab:peneloux_coeffs} (Appendix~\ref{sec:params}).
+coefficients listed in Table~S4 of the Supplemental Information (Section~S2).
 No volume shift is applied to CO$_2$.
 
 
@@ -599,7 +599,7 @@ the solver reverts to the pre-Newton state and continues with accelerated SSI,
 ensuring robustness.
 Across 9{,}825 two-phase conditions, Newton polish is triggered at 85.6\% of points and
 reduces the mean iteration count from 9.8 (SSI only) to 6.9 (4.8 SSI + 2.1 Newton);
-see Table~\ref{tab:accel_comparison} and Fig.~\ref{fig:newton_heatmap_SI}.
+see Table~\ref{tab:accel_comparison} and Fig.~S10.
 
 The CO$_2$-rich phase mole fraction $\beta$ (the fraction of total moles in the CO$_2$-rich
 phase) is obtained at each step by solving the Rachford--Rice equation:
@@ -672,7 +672,7 @@ solution from the previous SSI iteration as the initial guess.
 The $3\times 3$ Jacobian is derived analytically; all partial derivatives of $F_1$,
 $F_2$, and $F_3$ with respect to $(Z, \chi_{\rm H_2O}, \chi_{\rm CO_2})$ are available in closed form
 via the chain rule through $g(\eta)$ and its first two derivatives
-(Section~\ref{sec:jac_cpa}).
+(Section~S3.1 of the Supplemental Information).
 A scan+Brent fallback is retained for robustness when no warm start is available.
 Crucially, the same system $F_1$--$F_3$ is applied to \emph{both} phases using their
 respective compositions and SRK parameters; the two phases differ
@@ -782,7 +782,7 @@ the association strength.
 These three equations are solved simultaneously by Newton--Raphson, warm-started
 from the previous SSI iterate.
 The $3\times 3$ Jacobian $\mathbf{H} = \partial(G_0,G_1,G_2)/\partial(Z^{\rm aq},\varepsilon_r,\chi_{\rm H_2O})$
-is derived analytically in Section~\ref{sec:jac_ecpa}.
+is derived analytically in Section~S3.2 of the Supplemental Information.
 The CO$_2$-rich phase retains the $3\times 3$ system of Section~\ref{sec:ssi}
 (with $x_{\rm H_2O}^c=0$ eliminating the eCPA terms);
 when no warm start is available, a general-purpose root-finder provides
@@ -882,7 +882,7 @@ aqueous molality $m_s^{\rm aq}$.
 All seven quantities serve directly as warm-start inputs to the hierarchical
 flash: K-values initialize the outer SSI, while $Z$, $\varepsilon_r$, and
 $\chi$ initialize the inner Newton solves for compressibility factor and
-association fractions (Section~\ref{sec:jac_ecpa}), eliminating the need for
+association fractions (Section~S3.2 of the Supplemental Information), eliminating the need for
 cold-start Newton iterations.
 A scalar stability flag (two-phase or single-phase) is also stored.
 
@@ -990,7 +990,7 @@ the H$_2$O mole fraction in the CO$_2$-rich phase $y_{\text{H}_2\text{O}}$.
 
 Figure~\ref{fig:co2h2o_Tpanel} shows representative comparisons at three temperatures spanning
 the validated range ($T = 25$, $150$, and $250\,^\circ$C); results for the remaining 32 temperatures are collected in
-Fig.~\ref{fig:co2h2o_Tpanel_SI} in the Supplemental Information (phase split results for molalities up to $m_s = 6$\,mol\,kg$^{-1}$ are also included for comparison and discussed further below).
+Fig.~S1 of the Supplemental Information (phase split results for molalities up to $m_s = 6$\,mol\,kg$^{-1}$ are also included for comparison and discussed further below).
 Table~\ref{tab:co2h2o_metrics} summarizes the accuracy metrics by condition regime.
 CPA and eCPA give essentially identical results for the salt-free binary (an encouraging
 consistency validation between independent codes), so only eCPA values are reported.
@@ -1042,17 +1042,17 @@ $P = 50$--$600$\,bar), the AARE improves to \textbf{6.5\%} for $x_{\text{CO}_2}$
            rainbow-colored filled bands: eCPA predictions spanning NaCl molalities
            $m_s = 0$--$6$\,mol\,kg$^{-1}$ (filled between consecutive molality contours;
            violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$), with discrete eCPA curves overlaid.
-           Results for the remaining 32 temperatures are shown in Fig.~\ref{fig:co2h2o_Tpanel_SI}.}
+           Results for the remaining 32 temperatures are shown in Fig.~S1.}
   \label{fig:co2h2o_Tpanel}
 \end{figure}
 
-A cross-reference consistency analysis (Fig.~\ref{fig:error_heatmap_SI}) further reveals
+A cross-reference consistency analysis (Fig.~S7) further reveals
 that the $y_{\text{H}_2\text{O}}$ data of \citet{King1992} are physically suspect:
 the reported water content in the CO$_2$-rich phase \emph{increases} with pressure above
 the CO$_2$ saturation pressure, contradicting thermodynamic expectations and the measurements
 of \citet{Meyer2015} at overlapping conditions.
 After excluding flagged outlier references (92 of 631 points, see
-Fig.~\ref{fig:error_heatmap_SI}), the overall $y_{\text{H}_2\text{O}}$ AARE decreases from
+Fig.~S7), the overall $y_{\text{H}_2\text{O}}$ AARE decreases from
 24.4\% to 17.4\%.
 
 These model errors should be interpreted in the context of the experimental
@@ -1150,12 +1150,12 @@ before comparison.
            $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
            violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
            Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
-           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~\ref{fig:co2nacl_Tpanel_SI} and~\ref{fig:co2nacl_2panel_SI}.}
+           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~S2 and~S3.}
   \label{fig:co2nacl_Tpanel}
 \end{figure}
 
 
-All experimental results and eCPA predictions are illustrated in Figs.~\ref{fig:co2nacl_Tpanel}, \ref{fig:co2nacl_2panel}, \ref{fig:co2nacl_Tpanel_SI}, and~\ref{fig:co2nacl_2panel_SI}.
+All experimental results and eCPA predictions are illustrated in Figs.~\ref{fig:co2nacl_Tpanel}, \ref{fig:co2nacl_2panel}, S2, and~S3.
 
 Table~\ref{tab:co2nacl_metrics} shows the accuracy breakdown.
 689 of 708 points converge to a two-phase solution using the K-value SSI warm-started
@@ -1178,7 +1178,7 @@ near-purity of the CO$_2$-rich phase and its weak dependence on salinity.
   \caption{CO$_2$ + NaCl brine phase equilibria at temperatures for which both CO$_2$ molality
            ($m_{\text{CO}_2}$, left panel) and CO$_2$ mole fraction in the CO$_2$-rich phase ($y_{\text{CO}_2}$, right panel)
            data are available: (top) $50\,^\circ$C, (bottom) $150\,^\circ$C
-           (see also Fig.~\ref{fig:co2nacl_2panel_SI} for $100\,^\circ$C).
+           (see also Fig.~S3 for $100\,^\circ$C).
            Open symbols: experimental data \citep{Bando2003, Chabab2020, Guo2015,
            Hou2013, Koschel2006, Liu2021, Messabeb2016, Savary2012, Takenouchi1965,
            Yan2011, Zhao2015}; discrete lines with markers: eCPA at the
@@ -1201,7 +1201,7 @@ the freezing point where eCPA is not specifically parameterized.
 These conditions furthermore fall within the CO$_2$ hydrate stability zone, where solid
 CO$_2$ clathrates can form; the eCPA EoS computes fluid-phase VLE only and does not
 model hydrate formation explicitly.
-Figure~\ref{fig:co2nacl_heatmap} (SI) provides a comprehensive view of the error distribution
+Fig.~S4 provides a comprehensive view of the error distribution
 across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
 ($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
 systematically at the boundaries of the validated range.
@@ -1346,7 +1346,7 @@ We note that IAPWS-95 is itself a 56-parameter empirical Helmholtz free energy f
 with no molecular basis, optimized specifically to reproduce water data.
 Achieving 0.30\% with a physics-based association EoS (CPA/eCPA) is therefore a strong result.
 Full details, the parity plot, and the signed-error surface are provided in
-Appendix~\ref{sec:density_si}.
+Section~S4.1 of the Supplemental Information.
 
 
 %% ============================================================
@@ -1401,7 +1401,7 @@ all neighbors are correctly identified as single-phase.
 
 The accelerated SSI reduces the mean iteration count from 25.4 to 13.7
 (a 46\% reduction, or $1.9\times$ speedup) compared to standard SSI with the same
-Wilson K initialization (Figs.~\ref{fig:scan_summary}a and \ref{fig:strategy_comparison_SI}).
+Wilson K initialization (Figs.~\ref{fig:scan_summary}a and~S11).
 The speedup is most pronounced near the CO$_2$ critical point ($T \approx 31\,^\circ$C,
 $P \approx 74$\,bar) and at extreme compositions, where standard SSI requires many
 iterations to converge (Fig.~\ref{fig:ssi_heatmap}).
@@ -1487,7 +1487,7 @@ In the near-CO$_2$-critical region ($T \approx 7$--$57\,^\circ$C) the Newton ste
 can temporarily diverge; the solver then reverts to the pre-Newton SSI state
 and continues, so no convergence is lost in that region.
 The iteration breakdown and wall-time ratio across the full $(T, P)$ parameter
-space are shown in Fig.~\ref{fig:newton_heatmap_SI}.
+space are shown in Fig.~S10.
 
 
 
@@ -1733,12 +1733,11 @@ Each outer SSI iteration requires solving the inner per-phase EoS system.
 The two systems — CPA's $(Z, \chi_{\rm H_2O}, \chi_{\rm CO_2})$ and eCPA's $(Z^{\rm aq}, \varepsilon_r, \chi_{\rm H_2O})$
 — differ in structure but share the same warm-started Newton--Raphson strategy
 described in Sections~\ref{sec:ssi} and~\ref{sec:kv_flash};
-the analytical Jacobians are derived in Appendices~\ref{sec:jac_cpa}
-and~\ref{sec:jac_ecpa}.
+the analytical Jacobians are derived in Sections~S3.1 and~S3.2 of the Supplemental Information.
 The benchmarks below quantify the advantage of the warm-started Newton solve
 over the respective cold-start alternatives, and are distinct from the outer
 SSI$+$Newton-polish acceleration discussed in Section~\ref{sec:convergence}
-and Fig.~\ref{fig:newton_heatmap_SI}.
+and Fig.~S10.
 
 \paragraph{CPA: $(Z, \chi_{\rm H_2O}, \chi_{\rm CO_2})$ system}
 Starting from the previous SSI iterate (typically within 0.5\% of the converged
@@ -1793,7 +1792,7 @@ Contrary to expectation, the mean wall time is essentially identical to the full
 $\sim$11 inner Newton evaluations while SSI needs only $\sim$6 outer iterations with at
 most two inner solves each.
 Full per-temperature statistics, diagnostic figures, and a salinity breakdown are
-provided in Appendix~\ref{sec:simplified_si}.
+provided in Section~S4.2 of the Supplemental Information.
 
 %% ============================================================
 \section{Reservoir Simulation Demonstration}
@@ -1810,7 +1809,7 @@ The warm-started eCPA flash achieves a throughput of 14{,}270\,calls\,s$^{-1}$ a
 the CPA flash 8{,}840\,calls\,s$^{-1}$, with the flash accounting for 80--87\% of
 total step cost.
 Full details of the numerical scheme, simulation setup, spatial results, and
-performance metrics are provided in Appendix~\ref{sec:sim_table}.
+performance metrics are provided in Section~S6 of the Supplemental Information.
 
 
 %% ============================================================
