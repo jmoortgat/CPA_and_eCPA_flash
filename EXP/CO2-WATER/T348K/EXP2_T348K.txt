@@ -1,4 +1,0 @@
-#DSOUZA (1988) -> High Pressure Phase  Equilibria in the Carbon Dioxide - n-Hexadecane and Carbon Dioxide - Water  Systems 
-P [bar]    xc_W    yw_C
-101.3	0.0156		0.0074
-152.0	0.0188		0.0090

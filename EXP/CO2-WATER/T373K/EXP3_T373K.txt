@@ -1,7 +1,0 @@
-#TONG (2013) -> Solubility of CO2 in Aqueous Solutions of CaCl2or MgCl2and in aSynthetic Formation Brine at Temperatures up to 423 K andPressures up to 40 MPa
-P [bar]    xc_W    yw_C
-72.1	0.0110		X
-144.4	0.0171		X
-188.6	0.0192		X
-223.4	0.0205		X
-272.6	0.0219		X

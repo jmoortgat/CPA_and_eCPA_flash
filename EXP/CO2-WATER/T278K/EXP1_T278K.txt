@@ -1,8 +1,0 @@
-#Valtz (2004) > Vapour–liquid equilibria in the carbon dioxide–water system, measurement and modelling from 278.2 to 318.2 K
-P [bar]    xc_W    yw_C
-5.01	0.00585	0.0015
-7.55	0.00852	0.0011
-10.16	0.01111	0.0007
-13.22	0.01403	X
-16.74	0.01747	X
-20.31	0.02015	X
