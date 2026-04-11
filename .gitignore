@@ -1,6 +1,3 @@
-# Results (large binary files)
-results/
-
 # Python cache
 __pycache__/
 *.pyc
@@ -20,14 +17,23 @@ __pycache__/
 env/
 venv/
 
-# Parquet / data files at root level (large)
-*.parquet
+# Large scan tables (>100MB, exceed GitHub limit)
+code/results/scan_v3_table.npz
 
-# Large data and reference directories
-CO2/
-paper/*.pdf
-paper/*.html
-paper/*.webarchive
+# Manuscript and auxiliary files (local only)
+paper/
+paper_submit/
+aux_files/
+figures/
+EXP/
+logs/
+
+# Root-level dev scripts and outputs
+dev/
+*.npz
+*.png
+*.log
+*.slurm
 
 # Claude memory (managed separately)
 .claude/

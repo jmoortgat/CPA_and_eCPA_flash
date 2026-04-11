@@ -1,0 +1,16 @@
+name: ecpa
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pandas
+  - pyarrow          # parquet read/write
+  - matplotlib
+  - jupyterlab
+  - ipykernel
+  - pip
+  - pip:
+    - colour          # Color interpolation used in eCPA_flash_04142026.ipynb
