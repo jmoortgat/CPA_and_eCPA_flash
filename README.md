@@ -31,6 +31,9 @@ This repository implements:
    0.33% (aqueous density after Péneloux H₂O shift optimisation), 100% flash convergence
    across >9,800 conditions spanning *T* = 0–425 °C, *P* = 1–1500 bar.
 
+See [REPRODUCING_FIGURES.md](REPRODUCING_FIGURES.md) for a complete guide to
+regenerating every figure in the paper and supplemental information.
+
 ---
 
 ## Requirements
