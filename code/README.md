@@ -14,7 +14,7 @@ This repository implements:
    terms, with the parameters and temperature-dependent binary interaction coefficients from
    Coelho et al. (2025).
 
-2. **A generalized salt-free CPA flash** (`CPA2.py`) — Michelsen TPD stability test with six
+2. **A generalized salt-free CPA flash** (`CPA.py`) — Michelsen TPD stability test with six
    initial guesses and accelerated SSI ([Jex et al., 2024](https://doi.org/10.2118/219490-PA))
    for the CO₂ + H₂O binary. The hierarchical algorithm (stability → flash with K from lowest
    TPD) achieves 100% convergence across >29,000 conditions and a 2× iteration-count reduction
@@ -80,8 +80,8 @@ print(result)
 
 For the salt-free binary:
 ```python
-import CPA2
-r = CPA2.flash_co2_h2o_tpz(T=323.15, P_bar=100.0, z_co2=0.3)
+import CPA
+r = CPA.flash_co2_h2o_tpz(T=323.15, P_bar=100.0, z_co2=0.3)
 print(r['phase'], r['x'], r['tie']['rho_mass'] * 1000, 'kg/m³')
 ```
 
@@ -100,14 +100,14 @@ Claude_code/
 │   ├── solution_table.py          # build_solution_table, make_solution_guess_fn
 │   ├── scan.py                    # scan_flash — grid scan
 │   ├── envelope.py                # find_envelope_from_scan — phase boundary
-│   ├── guess_table.py             # make_guess_fn — CPA2 lookup table init
+│   ├── guess_table.py             # make_guess_fn — CPA lookup table init
 │   ├── validate_co2h2o.py         # CO2+H2O binary validation
 │   ├── validate_nacl.py           # CO2+NaCl ternary validation
 │   ├── plotting.py                # Shared plot utilities
 │   ├── exp_data.py                # Experimental data parsers
 │   └── utils.py                   # Numerical helpers
 │
-├── CPA2.py                        # Salt-free CPA binary: flash, stability, accelerated SSI
+├── CPA.py                        # Salt-free CPA binary: flash, stability, accelerated SSI
 │
 ├── eCPA_notebook.ipynb            # Interactive Jupyter notebook (sections 7–8)
 │
@@ -175,7 +175,7 @@ Claude_code/
 | `build_solution_table(T_grid, logP_grid, z_grid, ms_grid, params, n_workers)` | Build table from scratch. |
 | `make_solution_guess_fn(T_grid, logP_grid, z_grid, ms_grid, sol, stable)` | Build interpolating guess function from saved table. |
 
-### `CPA2.py`
+### `CPA.py`
 
 | Function | Description |
 |---|---|
@@ -200,9 +200,9 @@ The H₂O shift reduces aqueous-phase density AARE from 0.76% to 0.33% (37 exper
 points, *T* = 288–473 K). The shift is isofugacity-preserving and does **not** affect
 phase compositions or VLE predictions.
 
-For `CPA2.py`, pass shifts explicitly:
+For `CPA.py`, pass shifts explicitly:
 ```python
-r = CPA2.flash_co2_h2o_tpz(T=323, P_bar=100, z_co2=0.3,
+r = CPA.flash_co2_h2o_tpz(T=323, P_bar=100, z_co2=0.3,
                              vshift_h2o=1.105e-7,   # m³/mol
                              vshift_co2=0.0)
 rho_kg_m3 = r['tie']['rho_mass'][0] * 1000
