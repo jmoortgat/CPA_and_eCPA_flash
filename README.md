@@ -1,38 +1,54 @@
-# eCPA Flash — Open-Source Phase Equilibrium for CO₂ + H₂O + NaCl
+# eCPA Flash
 
-Fast, robust phase stability and flash calculations for the
-**CO₂ + H₂O + NaCl** ternary system using the electrolyte Cubic-Plus-Association
-(eCPA) equation of state of [Coelho, Franco & Firoozabadi (2025)][coelho2025].
+### Fast, robust phase equilibrium for CO₂ + H₂O + NaCl
+
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey.svg)
+![Paper](https://img.shields.io/badge/paper-under%20review%20%40%20CEJ-orange.svg)
+![Coverage](https://img.shields.io/badge/T%20range-0–425%20°C-teal.svg)
+![Coverage](https://img.shields.io/badge/P%20range-1–1500%20bar-teal.svg)
+
+Phase stability and flash calculations for the **CO₂ + H₂O + NaCl** ternary system
+using the electrolyte Cubic-Plus-Association (eCPA) equation of state of
+[Coelho, Franco & Firoozabadi (2025)][coelho2025].
+Covers the full spectrum from shallow CO₂ storage aquifers to deep geothermal reservoirs.
 
 ---
 
-## Overview
+## Highlights
 
-This repository implements:
+| | |
+|:---|:---|
+| ✅ **100% flash convergence** | across >9,800 conditions, *T* = 0–425 °C, *P* = 1–1500 bar |
+| ⚡ **3.2× faster** than cold-start SSI | via precomputed 4D solution table warm-start |
+| 🎯 **6.5% AARE** on CO₂ solubility | validated against >1,100 experimental data points |
+| 🔬 **0.33% AARE** on aqueous density | 475 IAPWS-95 reference conditions |
+| 🏗️ **Reservoir simulator demo** | 50×50 grid, 300 time steps, zero flash failures |
 
-1. **A complete eCPA EoS** (`code/ecpa/`) — all Debye–Hückel, Born, association, and permittivity
-   terms, with the parameters and temperature-dependent binary interaction coefficients from
-   Coelho et al. (2025).
+---
 
-2. **A generalized salt-free CPA flash** (`code/CPA.py`) — Michelsen TPD stability test with six
-   initial guesses and accelerated SSI ([Jex et al., 2024](https://doi.org/10.2118/219490-PA))
-   for the CO₂ + H₂O binary. The hierarchical algorithm (stability → flash with K from lowest
-   TPD) achieves 100% convergence across >29,000 conditions and a 2× iteration-count reduction
-   over standard SSI.
+## What this repository provides
 
-3. **eCPA stability + flash** (`code/ecpa/stability.py`, `code/ecpa/flash.py`) — extension to the
-   full ternary system using a direct warm-started SSI approach.
+1. **Complete eCPA EoS** (`code/ecpa/`) — Debye–Hückel, Born, association, and permittivity
+   terms with parameters from Coelho et al. (2025); analytical Jacobians for both Newton
+   inner solvers.
 
-4. **A precomputed solution table** (`code/results/CPA_ELV_all.parquet`) — 31T × 30P × 18*z* × 14*m*ₛ
-   cells covering *T* = 283–728 K, *P* = 1–1500 bar, CO₂ mole fraction *z* = 0.05–0.90, NaCl
-   molality *m*ₛ = 0–6 mol/kg. Enables warm-started flash that is **3.2× faster** than cold-start SSI.
+2. **Salt-free CPA flash** (`code/CPA.py`) — Michelsen TPD stability test with six
+   initial guesses and accelerated SSI ([Jex et al., 2024](https://doi.org/10.2118/219490-PA)).
+   Hierarchical algorithm achieves **100% convergence** across >29,000 conditions with a
+   **2.96×** iteration-count reduction over standard SSI.
 
-5. **Validated VLE and density predictions** — AARE 6.5% (CO₂ solubility in brine),
-   0.33% (aqueous density after Péneloux H₂O shift optimisation), 100% flash convergence
-   across >9,800 conditions spanning *T* = 0–425 °C, *P* = 1–1500 bar.
+3. **eCPA stability + flash** (`code/ecpa/flash.py`) — extension to the full ternary
+   CO₂ + H₂O + NaCl system via warm-started K-value SSI with optional Newton polish.
 
-See [REPRODUCING_FIGURES.md](REPRODUCING_FIGURES.md) for a complete guide to
-regenerating every figure in the paper and supplemental information.
+4. **Precomputed solution table** (`code/results/CPA_ELV_all.parquet`) — 31T × 30P × 18*z* × 14*m*ₛ
+   grid covering *T* = 283–728 K, *P* = 1–1500 bar, *z* = 0.05–0.90, *m*ₛ = 0–6 mol/kg.
+
+5. **Prototype reservoir simulator** (`code/co2brine_simulator.py`) — IMPEC scheme with
+   MFE pressure solver demonstrating production-level flash throughput.
+
+See [REPRODUCING_FIGURES.md](REPRODUCING_FIGURES.md) for the complete script-by-script
+guide to regenerating every figure in the paper.
 
 ---
 
@@ -40,15 +56,10 @@ regenerating every figure in the paper and supplemental information.
 
 ```
 python >= 3.11
-numpy
-scipy
-pandas
-pyarrow        # for parquet I/O
-matplotlib
-jupyter        # optional, for the notebook
+numpy · scipy · pandas · pyarrow · matplotlib
+jupyter   # optional, for the notebook
 ```
 
-Install with:
 ```bash
 pip install numpy scipy pandas pyarrow matplotlib jupyter
 ```
@@ -58,33 +69,30 @@ pip install numpy scipy pandas pyarrow matplotlib jupyter
 ## Quick start
 
 ```bash
-cd code/
+git clone https://github.com/jmoortgat/CPA_and_eCPA_flash.git
+cd CPA_and_eCPA_flash/code
 ```
 
-```python
-import sys
-sys.path.insert(0, 'code')   # or: cd code/ before launching Python
+**eCPA ternary flash** (CO₂ + H₂O + NaCl):
 
-from ecpa.parameters import make_params
-from ecpa.guess_table import make_guess_fn
-from ecpa.flash import flash_co2_h2o_salt_kv
+```python
+import sys; sys.path.insert(0, '.')
 import pandas as pd
+from ecpa.parameters import make_params
+from ecpa.guess_table  import make_guess_fn
+from ecpa.flash        import flash_co2_h2o_salt_kv
 
 params   = make_params()
-df       = pd.read_parquet('code/results/CPA_ELV_all.parquet')
-guess_fn = make_guess_fn(df)
+guess_fn = make_guess_fn(pd.read_parquet('results/CPA_ELV_all.parquet'))
 
-# Flash at T=350 K, P=100 bar, z_CO2=0.3, ms=1.0 mol/kg NaCl
-result = flash_co2_h2o_salt_kv(
-    T=350.0, P=100.0, z=0.3, ms=1.0,
-    params=params, guess_fn=guess_fn,
-)
+result = flash_co2_h2o_salt_kv(T=350.0, P=100.0, z=0.3, ms=1.0,
+                                params=params, guess_fn=guess_fn)
 print(result)
 ```
 
-For the salt-free binary:
+**Salt-free CPA binary** (CO₂ + H₂O):
+
 ```python
-import sys; sys.path.insert(0, 'code')
 import CPA
 r = CPA.flash_co2_h2o_tpz(T=323.15, P_bar=100.0, z_co2=0.3)
 print(r['phase'], r['x'], r['tie']['rho_mass'] * 1000, 'kg/m³')
@@ -97,169 +105,131 @@ print(r['phase'], r['x'], r['tie']['rho_mass'] * 1000, 'kg/m³')
 ```
 CPA_and_eCPA_flash/
 ├── README.md
-│
+├── REPRODUCING_FIGURES.md
 └── code/
-    ├── ecpa/                          # Main eCPA package
-    │   ├── constants.py               # All EoS parameters (edit Péneloux shifts here)
-    │   ├── parameters.py              # Assembles params dict (make_params())
-    │   ├── elv.py                     # ELV residual system + Jacobian
-    │   ├── flash.py                   # flash_co2_h2o_salt_kv (production flash)
-    │   ├── stability.py               # ecpa_stability, stability_map
-    │   ├── solution_table.py          # build_solution_table, make_solution_guess_fn
-    │   ├── guess_table.py             # make_guess_fn — parquet-based warm-start init
-    │   ├── flash_simplified.py        # Simplified flash for T < 80 °C
-    │   ├── scan.py                    # scan_flash — grid scan
-    │   ├── envelope.py                # find_envelope_from_scan — phase boundary
-    │   ├── validate_co2h2o.py         # CO2+H2O binary validation helpers
-    │   ├── validate_nacl.py           # CO2+NaCl ternary validation helpers
-    │   ├── plotting.py                # Shared plot utilities
-    │   ├── exp_data.py                # Experimental data loader (parquet)
-    │   └── utils.py                   # Numerical helpers
-    │
-    ├── CPA.py                         # Salt-free CPA binary: flash, stability, accelerated SSI
-    ├── co2brine_simulator.py          # Prototype IMPEC reservoir simulator
-    ├── eCPA_notebook.ipynb            # Interactive Jupyter notebook
-    │
-    ├── scripts/                       # Validation, benchmark, and figure scripts
-    │   ├── validate_co2h2o.py         # CO2+H2O binary VLE validation
-    │   ├── validate_co2nacl_full.py   # CO2+NaCl ternary VLE validation
-    │   ├── validate_density.py        # Aqueous-phase density validation
-    │   ├── build_solution_table.py    # Rebuild 4D solution table (~1–4 h)
-    │   ├── run_benchmark.py           # Benchmark: fast flash vs cold SSI
-    │   ├── run_parameter_scan.py      # CPA grid scan (T, P, z parameter space)
-    │   ├── plot_co2h2o_figures.py     # Publication figures: CO2+H2O VLE
-    │   ├── plot_co2nacl_figures.py    # Publication figures: CO2+NaCl VLE
-    │   └── ...                        # Additional benchmark and plot scripts
-    │
+    ├── ecpa/                      # eCPA package
+    │   ├── flash.py               #   flash_co2_h2o_salt_kv  ← production flash
+    │   ├── stability.py           #   ecpa_stability, stability_map
+    │   ├── guess_table.py         #   make_guess_fn (parquet warm-start)
+    │   ├── solution_table.py      #   build_solution_table
+    │   ├── constants.py           #   EoS parameters & Péneloux shifts
+    │   ├── parameters.py          #   make_params()
+    │   ├── elv.py                 #   ELV residual + analytical Jacobian
+    │   ├── flash_simplified.py    #   low-T simplified flash (T < 80 °C)
+    │   ├── envelope.py            #   phase-boundary tracing
+    │   ├── exp_data.py            #   experimental data loader
+    │   └── ...
+    ├── CPA.py                     # Salt-free CPA binary flash
+    ├── co2brine_simulator.py      # IMPEC reservoir simulator
+    ├── eCPA_notebook.ipynb        # Jupyter walkthrough
+    ├── scripts/                   # Validation, benchmark & figure scripts
+    │   ├── validate_co2h2o.py
+    │   ├── validate_co2nacl_full.py
+    │   ├── validate_density.py
+    │   ├── run_benchmark.py
+    │   ├── plot_co2h2o_figures.py
+    │   ├── plot_co2nacl_figures.py
+    │   └── ...
     └── results/
-        └── CPA_ELV_all.parquet        # Precomputed solution table (25 MB)
+        └── CPA_ELV_all.parquet    # Precomputed solution table (25 MB)
 ```
 
 ---
 
-## Key functions
+## API reference
 
 ### `ecpa/flash.py`
 
 | Function | Description |
-|---|---|
-| `flash_co2_h2o_salt_kv(T, P, z, ms, params, guess_fn)` | Hierarchical stability+flash with K-value SSI. **Use this in production.** |
-| `flash_co2_h2o_salt_ssi(T, P, z, ms, params)` | Robust cold-start SSI flash (ω=0.7). For single calls without a guess table. |
+|:---|:---|
+| `flash_co2_h2o_salt_kv(T, P, z, ms, params, guess_fn)` | **Production flash.** Hierarchical stability+flash with K-value SSI and optional Newton polish. |
+| `flash_co2_h2o_salt_ssi(T, P, z, ms, params)` | Cold-start SSI flash (ω = 0.7). No guess table needed. |
 
 ### `ecpa/stability.py`
 
 | Function | Description |
-|---|---|
-| `ecpa_stability(T, P, z, ms, params)` | Michelsen TPD test. Returns `(tpd_min, trial_comp, converged)`. |
-| `stability_map(T_range, P_range, z, ms, params, n_workers)` | Parallel 2D stability scan. |
-
-### `ecpa/solution_table.py`
-
-| Function | Description |
-|---|---|
-| `build_solution_table(T_grid, logP_grid, z_grid, ms_grid, params, n_workers)` | Build table from scratch. |
-| `make_solution_guess_fn(T_grid, logP_grid, z_grid, ms_grid, sol, stable)` | Build interpolating guess function from an npz table. |
+|:---|:---|
+| `ecpa_stability(T, P, z, ms, params)` | Michelsen TPD test → `(tpd_min, trial_comp, converged)`. |
+| `stability_map(T_range, P_range, z, ms, params, n_workers)` | Parallel 2-D stability scan. |
 
 ### `CPA.py`
 
 | Function | Description |
-|---|---|
-| `flash_co2_h2o_tpz(T, P_bar, z_co2, vshift_h2o, vshift_co2)` | Salt-free CO₂+H₂O binary flash. Returns phase, compositions, Z-factors, `rho_mass` [kg/L]. |
-| `flash_co2_h2o_tpz_robust(T, P_bar, z_co2, **kwargs)` | Hierarchical flash: stability → best-K flash → Wilson fallback. **100% convergence.** |
-| `stability_test(T, P_bar, z, ..., accelerated=True)` | Michelsen TPD test with 6 initial guesses ([Jex et al., 2024](https://doi.org/10.2118/219490-PA)). |
-| `tie_line_two_comp(T, P_bar, ..., accelerated=True)` | SSI flash with dominant-eigenvalue acceleration. |
+|:---|:---|
+| `flash_co2_h2o_tpz_robust(T, P_bar, z_co2)` | **100% convergence.** Stability → best-K flash → Wilson fallback. |
+| `flash_co2_h2o_tpz(T, P_bar, z_co2, vshift_h2o, vshift_co2)` | Single-call binary flash. Returns compositions, Z-factors, `rho_mass` [kg/L]. |
+| `stability_test(T, P_bar, z, accelerated=True)` | TPD with 6 initial guesses ([Jex et al., 2024](https://doi.org/10.2118/219490-PA)). |
+
+---
+
+## Performance
+
+### eCPA ternary flash
+
+| Method | SSI iters | Time / call | Speedup |
+|:---|:---:|:---:|:---:|
+| Cold-start SSI (Wilson init) | 11.7 | ~10 ms | 1× |
+| **Warm-start (solution table)** | **3.3** | **~3 ms** | **3.2×** |
+
+*Benchmark: T = 398 K, z = 0.5, m*ₛ *=  1.0 mol/kg, 30 pressure points.*
+
+### Salt-free CPA binary flash
+
+| Strategy | Convergence | Mean iters |
+|:---|:---:|:---:|
+| Standard SSI + Wilson K | 96.0% | 46.6 |
+| Accelerated SSI + Wilson K | 97.1% | 17.0 |
+| **Hierarchical (robust)** | **100%** | **12.0** |
+
+*Tested at 631 experimental CO₂+H₂O points (T = 273–623 K, P = 5–3500 bar).*
+
+---
+
+## Validation
+
+| System | Quantity | *N* | AARE |
+|:---|:---|:---:|:---:|
+| CO₂ + H₂O (CPA) | *x*_CO₂ in water | 460 | 8.9% |
+| CO₂ + H₂O (eCPA) | *x*_CO₂ in water | 451 | 8.2% |
+| CO₂ + NaCl (eCPA) | *m*_CO₂ [mol/kg] | 440 | 6.9% |
+| CO₂ + NaCl (eCPA) | *x*_CO₂ [mole fraction] | 99 | 7.0% |
+| Aqueous density | ρ_W [kg/m³] | 37 | **0.33%** |
 
 ---
 
 ## Péneloux volume shifts
 
-All shifts are defined in `code/ecpa/constants.py` and propagated through `make_params()`:
+All shifts are in `code/ecpa/constants.py` and applied automatically via `make_params()`.
 
-| Parameter | Value | Description |
-|---|---|---|
-| `Penelouxs` | −53.5 cm³/mol | NaCl shift — from Coelho et al. (2025) |
-| `Peneloux_H2O` | +0.1105 cm³/mol | H₂O shift — **optimised in this work** |
-| `Peneloux_CO2` | 0 | CO₂ shift — off by default |
+| Parameter | Value | Source |
+|:---|:---:|:---|
+| `Penelouxs` (NaCl) | −53.5 cm³/mol | Coelho et al. (2025) |
+| `Peneloux_H2O` | **+0.1105 cm³/mol** | Optimised in this work |
+| `Peneloux_CO2` | 0 | Off by default |
 
-The H₂O shift reduces aqueous-phase density AARE from 0.76% to 0.33% (37 experimental
-points, *T* = 288–473 K). The shift is isofugacity-preserving and does **not** affect
-phase compositions or VLE predictions.
-
-To apply the H₂O shift in `CPA.py`:
-```python
-r = CPA.flash_co2_h2o_tpz(T=323, P_bar=100, z_co2=0.3,
-                            vshift_h2o=1.105e-7,   # m³/mol
-                            vshift_co2=0.0)
-rho_kg_m3 = r['tie']['rho_mass'][0] * 1000
-```
+The H₂O shift is isofugacity-preserving — it improves density predictions without
+affecting phase compositions or VLE results.
 
 ---
 
-## Running validations
+## Reproducing the figures
 
-From the repo root:
+See **[REPRODUCING_FIGURES.md](REPRODUCING_FIGURES.md)** for the complete script-by-script
+commands to regenerate all figures in the paper and supplemental information.
+
+Quick summary:
 
 ```bash
 cd code
-
-# CO₂ + H₂O binary VLE
-python scripts/validate_co2h2o.py
-
-# CO₂ + NaCl ternary VLE
-python scripts/validate_co2nacl_full.py
-
-# Aqueous-phase density
-python scripts/validate_density.py
-
-# Performance benchmark
-python scripts/run_benchmark.py
+python scripts/validate_co2h2o.py        # ~5 min
+python scripts/validate_co2nacl_full.py  # ~30 min
+python scripts/run_parameter_scan.py     # ~20 min
+python scripts/run_warmstart_scan.py     # ~27 min
+python scripts/plot_co2h2o_figures.py    # Figs. 1, S1, S6
+python scripts/plot_co2nacl_figures.py   # Figs. 2, 3, S2, S4
+python scripts/plot_scan_figures.py      # Figs. 7, 8, 9
+# ... see REPRODUCING_FIGURES.md for the full list
 ```
-
-Results are saved to `code/results/` (parquet files).
-
-### Rebuilding the solution table
-
-The pre-built table is `code/results/CPA_ELV_all.parquet`. To rebuild from scratch (1–4 h):
-
-```bash
-cd code
-python scripts/build_solution_table.py
-```
-
----
-
-## Performance summary
-
-### eCPA ternary flash (solution-table warm start)
-
-| Method | Mean SSI iters | Time per call | Speedup |
-|---|---|---|---|
-| Cold-start SSI (ω=0.7, Wilson init) | 11.7 | ~10 ms | 1× |
-| **Fast flash (table warm-start)** | **3.3** | **~3 ms** | **3.2×** |
-
-Benchmark conditions: *T* = 398 K, *z* = 0.5, *m*ₛ = 1.0 mol/kg, 30 pressure points.
-
-### Salt-free CPA binary flash (accelerated SSI)
-
-| Strategy | Convergence | Mean iters | Description |
-|---|---|---|---|
-| Standard SSI + Wilson K | 96.0% | 46.6 | Baseline |
-| Accelerated SSI + Wilson K | 97.1% | 17.0 | Jex acceleration only |
-| **Robust (hierarchical)** | **100%** | **12.0** | Stability → best-K flash → Wilson fallback |
-
-Tested at all 631 experimental CO₂+H₂O data points (*T* = 273–623 K, *P* = 5–3500 bar).
-
----
-
-## Validation summary
-
-| System | Quantity | *N* | AARE |
-|---|---|---|---|
-| CO₂ + H₂O (CPA) | *x*_CO₂ in water | 460 | 8.9% |
-| CO₂ + H₂O (eCPA) | *x*_CO₂ in water | 451 | 8.2% |
-| CO₂ + NaCl (eCPA) | *m*_CO₂ [mol/kg] | 440 | 6.9% |
-| CO₂ + NaCl (eCPA) | *x*_CO₂ [salt-free] | 99 | 7.0% |
-| Aqueous density (CPA+eCPA) | ρ_W [kg/m³] | 37 | **0.33%** |
 
 ---
 
@@ -267,20 +237,37 @@ Tested at all 631 experimental CO₂+H₂O data points (*T* = 273–623 K, *P* =
 
 If you use this code, please cite:
 
-> Moortgat, J., Coelho, F. M., & Firoozabadi, A. Fast and Robust Phase Equilibrium
-> Computations for CO₂ + H₂O + NaCl Mixtures Using the Electrolyte Cubic-Plus-Association
-> Equation of State. *Chemical Engineering Journal* (2026, under review).
+```bibtex
+@article{moortgat2026ecpa,
+  author  = {Moortgat, Joachim and Coelho, Felipe Mour{\~a}o and Firoozabadi, Abbas},
+  title   = {Fast and Robust Phase Equilibrium Computations for {CO}$_2$ + {H}$_2${O} + {NaCl}
+             Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State},
+  journal = {Chemical Engineering Journal},
+  year    = {2026},
+  note    = {under review}
+}
+```
 
 And the underlying eCPA parametrisation:
 
-> Coelho, L., Franco, L. F. M., & Firoozabadi, A. (2025). Phase Equilibria of CO₂–Water
-> and CO₂–Brine at High Temperatures: From Monte Carlo Simulations to the Equation of State.
-> *Ind. Eng. Chem. Res.*, **64**(16), 8492–8505. https://doi.org/10.1021/acs.iecr.5c00134
+```bibtex
+@article{coelho2025ecpa,
+  author  = {Coelho, Lu{\'i}s and Franco, Luis F. M. and Firoozabadi, Abbas},
+  title   = {Phase Equilibria of {CO}$_2$--Water and {CO}$_2$--Brine at High Temperatures:
+             From {Monte Carlo} Simulations to the Equation of State},
+  journal = {Industrial \& Engineering Chemistry Research},
+  volume  = {64},
+  number  = {16},
+  pages   = {8492--8505},
+  year    = {2025},
+  doi     = {10.1021/acs.iecr.5c00134}
+}
+```
 
 ---
 
 ## License
 
-[TODO: add license file]
+To be added upon acceptance. Code will be released under an open-source license.
 
 [coelho2025]: https://doi.org/10.1021/acs.iecr.5c00134
