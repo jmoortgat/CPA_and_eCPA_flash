@@ -1,3 +1,6 @@
+# Personal / HPC-specific files
+HPC_instructions.md
+
 # Python cache
 __pycache__/
 *.pyc
@@ -22,14 +25,11 @@ results/scan_v3_table.npz
 results/scan_v4_table.npz
 results/solution_table.npz
 
-# Exclude most results parquets (intermediate/reproducible outputs)
-results/*.parquet
+# Exclude all parquets by default (intermediate/reproducible outputs)
+*.parquet
+
 # But include the solution table (needed to run flash without recomputing)
 !results/CPA_ELV_all.parquet
-
-# Experimental data parquets (small, include them)
-# CO2_WATER_exp.parquet and CPA_ELV_all.parquet at root are duplicates; exclude
-*.parquet
 
 # Large data and reference directories
 CO2/
