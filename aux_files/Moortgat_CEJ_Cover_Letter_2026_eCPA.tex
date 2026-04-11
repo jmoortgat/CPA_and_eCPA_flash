@@ -1,0 +1,72 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cover letter for Chemical Engineering Journal submission
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt, a4paper]{letter}
+\newcommand{\whichjob}{\textit{Chemical Engineering Journal}~}
+\input{structure.tex}
+
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{ragged2e, url}
+
+\longindentation=0pt
+
+%----------------------------------------------------------------------------------------
+%	YOUR INFORMATION
+%----------------------------------------------------------------------------------------
+
+\Who{Joachim Moortgat}
+\Title{, PhD}
+
+\authordetails{{{\textcolor{gray}{Professor\\
+Director BuckAI Observatory\\
+School of Earth Sciences\\
+The Ohio State University\\
+275 Mendenhall Laboratory\\
+125 South Oval Mall\\
+Columbus, OH 43210\\
+Email: moortgat.1@osu.edu\\
+Web: buckai-observatory.org}}
+}}
+
+%----------------------------------------------------------------------------------------
+
+\logo{logo2}
+\headerlineone{}
+\headerlinetwo{}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\begin{letter}{
+    \smallskip\today\\\smallskip
+}
+
+\opening{\vspace*{0em}Dear Editors,}
+
+Please consider for publication in \whichjob our manuscript entitled:
+
+\textit{Fast and Robust Phase Equilibrium Computations for CO$_2$ + H$_2$O + NaCl Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State},
+
+authored by Joachim Moortgat, Felipe Mourão Coelho, and Abbas Firoozabadi.
+
+Geological storage of CO$_2$ in saline aquifers is a cornerstone of near-term carbon mitigation strategy, yet the thermodynamic engine at the heart of every reservoir simulator --- the phase stability and flash calculation --- remains a critical computational bottleneck when applied to realistic CO$_2$ + H$_2$O + NaCl mixtures. The challenge is fundamental: in this ternary system, water partitioning into the CO$_2$-rich phase concentrates NaCl in the aqueous phase, raising the equilibrium brine salinity above the feed value (salting-out) and suppressing CO$_2$ solubility in a feed-composition-dependent way that cannot be captured by simple binary VLE lookups. This coupling makes a full stability$+$flash calculation unavoidable, but the electrolyte Cubic-Plus-Association (eCPA) equation of state that correctly models this physics is substantially more expensive to evaluate than a conventional cubic EoS --- a gap that has, until now, prevented eCPA from being used in production reservoir simulations. Beyond CO$_2$ storage, the same CO$_2$ + H$_2$O + NaCl system governs fluid behavior in high-enthalpy geothermal reservoirs, where temperatures and pressures far exceed typical storage conditions and pose an even more stringent test of any thermodynamic framework. Our validated operating range spans near-freezing to hydrothermal conditions ($T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar), covering the full spectrum from shallow CO$_2$ injection sites to deep geothermal systems in a single, unified algorithm.
+
+This manuscript closes that gap. Building on the eCPA thermodynamic framework of Coelho et al.\ (2025), we develop four tightly integrated algorithmic contributions: (i) analytical Jacobian-based Newton--Raphson inner solvers for both the CPA and eCPA root-finding problems, derived in closed form, which reduce the per-iteration overhead to only $\sim$3$\times$ that of a plain cubic EoS and run 6--13$\times$ faster than cold-start alternatives; (ii) a hierarchical outer flash combining Michelsen tangent-plane distance stability testing with six physically motivated initial guesses, accelerated successive-substitution iterations (SSI), and optional Newton polish --- achieving 100\% convergence over 9{,}825 two-phase conditions spanning reservoir to hydrothermal conditions ($T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar); (iii) a precomputed three-dimensional $(T, P, m_s)$ solution table that warm-starts the flash and reduces mean iteration counts by 3.2$\times$ for the full ternary system and by more than two orders of magnitude for the salt-free binary; and (iv) a simplified flash that exploits the negligible water content of the CO$_2$-rich phase below $80\,^\circ$C to reduce the problem to a single scalar equation, introducing less than 2\% error in dissolved CO$_2$ molality at essentially no additional cost. Together these advances enable eCPA flash throughputs competitive with conventional cubic-EoS implementations. Validation against $>$1100 experimental data points achieves average absolute relative errors of 6.5\% for CO$_2$ solubility under subsurface storage conditions, 6.6\% for CO$_2$ molality in NaCl brine, and 0.30\% for pure-water density over 475 IAPWS-95 reference conditions --- with 100\% flash convergence throughout. We further demonstrate the framework in a prototype IMPEC reservoir simulator running on a $50\times50$ grid over 300 time steps with no flash failures.
+
+This manuscript aligns directly with the scope of \whichjob across two of its core themes. First, it represents a substantive contribution to \textit{Computational Chemical Engineering}: the derivation of closed-form Jacobians, the design of a hierarchical convergence strategy, and the construction and use of a precomputed solution table are all methodological advances in numerical thermodynamics with broad applicability beyond CO$_2$ storage. Second, it addresses a pressing problem in \textit{Environmental Engineering}: accurate, fast phase equilibrium computation for CO$_2$--brine systems underpins high-fidelity simulation of both geological carbon sequestration and geothermal energy extraction --- two technologies central to the energy transition. The breadth of validated conditions ($T = 0$--$425\,^\circ$C, $P = 1$--$1500$\,bar) makes this framework applicable across this entire landscape, from near-surface CO$_2$ injection to deep, high-enthalpy geothermal reservoirs. We are not aware of any prior work that delivers production-ready, fully converged eCPA flash at throughputs sufficient for large-scale reservoir simulation over this range.
+
+This manuscript is original, has not been published elsewhere, and is not under consideration by any other journal. All authors have approved the submission, and we declare no conflicts of interest. Code implementing the algorithms will be made publicly available upon acceptance.
+
+Thank you for your consideration. We are confident that this work will be of strong interest to the \whichjob readership working at the intersection of computational thermodynamics, process engineering, and environmental chemical engineering.
+
+\closing{Sincerely,}
+
+\vspace{2mm}
+Joachim Moortgat, PhD\\
+(on behalf of all authors)
+
+\end{letter}
+\end{document}

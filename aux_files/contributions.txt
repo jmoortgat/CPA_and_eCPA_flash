@@ -1,0 +1,39 @@
+Conceptualization
+Moortgat and Firoozabadi
+
+
+Data curation
+Moortgat and Coelho
+
+Formal analysis
+Moortgat
+
+Funding acquisition
+Firoozabadi
+
+Investigation
+Moortgat
+
+Methodology
+Moortgat
+
+Project administration
+Moortgat
+
+Resources
+Moortgat
+
+Software
+Moortgat
+
+Supervision
+None
+
+Validation
+Moortgat
+
+Visualization
+Moortgat
+
+Writing – original draft 
+Moortgat, Coelho, Firoozabadi

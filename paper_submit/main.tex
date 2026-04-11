@@ -2,7 +2,7 @@
 %% Target: Fluid Phase Equilibria / Industrial & Engineering Chemistry Research
 %% Compilation: pdflatex main && bibtex main && pdflatex main && pdflatex main
 
-\documentclass[preprint,12pt,authoryear]{elsarticle}
+\documentclass[preprint,12pt,number]{elsarticle}
 
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
@@ -20,7 +20,7 @@
 \usepackage{float}              % provides [H] placement
 \usepackage{longtable}          % multi-page tables (nomenclature)
 
-\journal{Fluid Phase Equilibria}
+\journal{Chemical Engineering Journal}
 
 %% ============================================================
 \begin{document}
@@ -651,8 +651,8 @@ For the CO$_2$--H$_2$O binary, the inner problem comprises three coupled equatio
 (written here for the aqueous phase with mole fractions $x_i$; the CO$_2$-rich phase uses
 the identical system with $y_i$ in place of $x_i$):
 \begin{align}
-  F_1 &= Z - \frac{Z}{Z - B} + \frac{A}{Z + B}
-         - \left(1 + \frac{\eta}{g}\frac{\mathrm{d}g}{\mathrm{d}\eta}\right)
+  F_1 &= Z - \frac{Z}{Z - B} + \frac{A}{Z + B} \nonumber\\
+       &  - \left(1 + \frac{\eta}{g}\frac{\mathrm{d}g}{\mathrm{d}\eta}\right)
          \bigl[x_{\rm H_2O}(\chi_{\rm H_2O} - 1) + x_{\rm CO_2}(\chi_{\rm CO_2} - 1)\bigr] = 0,
          \label{eq:funZ} \\
   F_2 &= c_3 \chi_{\rm H_2O}^3 + c_2 \chi_{\rm H_2O}^2 + c_1 \chi_{\rm H_2O} + c_0 = 0,
@@ -1027,25 +1027,6 @@ However, these headline numbers are inflated by three challenging regimes:
 For conditions most relevant to subsurface CO$_2$ storage ($T = 30$--$150\,^\circ$C,
 $P = 50$--$600$\,bar), the AARE improves to \textbf{6.5\%} for $x_{\text{CO}_2}$ ($N = 137$).
 
-
-
-\begin{figure}[H]
-  
-  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1a.png}\caption{$25\,^\circ$C\,(298\,K)}\end{subfigure}\\[6pt]
-  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1d.png}\caption{$150\,^\circ$C\,(423\,K)}\end{subfigure}\\[6pt]
-  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1f.png}\caption{$250\,^\circ$C\,(523\,K)}\end{subfigure}
-  \caption{CO$_2$ + H$_2$O phase equilibria at three representative temperatures ($25$, $150$, and $250\,^\circ$C).
-           Each panel shows the CO$_2$ mole fraction in the aqueous phase ($x_{\text{CO}_2}$, left sub-panel)
-           and the H$_2$O mole fraction in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$, right sub-panel)
-           vs.\ pressure.
-           Open symbols: experimental data \citep{Coelho2025}; black solid line: CPA (salt-free);
-           rainbow-colored filled bands: eCPA predictions spanning NaCl molalities
-           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (filled between consecutive molality contours;
-           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$), with discrete eCPA curves overlaid.
-           Results for the remaining 32 temperatures are shown in Fig.~S1.}
-  \label{fig:co2h2o_Tpanel}
-\end{figure}
-
 A cross-reference consistency analysis (Fig.~S7) further reveals
 that the $y_{\text{H}_2\text{O}}$ data of \citet{King1992} are physically suspect:
 the reported water content in the CO$_2$-rich phase \emph{increases} with pressure above
@@ -1069,18 +1050,37 @@ Fig.~S7), the overall $y_{\text{H}_2\text{O}}$ AARE decreases from
     \toprule
     & \multicolumn{3}{c}{$x_{\text{CO}_2}$ (aqueous)} & \multicolumn{3}{c}{$y_{\text{H}_2\text{O}}$ (CO$_2$-rich)} \\
     \cmidrule(lr){2-4} \cmidrule(lr){5-7}
-    Regime & $N$ & AARE & AAE & $N$ & AARE & AAE \\
+    Regime & $N$ & \shortstack{AARE\\(\%)} & \shortstack{AAE\\(mol\%)} & $N$ & \shortstack{AARE\\(\%)} & \shortstack{AAE\\(mol\%)} \\
     \midrule
-    All data                          & 560 & 9.6\% & 0.53\,mol\% & 452 & 24.4\% & 3.5\,mol\% \\
-    All (excl.\ outliers)             & 468 & 9.3\% & 0.53\,mol\% & 355 & 17.4\% & 3.0\,mol\% \\
-    Subsurface                        & 137 & 6.5\% & 0.13\,mol\% & 102 & 25.6\% & 0.68\,mol\% \\
-    Extended ($T = 10$--$200\,^\circ$C)    & 362 & 8.9\% & 0.21\,mol\% & 299 & 24.6\% & 1.7\,mol\% \\
-    High-$T$ ($T \geq 260\,^\circ$C)        & 129 & 10.1\% & 1.6\,mol\% & 111 & 15.9\% & 8.0\,mol\% \\
-    High-$P$ ($P > 1500$\,bar)        & 27  & 18.4\% & 2.9\,mol\% & 27  & 78.0\% & 15.0\,mol\% \\
+    All data                          & 560 & 9.6  & 0.53 & 452 & 24.4 & 3.5  \\
+    All (excl.\ outliers)             & 468 & 9.3  & 0.53 & 355 & 17.4 & 3.0  \\
+    Subsurface                        & 137 & 6.5  & 0.13 & 102 & 25.6 & 0.68 \\
+    Extended ($T = 10$--$200\,^\circ$C)    & 362 & 8.9  & 0.21 & 299 & 24.6 & 1.7  \\
+    High-$T$ ($T \geq 260\,^\circ$C)       & 129 & 10.1 & 1.6  & 111 & 15.9 & 8.0  \\
+    High-$P$ ($P > 1500$\,bar)        & 27  & 18.4 & 2.9  & 27  & 78.0 & 15.0 \\
     \bottomrule
     \multicolumn{7}{l}{\footnotesize Subsurface: $T = 30$--$150\,^\circ$C, $P = 50$--$600$\,bar.} \\
   \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+  
+  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1a.png}\caption{$25\,^\circ$C\,(298\,K)}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1d.png}\caption{$150\,^\circ$C\,(423\,K)}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\textwidth}\centering\includegraphics[width=.85\textwidth]{fig_1f.png}\caption{$250\,^\circ$C\,(523\,K)}\end{subfigure}
+  \caption{CO$_2$ + H$_2$O phase equilibria at three representative temperatures ($25$, $150$, and $250\,^\circ$C).
+           Each panel shows the CO$_2$ mole fraction in the aqueous phase ($x_{\text{CO}_2}$, left sub-panel)
+           and the H$_2$O mole fraction in the CO$_2$-rich phase ($y_{\text{H}_2\text{O}}$, right sub-panel)
+           vs.\ pressure.
+           Open symbols: experimental data \citep{Coelho2025}; black solid line: CPA (salt-free);
+           rainbow-colored filled bands: eCPA predictions spanning NaCl molalities
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (filled between consecutive molality contours;
+           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$), with discrete eCPA curves overlaid.
+           Results for the remaining 32 temperatures are shown in Fig.~S1.}
+  \label{fig:co2h2o_Tpanel}
+\end{figure}
+
+
 
 These model errors should be interpreted in the context of the experimental
 uncertainty in the compiled dataset.
@@ -1113,27 +1113,6 @@ simulation.  Across all data, the AAE is 0.53 mol\% for $x_{\text{CO}_2}$ and
 \subsection{CO$_2$ + NaCl brine}
 \label{sec:co2nacl}
 
-\begin{figure}[H]
-  \centering
-  \newcommand{\snw}{0.47\textwidth}%
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2b.png}\caption{$40\,^\circ$C}\end{subfigure}\hfill
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2c.png}\caption{$80\,^\circ$C}\end{subfigure}\\[6pt]
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2d.png}\caption{$120\,^\circ$C}\end{subfigure}\hfill
-  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2f.png}\caption{$250\,^\circ$C}\end{subfigure}
-  \caption{CO$_2$ solubility in NaCl brine at four representative temperatures ($40$, $80$, $120$, and $250\,^\circ$C).
-           Each panel shows CO$_2$ molality $m_{\text{CO}_2}$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
-           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Kiepe2002,
-           Nighswander1989, Bando2003, Liu2021, Takenouchi1965}; discrete lines
-           with markers: eCPA at the experimental NaCl molalities.
-           Rainbow-colored background bands: continuous eCPA predictions spanning
-           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
-           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
-           Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
-           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~S2 and~S3.}
-  \label{fig:co2nacl_Tpanel}
-\end{figure}
-
-
 Figure~\ref{fig:co2h2o_Tpanel} also illustrates the effect of brine salinity on the equilibrium compositions by including predictions for the full molality range considered in this work. 
 We further validate the eCPA ternary flash against all available experimental data from the
 literature \citep{Guo2015, Rumpf1994, Koschel2006, Kiepe2002, Takenouchi1965,
@@ -1161,6 +1140,29 @@ before comparison.
 
 All experimental results and eCPA predictions are illustrated in Figs.~\ref{fig:co2nacl_Tpanel}, \ref{fig:co2nacl_2panel}, S2, and~S3.
 
+\begin{figure}[H]
+  \centering
+  \newcommand{\snw}{0.47\textwidth}%
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2b.png}\caption{$40\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2c.png}\caption{$80\,^\circ$C}\end{subfigure}\\[6pt]
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2d.png}\caption{$120\,^\circ$C}\end{subfigure}\hfill
+  \begin{subfigure}[t]{\snw}\includegraphics[width=\textwidth]{fig_2f.png}\caption{$250\,^\circ$C}\end{subfigure}
+  \caption{CO$_2$ solubility in NaCl brine at four representative temperatures ($40$, $80$, $120$, and $250\,^\circ$C).
+           Each panel shows CO$_2$ molality $m_{\text{CO}_2}$ [mol\,kg$^{-1}$] vs.\ pressure (log--log).
+           Open symbols: experimental data \citep{Guo2015, Rumpf1994, Kiepe2002,
+           Nighswander1989, Bando2003, Liu2021, Takenouchi1965}; discrete lines
+           with markers: eCPA at the experimental NaCl molalities.
+           Rainbow-colored background bands: continuous eCPA predictions spanning
+           $m_s = 0$--$6$\,mol\,kg$^{-1}$ (color scale as in Fig.~\ref{fig:co2h2o_Tpanel}:
+           violet $\approx 0$, red $= 6$\,mol\,kg$^{-1}$).
+           Temperatures with additional CO$_2$-rich phase data ($y_{\text{CO}_2}$) are shown separately
+           in Fig.~\ref{fig:co2nacl_2panel}; all 18 temperatures in Figs.~S2 and~S3.}
+  \label{fig:co2nacl_Tpanel}
+\end{figure}
+
+
+
+
 Table~\ref{tab:co2nacl_metrics} shows the accuracy breakdown.
 689 of 708 points converge to a two-phase solution using the K-value SSI warm-started
 from the solution table; the model predicts single-phase behavior at 18 points
@@ -1175,23 +1177,7 @@ reported by \citet{Coelho2025} using the original eCPA parameterization.
 The CO$_2$-rich phase composition $y_{\text{CO}_2}$ is reproduced to within 0.4\% AARE, reflecting the
 near-purity of the CO$_2$-rich phase and its weak dependence on salinity.
 
-At hydrothermal temperatures, AARE for $m_{\text{CO}_2}$ rises to 14.0\% at $T = 300\,^\circ$C and
-12.8\% at $T = 350\,^\circ$C, reflecting reduced eCPA accuracy at conditions beyond the
-conventional reservoir temperature range.
-At $T \geq 400\,^\circ$C, the available experimental pressures (300--900\,bar, all from
-\citealt{Takenouchi1965}) fall in the region where eCPA predicts single-phase behavior,
-suggesting that the CO$_2$ + H$_2$O miscibility gap closes at these extreme conditions
-in the model.
-Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
-(AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
-the freezing point where eCPA is not specifically parameterized.
-These conditions furthermore fall within the CO$_2$ hydrate stability zone, where solid
-CO$_2$ clathrates can form; the eCPA EoS computes fluid-phase VLE only and does not
-model hydrate formation explicitly.
-Fig.~S4 provides a comprehensive view of the error distribution
-across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
-($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
-systematically at the boundaries of the validated range.
+
 
 \begin{figure}[H]
   \centering
@@ -1210,6 +1196,23 @@ systematically at the boundaries of the validated range.
   \label{fig:co2nacl_2panel}
 \end{figure}
 
+At hydrothermal temperatures, AARE for $m_{\text{CO}_2}$ rises to 14.0\% at $T = 300\,^\circ$C and
+12.8\% at $T = 350\,^\circ$C, reflecting reduced eCPA accuracy at conditions beyond the
+conventional reservoir temperature range.
+At $T \geq 400\,^\circ$C, the available experimental pressures (300--900\,bar, all from
+\citealt{Takenouchi1965}) fall in the region where eCPA predicts single-phase behavior,
+suggesting that the CO$_2$ + H$_2$O miscibility gap closes at these extreme conditions
+in the model.
+Notably, accuracy at the lowest temperatures ($T = 5$--$10\,^\circ$C) is also reduced
+(AARE 14--21\%), reflecting the challenge of modeling CO$_2$ solubility very close to
+the freezing point where eCPA is not specifically parameterized.
+These conditions furthermore fall within the CO$_2$ hydrate stability zone, where solid
+CO$_2$ clathrates can form; the eCPA EoS computes fluid-phase VLE only and does not
+model hydrate formation explicitly.
+Fig.~S4 provides a comprehensive view of the error distribution
+across the full $(T, m_s)$ parameter space: accuracy is best at intermediate temperatures
+($T = 27$--$227\,^\circ$C) and moderate salinities ($m_s \leq 3$\,mol\,kg$^{-1}$), and degrades
+systematically at the boundaries of the validated range.
 
 
 \begin{table}[H]
@@ -1266,6 +1269,28 @@ This elevated salinity modifies the aqueous-phase fugacity coefficients and in
 turn shifts the equilibrium phase compositions --- an effect that cannot be
 captured by a VLE table indexed on feed molality alone.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig_4.png}
+  \caption{eCPA flash results as a function of overall CO$_2$ feed mole fraction $z_{\rm CO_2}$
+           at $P = 200$\,bar, feed molality $m_s = 1.0$\,mol\,kg$^{-1}$
+           NaCl, and ten isotherms from $27$ to $252\,^\circ$C (violet to red).
+           (a) CO$_2$-rich phase fraction $\beta$; the two-phase window narrows
+           progressively at higher temperature.
+           (b) Ratio of equilibrium aqueous NaCl molality to feed molality,
+           $m_s^\mathrm{aq}/m_s$; NaCl concentrates in the aqueous phase
+           as H$_2$O partitions to the CO$_2$-rich phase, reaching a factor of ${\sim}8$
+           at $T = 252\,^\circ$C and $z_{\rm CO_2} \approx 0.98$.
+           (c) CO$_2$ molality $m_{\text{CO}_2}$ in the aqueous phase; the salting-out effect
+           driven by the elevated $m_s^\mathrm{aq}$ reduces CO$_2$ solubility
+           with increasing $z_{\rm CO_2}$.
+           (d) H$_2$O mole fraction $y_{\mathrm{H_2O}}$ in the CO$_2$-rich phase;
+           substantial water content at high temperatures (up to ${\sim}30$\,mol\%
+           at $252\,^\circ$C) and its strong variation with $z_{\rm CO_2}$ highlight the need
+           for full flash rather than a fixed-salinity VLE lookup.}
+  \label{fig:flash_vs_z}
+\end{figure}
+
 Figure~\ref{fig:flash_vs_z} demonstrates these effects for $P = 200$\,bar,
 $m_s = 1.0$\,mol\,kg$^{-1}$ NaCl, and ten isotherms from $27$ to
 $252\,^\circ$C (in $25\,^\circ$C increments) over the two-phase feed range $z_{\rm CO_2} = 0.005$--$0.995$.
@@ -1293,27 +1318,7 @@ $m_s^\mathrm{aq}$ suppresses CO$_2$ solubility.
 A simple VLE lookup at the feed molality $m_s$ would return the
 wrong CO$_2$ solubility for all but the dilute-CO$_2$ end of the window.
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=\textwidth]{fig_4.png}
-  \caption{eCPA flash results as a function of overall CO$_2$ feed mole fraction $z_{\rm CO_2}$
-           at $P = 200$\,bar, feed molality $m_s = 1.0$\,mol\,kg$^{-1}$
-           NaCl, and ten isotherms from $27$ to $252\,^\circ$C (violet to red).
-           (a) CO$_2$-rich phase fraction $\beta$; the two-phase window narrows
-           progressively at higher temperature.
-           (b) Ratio of equilibrium aqueous NaCl molality to feed molality,
-           $m_s^\mathrm{aq}/m_s$; NaCl concentrates in the aqueous phase
-           as H$_2$O partitions to the CO$_2$-rich phase, reaching a factor of ${\sim}8$
-           at $T = 252\,^\circ$C and $z_{\rm CO_2} \approx 0.98$.
-           (c) CO$_2$ molality $m_{\text{CO}_2}$ in the aqueous phase; the salting-out effect
-           driven by the elevated $m_s^\mathrm{aq}$ reduces CO$_2$ solubility
-           with increasing $z_{\rm CO_2}$.
-           (d) H$_2$O mole fraction $y_{\mathrm{H_2O}}$ in the CO$_2$-rich phase;
-           substantial water content at high temperatures (up to ${\sim}30$\,mol\%
-           at $252\,^\circ$C) and its strong variation with $z_{\rm CO_2}$ highlight the need
-           for full flash rather than a fixed-salinity VLE lookup.}
-  \label{fig:flash_vs_z}
-\end{figure}
+
 
 Panel (d) shows the H$_2$O mole fraction in the CO$_2$-rich phase, $y_{\mathrm{H_2O}}$,
 and reveals a second consequence of the salting-out chain.
@@ -1712,14 +1717,14 @@ experimental validation datasets used in Sections~\ref{sec:co2h2o}--\ref{sec:co2
   \centering
   \caption{Flash convergence statistics across the experimental validation datasets.}
   \label{tab:convergence}
-  \begin{tabular}{llrrrrl}
+  \begin{tabular}{lrrrrl}
     \toprule
-    System & Method & \shortstack{$N$\\calls} & \shortstack{Mean\\iter} & Median & Max & \shortstack{Median\\time/call} \\
+     Method & \shortstack{$N$\\calls} & \shortstack{Mean\\iter} & Median & Max & \shortstack{Median\\time/call} \\
     \midrule
-    CO$_2$+H$_2$O  & CPA (cold, accel.)   & 29{,}412 &  6.3 &  6 & 272 & $\sim$215\,ms \\
-    CO$_2$+H$_2$O  & CPA (warm SSI)       &    626   &  6.2 &  6 &  40 & $\sim$2\,ms   \\
-    CO$_2$+H$_2$O  & \shortstack[l]{eCPA (warm SSI,\\$m_s\!\approx\!0$)} &    631   &  5.9 &  6 &  10 & $\sim$2\,ms   \\
-    CO$_2$+NaCl    & eCPA (warm SSI)      &    686   &  5.8 &  6 &  16 & $\sim$2\,ms   \\
+     CPA (cold, accel.)   & 29{,}412 &  6.3 &  6 & 272 & $\sim$215\,ms \\
+     CPA (warm SSI)       &    626   &  6.2 &  6 &  40 & $\sim$2\,ms   \\
+     \shortstack[l]{eCPA (warm SSI,\\$m_s\!\approx\!0$)} &    631   &  5.9 &  6 &  10 & $\sim$2\,ms   \\
+    eCPA (warm SSI)      &    686   &  5.8 &  6 &  16 & $\sim$2\,ms   \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1890,12 +1895,31 @@ in saline aquifers at reservoir scale.
 %% ============================================================
 \section*{Acknowledgements}
 
-Abbas Firoozabadi was supported by the member companies of the Reservoir Engineering Research Institute. 
-
-\newpage
-
+Abbas Firoozabadi was supported by the member companies of the Reservoir Engineering Research Institute.
+J.\ Moortgat did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
 
 
+
+
+
+
+%% ============================================================
+\section*{Author Contributions}
+
+\textbf{Joachim Moortgat:} Conceptualization, Data curation, Formal analysis,
+Investigation, Methodology, Project administration, Resources, Software,
+Validation, Visualization, Writing -- original draft.
+\textbf{Felipe Mour\~{a}o Coelho:} Data curation, Writing -- original draft.
+\textbf{Abbas Firoozabadi:} Conceptualization, Funding acquisition, Writing -- original draft.
+
+%% ============================================================
+\section*{Declaration of Generative AI and AI-Assisted Technologies in the
+Manuscript Preparation Process}
+
+During the preparation of this work the authors used Claude (Anthropic) in order
+to assist with writing, editing, and LaTeX formatting of the manuscript.
+After using this tool, the authors reviewed and edited all content as needed
+and take full responsibility for the content of the published article.
 
 %% ============================================================
 \section*{Data and Code Availability}
@@ -1903,7 +1927,7 @@ Abbas Firoozabadi was supported by the member companies of the Reservoir Enginee
 All source code implementing the CPA and eCPA equations of state,
 the phase stability and flash algorithms, the solution table construction,
 and the reservoir simulator described in this work is freely available at
-\url{https://github.com/XXX/ecpa-flash} ($^\ast$upon acceptance of paper).
+\url{https://github.com/buckai-observatory/ecpa-flash} ($^\ast$upon acceptance of paper).
 The repository includes the precomputed three-dimensional solution table,
 all experimental VLE data used for validation, and scripts to reproduce
 every figure and table in this paper.
@@ -1949,7 +1973,7 @@ The following material is provided as Supplementary Information.
 \end{itemize}
 
 %% ============================================================
-\begin{thebibliography}{48}
+\begin{thebibliography}{46}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 \providecommand{\url}[1]{\texttt{#1}}
 \providecommand{\href}[2]{#2}
@@ -1962,477 +1986,442 @@ The following material is provided as Supplementary Information.
 \providecommand{\Pubmed}[1]{\href{pmid:#1}{\path{#1}}}
 \providecommand{\bibinfo}[2]{#2}
 \ifx\xfnm\relax \def\xfnm[#1]{\unskip,\space#1}\fi
-%Type = Article
-\bibitem[{Aavatsmark(2002)}]{Aavatsmark2003}
-\bibinfo{author}{Aavatsmark, I.}, \bibinfo{year}{2002}.
-\newblock \bibinfo{title}{An introduction to multipoint flux approximations for
-  quadrilateral grids}.
-\newblock \bibinfo{journal}{Comput. Geosci.} \bibinfo{volume}{6},
-  \bibinfo{pages}{405--432}.
-%Type = Article
-\bibitem[{Bando et~al.(2003)Bando, Takemura, Nishio, Hihara and
-  Akai}]{Bando2003}
-\bibinfo{author}{Bando, S.}, \bibinfo{author}{Takemura, F.},
-  \bibinfo{author}{Nishio, M.}, \bibinfo{author}{Hihara, E.},
-  \bibinfo{author}{Akai, M.}, \bibinfo{year}{2003}.
-\newblock \bibinfo{title}{Solubility of \ce{CO2} in aqueous solutions of nacl
-  at (30 to 60) °c and (10 to 20) mpa}.
-\newblock \bibinfo{journal}{Journal of Chemical \& Engineering Data}
-  \bibinfo{volume}{48}, \bibinfo{pages}{576--579}.
 %Type = Book
-\bibitem[{Brent(1973)}]{Brent1973}
-\bibinfo{author}{Brent, R.P.}, \bibinfo{year}{1973}.
-\newblock \bibinfo{title}{Algorithms for Minimization without Derivatives}.
-\newblock \bibinfo{publisher}{Prentice-Hall}, \bibinfo{address}{Englewood
-  Cliffs, NJ}.
+\bibitem[{Metz et~al.(2005)Metz, Davidson, de~Coninck, Loos, and
+  Meyer}]{Metz2005}
+\bibinfo{editor}{B.~Metz}, \bibinfo{editor}{O.~Davidson},
+  \bibinfo{editor}{H.~C. de~Coninck}, \bibinfo{editor}{M.~Loos},
+  \bibinfo{editor}{L.~A. Meyer} (Eds.), \bibinfo{title}{{IPCC Special Report on
+  Carbon Dioxide Capture and Storage}}, \bibinfo{publisher}{Cambridge
+  University Press}, \bibinfo{address}{Cambridge, UK}, \bibinfo{year}{2005}.
 %Type = Article
-\bibitem[{Chabab et~al.(2020)Chabab, Théveneau, Coquelet, Corvisier and
-  Fossion}]{Chabab2020}
-\bibinfo{author}{Chabab, S.}, \bibinfo{author}{Théveneau, P.},
-  \bibinfo{author}{Coquelet, C.}, \bibinfo{author}{Corvisier, J.},
-  \bibinfo{author}{Fossion, P.}, \bibinfo{year}{2020}.
-\newblock \bibinfo{title}{Measurements and predictive models of high-pressure
-  {H$_2$S} solubility in brine ({NaCl} aqueous solution) and mixed gas
-  ({CO$_2$} + {H$_2$S}) solubilities in various aqueous solutions at high
-  pressures}.
-\newblock \bibinfo{journal}{Int. J. Greenhouse Gas Control}
-  \bibinfo{volume}{93}, \bibinfo{pages}{102894}.
-\newblock \DOIprefix\doi{10.1016/j.ijggc.2019.102894}. \bibinfo{note}{cO$_2$ +
-  NaCl data at $m_s = 6$\,mol\,kg$^{-1}$}.
-%Type = Book
-\bibitem[{Chavent and Jaffre(1986)}]{chaventjaffre}
-\bibinfo{author}{Chavent, G.}, \bibinfo{author}{Jaffre, J.},
-  \bibinfo{year}{1986}.
-\newblock \bibinfo{title}{{Mathematical models and finite elements for
-  reservoir simulation. Studies in mathematics and its applications.}}
-\newblock \bibinfo{publisher}{Elsevier}, \bibinfo{address}{North-Holland}.
+\bibitem[{Orr(2004)}]{Orr2004}
+\bibinfo{author}{F.~M. Orr},
+\newblock \bibinfo{title}{Storage of carbon dioxide in geologic formations},
+\newblock \bibinfo{journal}{J. Pet. Technol.} \bibinfo{volume}{56}
+  (\bibinfo{year}{2004}) \bibinfo{pages}{90--97}.
+  \DOIprefix\doi{10.2118/88842-JPT}.
 %Type = Article
-\bibitem[{Coelho et~al.(2025)Coelho, Franco and Firoozabadi}]{Coelho2025}
-\bibinfo{author}{Coelho, F.M.}, \bibinfo{author}{Franco, L.F.M.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2025}.
+\bibitem[{Solovsk{\`y} and Firoozabadi(2026)}]{solovsky2026efficient}
+\bibinfo{author}{J.~Solovsk{\`y}}, \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Efficient numerical simulation of heat extraction
+  from fractured media in enhanced geothermal systems (egs) by water and
+  \ce{CO2}},
+\newblock \bibinfo{journal}{International Journal of Heat and Mass Transfer}
+  \bibinfo{volume}{256} (\bibinfo{year}{2026}) \bibinfo{pages}{128065}.
+%Type = Article
+\bibitem[{Kontogeorgis et~al.(1996)Kontogeorgis, Voutsas, Yakoumis, and
+  Tassios}]{Kontogeorgis1996}
+\bibinfo{author}{G.~M. Kontogeorgis}, \bibinfo{author}{E.~C. Voutsas},
+  \bibinfo{author}{I.~V. Yakoumis}, \bibinfo{author}{D.~P. Tassios},
+\newblock \bibinfo{title}{An equation of state for associating fluids},
+\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{35}
+  (\bibinfo{year}{1996}) \bibinfo{pages}{4310--4318}.
+  \DOIprefix\doi{10.1021/ie9600203}.
+%Type = Article
+\bibitem[{Wertheim(1984)}]{Wertheim1984}
+\bibinfo{author}{M.~S. Wertheim},
+\newblock \bibinfo{title}{Fluids with highly directional attractive forces.
+  {I}. statistical thermodynamics},
+\newblock \bibinfo{journal}{J. Stat. Phys.} \bibinfo{volume}{35}
+  (\bibinfo{year}{1984}) \bibinfo{pages}{19--34}.
+  \DOIprefix\doi{10.1007/BF01017362}.
+%Type = Article
+\bibitem[{Li and Firoozabadi(2009)}]{LiFiroozabadi2009}
+\bibinfo{author}{Z.~Li}, \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Cubic-plus-association equation of state for
+  water-containing mixtures: Is ``cross association'' necessary?},
+\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{55}
+  (\bibinfo{year}{2009}) \bibinfo{pages}{1803--1813}.
+  \DOIprefix\doi{10.1002/aic.11784}.
+%Type = Article
+\bibitem[{Maribo-Mogensen et~al.(2015)Maribo-Mogensen, Thomsen, and
+  Kontogeorgis}]{MaribMogensen2015}
+\bibinfo{author}{B.~Maribo-Mogensen}, \bibinfo{author}{K.~Thomsen},
+  \bibinfo{author}{G.~M. Kontogeorgis},
+\newblock \bibinfo{title}{An electrolyte {CPA} equation of state for mixed
+  solvent electrolytes},
+\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61}
+  (\bibinfo{year}{2015}) \bibinfo{pages}{2933--2950}.
+  \DOIprefix\doi{10.1002/aic.14829}.
+%Type = Article
+\bibitem[{Kontogeorgis et~al.(2022)Kontogeorgis, Schlaikjer, Olsen,
+  Maribo-Mogensen, Thomsen, von Solms, and Liang}]{kontogeorgis2022review}
+\bibinfo{author}{G.~M. Kontogeorgis}, \bibinfo{author}{A.~Schlaikjer},
+  \bibinfo{author}{M.~D. Olsen}, \bibinfo{author}{B.~Maribo-Mogensen},
+  \bibinfo{author}{K.~Thomsen}, \bibinfo{author}{N.~von Solms},
+  \bibinfo{author}{X.~Liang},
+\newblock \bibinfo{title}{A review of electrolyte equations of state with
+  emphasis on those based on cubic and cubic-plus-association (cpa) models},
+\newblock \bibinfo{journal}{International Journal of Thermophysics}
+  \bibinfo{volume}{43} (\bibinfo{year}{2022}) \bibinfo{pages}{54}.
+%Type = Article
+\bibitem[{Coelho et~al.(2025)Coelho, Franco, and Firoozabadi}]{Coelho2025}
+\bibinfo{author}{F.~M. Coelho}, \bibinfo{author}{L.~F.~M. Franco},
+  \bibinfo{author}{A.~Firoozabadi},
 \newblock \bibinfo{title}{Phase equilibria of {CO$_2$}--water and
   {CO$_2$}--brine at high temperatures: From {Monte Carlo} simulations to the
-  equation of state}.
-\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{64},
-  \bibinfo{pages}{8492--8505}.
-\newblock \DOIprefix\doi{10.1021/acs.iecr.5c00134}.
+  equation of state},
+\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{64}
+  (\bibinfo{year}{2025}) \bibinfo{pages}{8492--8505}.
+  \DOIprefix\doi{10.1021/acs.iecr.5c00134}.
 %Type = Article
-\bibitem[{Gasser et~al.(1986)Gasser, Sroka and Jennen-Steinmetz}]{Gasser1986}
-\bibinfo{author}{Gasser, T.}, \bibinfo{author}{Sroka, L.},
-  \bibinfo{author}{Jennen-Steinmetz, C.}, \bibinfo{year}{1986}.
-\newblock \bibinfo{title}{Residual variance and residual pattern in nonlinear
-  regression}.
-\newblock \bibinfo{journal}{Biometrika} \bibinfo{volume}{73},
-  \bibinfo{pages}{625--633}.
-\newblock \DOIprefix\doi{10.1093/biomet/73.3.625}.
+\bibitem[{Michelsen(1982)}]{Michelsen1982a}
+\bibinfo{author}{M.~L. Michelsen},
+\newblock \bibinfo{title}{The isothermal flash problem. {Part I}: Stability},
+\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{9}
+  (\bibinfo{year}{1982}) \bibinfo{pages}{1--19}.
+  \DOIprefix\doi{10.1016/0378-3812(82)85001-2}.
 %Type = Article
-\bibitem[{Guo et~al.(2015)Guo, Huang, Chen and Zhou}]{Guo2015}
-\bibinfo{author}{Guo, H.}, \bibinfo{author}{Huang, Y.}, \bibinfo{author}{Chen,
-  Y.}, \bibinfo{author}{Zhou, Q.}, \bibinfo{year}{2015}.
-\newblock \bibinfo{title}{Quantitative {Raman} spectroscopic measurements of
-  {CO$_2$} solubility in {NaCl} solution from 273.15 to 473.15 {K} at {$p$ = 10
-  to 100 MPa}}.
-\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{61},
-  \bibinfo{pages}{466--474}.
-\newblock \DOIprefix\doi{10.1021/acs.jced.5b00799}.
-%Type = Article
-\bibitem[{Hou et~al.(2013)Hou, Maitland and Trusler}]{Hou2013}
-\bibinfo{author}{Hou, S.X.}, \bibinfo{author}{Maitland, G.C.},
-  \bibinfo{author}{Trusler, J.P.M.}, \bibinfo{year}{2013}.
-\newblock \bibinfo{title}{Measurement and modeling of the phase behavior of the
-  ({Carbon Dioxide} + {Water}) and ({Carbon Dioxide} + {Water} + {NaCl})
-  systems at temperatures from 298.15 to 448.15 {K}}.
-\newblock \bibinfo{journal}{J. Supercrit. Fluids} \bibinfo{volume}{73},
-  \bibinfo{pages}{87--96}.
-\newblock \DOIprefix\doi{10.1016/j.supflu.2012.11.011}.
-%Type = Article
-\bibitem[{Jex et~al.(2024)Jex, Miky{\v{s}}ka and Firoozabadi}]{Jex2024}
-\bibinfo{author}{Jex, M.}, \bibinfo{author}{Miky{\v{s}}ka, J.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2024}.
+\bibitem[{Jex et~al.(2024)Jex, Miky{\v{s}}ka, and Firoozabadi}]{Jex2024}
+\bibinfo{author}{M.~Jex}, \bibinfo{author}{J.~Miky{\v{s}}ka},
+  \bibinfo{author}{A.~Firoozabadi},
 \newblock \bibinfo{title}{Fast and robust multiphase equilibrium calculation at
   high pressures and temperatures using accelerated successive substitution and
-  new multiple initial guesses for stability analysis}.
-\newblock \bibinfo{journal}{SPE J.} \bibinfo{volume}{29},
-  \bibinfo{pages}{3643--3658}.
-\newblock \DOIprefix\doi{10.2118/219490-PA}.
+  new multiple initial guesses for stability analysis},
+\newblock \bibinfo{journal}{SPE J.} \bibinfo{volume}{29} (\bibinfo{year}{2024})
+  \bibinfo{pages}{3643--3658}. \DOIprefix\doi{10.2118/219490-PA}.
+%Type = Book
+\bibitem[{Lie(2019)}]{Lie2019}
+\bibinfo{author}{K.-A. Lie}, \bibinfo{title}{An Introduction to Reservoir
+  Simulation Using {MATLAB/GNU} Octave: User Guide for the {MATLAB} Reservoir
+  Simulation Toolbox ({MRST})}, \bibinfo{publisher}{Cambridge University
+  Press}, \bibinfo{address}{Cambridge, UK}, \bibinfo{year}{2019}.
+  \DOIprefix\doi{10.1017/9781108591416}.
 %Type = Article
-\bibitem[{Kiepe et~al.(2002)Kiepe, Horstmann, Fischer and Gmehling}]{Kiepe2002}
-\bibinfo{author}{Kiepe, J.}, \bibinfo{author}{Horstmann, S.},
-  \bibinfo{author}{Fischer, K.}, \bibinfo{author}{Gmehling, J.},
-  \bibinfo{year}{2002}.
-\newblock \bibinfo{title}{Experimental determination and prediction of gas
-  solubility data for {CO$_2$} + {H$_2$O} mixtures containing {NaCl} or {KCl}
-  at temperatures between 313 and 393 {K} and pressures up to 10 {MPa}}.
-\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{41},
-  \bibinfo{pages}{4393--4398}.
-\newblock \DOIprefix\doi{10.1021/ie020041h}.
-%Type = Article
-\bibitem[{King et~al.(1992)King, Mubarak, Kim and Bott}]{King1992}
-\bibinfo{author}{King, M.B.}, \bibinfo{author}{Mubarak, A.},
-  \bibinfo{author}{Kim, J.D.}, \bibinfo{author}{Bott, T.R.},
-  \bibinfo{year}{1992}.
-\newblock \bibinfo{title}{The mutual solubilities of water with supercritical
-  and liquid carbon dioxides}.
-\newblock \bibinfo{journal}{J. Supercrit. Fluids} \bibinfo{volume}{5},
-  \bibinfo{pages}{296--302}.
-\newblock \DOIprefix\doi{10.1016/0896-8446(92)90021-B}.
+\bibitem[{Rasmussen et~al.(2021)Rasmussen, Sandve, Bao, Lauser, Hove,
+  Sk{\aa}flestad, Kl{\"o}fkorn, Blatt, Rustad, Sævareid, Lie, and
+  Thune}]{Rasmussen2021}
+\bibinfo{author}{A.~F. Rasmussen}, \bibinfo{author}{T.~H. Sandve},
+  \bibinfo{author}{K.~Bao}, \bibinfo{author}{A.~Lauser},
+  \bibinfo{author}{J.~Hove}, \bibinfo{author}{B.~Sk{\aa}flestad},
+  \bibinfo{author}{R.~Kl{\"o}fkorn}, \bibinfo{author}{M.~Blatt},
+  \bibinfo{author}{A.~B. Rustad}, \bibinfo{author}{O.~Sævareid},
+  \bibinfo{author}{K.-A. Lie}, \bibinfo{author}{A.~Thune},
+\newblock \bibinfo{title}{The open porous media flow reservoir simulator},
+\newblock \bibinfo{journal}{Comput. Math. Appl.} \bibinfo{volume}{81}
+  (\bibinfo{year}{2021}) \bibinfo{pages}{159--185}.
+  \DOIprefix\doi{10.1016/j.camwa.2020.05.014}.
 %Type = Article
 \bibitem[{Koch et~al.(2021)Koch, Gl{\"a}ser, Weishaupt, Ackermann, Beck,
   Becker, Burbulla, Class, Coltman, Emmert, Fetzer, Gr{\"u}ninger, Heck,
   Hommel, Kurz, Lipp, Mohammadi, Scherrer, Schneider, Seitz, Stadler, Utz,
-  Weinhardt and Flemisch}]{Koch2021}
-\bibinfo{author}{Koch, T.}, \bibinfo{author}{Gl{\"a}ser, D.},
-  \bibinfo{author}{Weishaupt, K.}, \bibinfo{author}{Ackermann, S.},
-  \bibinfo{author}{Beck, M.}, \bibinfo{author}{Becker, B.},
-  \bibinfo{author}{Burbulla, S.}, \bibinfo{author}{Class, H.},
-  \bibinfo{author}{Coltman, E.}, \bibinfo{author}{Emmert, S.},
-  \bibinfo{author}{Fetzer, T.}, \bibinfo{author}{Gr{\"u}ninger, C.},
-  \bibinfo{author}{Heck, K.}, \bibinfo{author}{Hommel, J.},
-  \bibinfo{author}{Kurz, T.}, \bibinfo{author}{Lipp, M.},
-  \bibinfo{author}{Mohammadi, F.}, \bibinfo{author}{Scherrer, S.},
-  \bibinfo{author}{Schneider, M.}, \bibinfo{author}{Seitz, G.},
-  \bibinfo{author}{Stadler, L.}, \bibinfo{author}{Utz, M.},
-  \bibinfo{author}{Weinhardt, F.}, \bibinfo{author}{Flemisch, B.},
-  \bibinfo{year}{2021}.
+  Weinhardt, and Flemisch}]{Koch2021}
+\bibinfo{author}{T.~Koch}, \bibinfo{author}{D.~Gl{\"a}ser},
+  \bibinfo{author}{K.~Weishaupt}, \bibinfo{author}{S.~Ackermann},
+  \bibinfo{author}{M.~Beck}, \bibinfo{author}{B.~Becker},
+  \bibinfo{author}{S.~Burbulla}, \bibinfo{author}{H.~Class},
+  \bibinfo{author}{E.~Coltman}, \bibinfo{author}{S.~Emmert},
+  \bibinfo{author}{T.~Fetzer}, \bibinfo{author}{C.~Gr{\"u}ninger},
+  \bibinfo{author}{K.~Heck}, \bibinfo{author}{J.~Hommel},
+  \bibinfo{author}{T.~Kurz}, \bibinfo{author}{M.~Lipp},
+  \bibinfo{author}{F.~Mohammadi}, \bibinfo{author}{S.~Scherrer},
+  \bibinfo{author}{M.~Schneider}, \bibinfo{author}{G.~Seitz},
+  \bibinfo{author}{L.~Stadler}, \bibinfo{author}{M.~Utz},
+  \bibinfo{author}{F.~Weinhardt}, \bibinfo{author}{B.~Flemisch},
 \newblock \bibinfo{title}{{DuMu$^\mathbf{x}$ 3} --- an open-source simulator
   for solving flow and transport problems in porous media with a focus on model
-  coupling}.
-\newblock \bibinfo{journal}{Comput. Math. Appl.} \bibinfo{volume}{81},
-  \bibinfo{pages}{423--443}.
-\newblock \DOIprefix\doi{10.1016/j.camwa.2020.02.012}.
+  coupling},
+\newblock \bibinfo{journal}{Comput. Math. Appl.} \bibinfo{volume}{81}
+  (\bibinfo{year}{2021}) \bibinfo{pages}{423--443}.
+  \DOIprefix\doi{10.1016/j.camwa.2020.02.012}.
 %Type = Article
-\bibitem[{Kontogeorgis et~al.(2022)Kontogeorgis, Schlaikjer, Olsen,
-  Maribo-Mogensen, Thomsen, von Solms and Liang}]{kontogeorgis2022review}
-\bibinfo{author}{Kontogeorgis, G.M.}, \bibinfo{author}{Schlaikjer, A.},
-  \bibinfo{author}{Olsen, M.D.}, \bibinfo{author}{Maribo-Mogensen, B.},
-  \bibinfo{author}{Thomsen, K.}, \bibinfo{author}{von Solms, N.},
-  \bibinfo{author}{Liang, X.}, \bibinfo{year}{2022}.
-\newblock \bibinfo{title}{A review of electrolyte equations of state with
-  emphasis on those based on cubic and cubic-plus-association (cpa) models}.
-\newblock \bibinfo{journal}{International Journal of Thermophysics}
-  \bibinfo{volume}{43}, \bibinfo{pages}{54}.
+\bibitem[{Soave(1972)}]{Soave1972}
+\bibinfo{author}{G.~Soave},
+\newblock \bibinfo{title}{Equilibrium constants from a modified {Redlich-Kwong}
+  equation of state},
+\newblock \bibinfo{journal}{Chem. Eng. Sci.} \bibinfo{volume}{27}
+  (\bibinfo{year}{1972}) \bibinfo{pages}{1197--1203}.
+  \DOIprefix\doi{10.1016/0009-2509(72)80096-4}.
 %Type = Article
-\bibitem[{Kontogeorgis et~al.(1996)Kontogeorgis, Voutsas, Yakoumis and
-  Tassios}]{Kontogeorgis1996}
-\bibinfo{author}{Kontogeorgis, G.M.}, \bibinfo{author}{Voutsas, E.C.},
-  \bibinfo{author}{Yakoumis, I.V.}, \bibinfo{author}{Tassios, D.P.},
-  \bibinfo{year}{1996}.
-\newblock \bibinfo{title}{An equation of state for associating fluids}.
-\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{35},
-  \bibinfo{pages}{4310--4318}.
-\newblock \DOIprefix\doi{10.1021/ie9600203}.
+\bibitem[{Peng and Robinson(1976)}]{PengRobinson1976}
+\bibinfo{author}{D.-Y. Peng}, \bibinfo{author}{D.~B. Robinson},
+\newblock \bibinfo{title}{A new two-constant equation of state},
+\newblock \bibinfo{journal}{Ind. Eng. Chem. Fundam.} \bibinfo{volume}{15}
+  (\bibinfo{year}{1976}) \bibinfo{pages}{59--64}.
+  \DOIprefix\doi{10.1021/i160057a011}.
 %Type = Article
-\bibitem[{Koschel et~al.(2006)Koschel, Coxam, Rodier and Majer}]{Koschel2006}
-\bibinfo{author}{Koschel, D.}, \bibinfo{author}{Coxam, J.Y.},
-  \bibinfo{author}{Rodier, L.}, \bibinfo{author}{Majer, V.},
-  \bibinfo{year}{2006}.
-\newblock \bibinfo{title}{Enthalpy and solubility data of {CO$_2$} in water and
-  {NaCl(aq)} at conditions of interest for geological sequestration}.
-\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{247},
-  \bibinfo{pages}{107--120}.
-\newblock \DOIprefix\doi{10.1016/j.fluid.2006.06.016}.
+\bibitem[{Moortgat(2018)}]{moortgat2018reservoir}
+\bibinfo{author}{J.~Moortgat},
+\newblock \bibinfo{title}{Reservoir simulation with the cubic plus (cross-)
+  association equation of state for water, \ce{CO2}, hydrocarbons, and
+  tracers},
+\newblock \bibinfo{journal}{Advances in Water Resources} \bibinfo{volume}{114}
+  (\bibinfo{year}{2018}) \bibinfo{pages}{29--44}.
 %Type = Article
-\bibitem[{Li and Firoozabadi(2009)}]{LiFiroozabadi2009}
-\bibinfo{author}{Li, Z.}, \bibinfo{author}{Firoozabadi, A.},
-  \bibinfo{year}{2009}.
-\newblock \bibinfo{title}{Cubic-plus-association equation of state for
-  water-containing mixtures: Is ``cross association'' necessary?}
-\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{55},
-  \bibinfo{pages}{1803--1813}.
-\newblock \DOIprefix\doi{10.1002/aic.11784}.
+\bibitem[{Nasrabadi et~al.(2016)Nasrabadi, Moortgat, and
+  Firoozabadi}]{nasrabadi2016new}
+\bibinfo{author}{H.~Nasrabadi}, \bibinfo{author}{J.~Moortgat},
+  \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{New three-phase multicomponent compositional model
+  for asphaltene precipitation during \ce{CO2} injection using cpa-eos},
+\newblock \bibinfo{journal}{Energy \& Fuels} \bibinfo{volume}{30}
+  (\bibinfo{year}{2016}) \bibinfo{pages}{3306--3319}.
+%Type = Article
+\bibitem[{Moortgat(2025)}]{moortgat2025vapor}
+\bibinfo{author}{J.~Moortgat},
+\newblock \bibinfo{title}{Vapor-liquid equilibrium of water-hydrogen mixtures:
+  A review of experimental data and modeling with a cubic-plus-association
+  equation-of-state},
+\newblock \bibinfo{journal}{PLoS One} \bibinfo{volume}{20}
+  (\bibinfo{year}{2025}) \bibinfo{pages}{e0332157}.
+%Type = Inproceedings
+\bibitem[{Moortgat et~al.(2011)Moortgat, Li, and
+  Firoozabadi}]{moortgat2011three}
+\bibinfo{author}{J.~Moortgat}, \bibinfo{author}{Z.~Li},
+  \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Three-phase compositional modeling of \ce{CO2}
+  injection by higher-order finite element methods with cpa equation of state},
+\newblock in: \bibinfo{booktitle}{SPE Reservoir Simulation Conference},
+  \bibinfo{organization}{SPE}, \bibinfo{year}{2011}, pp.
+  \bibinfo{pages}{SPE--141907}.
+%Type = Article
+\bibitem[{P{\'e}neloux et~al.(1982)P{\'e}neloux, Rauzy, and
+  Fr{\'e}ze}]{Peneloux1982}
+\bibinfo{author}{A.~P{\'e}neloux}, \bibinfo{author}{E.~Rauzy},
+  \bibinfo{author}{R.~Fr{\'e}ze},
+\newblock \bibinfo{title}{A consistent correction for {Redlich-Kwong-Soave}
+  volumes},
+\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{8}
+  (\bibinfo{year}{1982}) \bibinfo{pages}{7--23}.
+  \DOIprefix\doi{10.1016/0378-3812(82)80002-2}.
 %Type = Book
-\bibitem[{Lie(2019)}]{Lie2019}
-\bibinfo{author}{Lie, K.A.}, \bibinfo{year}{2019}.
-\newblock \bibinfo{title}{An Introduction to Reservoir Simulation Using
-  {MATLAB/GNU} Octave: User Guide for the {MATLAB} Reservoir Simulation Toolbox
-  ({MRST})}.
-\newblock \bibinfo{publisher}{Cambridge University Press},
-  \bibinfo{address}{Cambridge, UK}.
-\newblock \DOIprefix\doi{10.1017/9781108591416}.
+\bibitem[{Brent(1973)}]{Brent1973}
+\bibinfo{author}{R.~P. Brent}, \bibinfo{title}{Algorithms for Minimization
+  without Derivatives}, \bibinfo{publisher}{Prentice-Hall},
+  \bibinfo{address}{Englewood Cliffs, NJ}, \bibinfo{year}{1973}.
 %Type = Article
-\bibitem[{Liu et~al.(2021)Liu, Mahmood, Mohammadian, Khaksar~Manshad, Rosli and
-  Ostadhassan}]{Liu2021}
-\bibinfo{author}{Liu, B.}, \bibinfo{author}{Mahmood, B.S.},
-  \bibinfo{author}{Mohammadian, E.}, \bibinfo{author}{Khaksar~Manshad, A.},
-  \bibinfo{author}{Rosli, N.R.}, \bibinfo{author}{Ostadhassan, M.},
-  \bibinfo{year}{2021}.
+\bibitem[{T{\"o}dheide and Franck(1963)}]{Todheide1963}
+\bibinfo{author}{K.~T{\"o}dheide}, \bibinfo{author}{E.~U. Franck},
+\newblock \bibinfo{title}{Das {Zweiphasengebiet} und die kritische {Kurve} im
+  {System} {Kohlendioxid-Wasser} bis zu {Drucken} von 3500 bar},
+\newblock \bibinfo{journal}{Z. Phys. Chem.} \bibinfo{volume}{37}
+  (\bibinfo{year}{1963}) \bibinfo{pages}{387--401}.
+%Type = Article
+\bibitem[{King et~al.(1992)King, Mubarak, Kim, and Bott}]{King1992}
+\bibinfo{author}{M.~B. King}, \bibinfo{author}{A.~Mubarak},
+  \bibinfo{author}{J.~D. Kim}, \bibinfo{author}{T.~R. Bott},
+\newblock \bibinfo{title}{The mutual solubilities of water with supercritical
+  and liquid carbon dioxides},
+\newblock \bibinfo{journal}{J. Supercrit. Fluids} \bibinfo{volume}{5}
+  (\bibinfo{year}{1992}) \bibinfo{pages}{296--302}.
+  \DOIprefix\doi{10.1016/0896-8446(92)90021-B}.
+%Type = Article
+\bibitem[{Meyer and Harvey(2015)}]{Meyer2015}
+\bibinfo{author}{C.~W. Meyer}, \bibinfo{author}{A.~H. Harvey},
+\newblock \bibinfo{title}{Dew-point measurements for water in compressed carbon
+  dioxide},
+\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61}
+  (\bibinfo{year}{2015}) \bibinfo{pages}{2913--2925}.
+  \DOIprefix\doi{10.1002/aic.14818}.
+%Type = Article
+\bibitem[{Gasser et~al.(1986)Gasser, Sroka, and Jennen-Steinmetz}]{Gasser1986}
+\bibinfo{author}{T.~Gasser}, \bibinfo{author}{L.~Sroka},
+  \bibinfo{author}{C.~Jennen-Steinmetz},
+\newblock \bibinfo{title}{Residual variance and residual pattern in nonlinear
+  regression},
+\newblock \bibinfo{journal}{Biometrika} \bibinfo{volume}{73}
+  (\bibinfo{year}{1986}) \bibinfo{pages}{625--633}.
+  \DOIprefix\doi{10.1093/biomet/73.3.625}.
+%Type = Article
+\bibitem[{Guo et~al.(2015)Guo, Huang, Chen, and Zhou}]{Guo2015}
+\bibinfo{author}{H.~Guo}, \bibinfo{author}{Y.~Huang},
+  \bibinfo{author}{Y.~Chen}, \bibinfo{author}{Q.~Zhou},
+\newblock \bibinfo{title}{Quantitative {Raman} spectroscopic measurements of
+  {CO$_2$} solubility in {NaCl} solution from 273.15 to 473.15 {K} at {$p$ = 10
+  to 100 MPa}},
+\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{61}
+  (\bibinfo{year}{2015}) \bibinfo{pages}{466--474}.
+  \DOIprefix\doi{10.1021/acs.jced.5b00799}.
+%Type = Article
+\bibitem[{Rumpf et~al.(1994)Rumpf, Nicolaisen, Öcal, and Maurer}]{Rumpf1994}
+\bibinfo{author}{B.~Rumpf}, \bibinfo{author}{H.~Nicolaisen},
+  \bibinfo{author}{C.~Öcal}, \bibinfo{author}{G.~Maurer},
+\newblock \bibinfo{title}{Solubility of carbon dioxide in aqueous solutions of
+  sodium chloride: Experimental results and correlation},
+\newblock \bibinfo{journal}{J. Solution Chem.} \bibinfo{volume}{23}
+  (\bibinfo{year}{1994}) \bibinfo{pages}{431--448}.
+  \DOIprefix\doi{10.1007/BF00973113}.
+%Type = Article
+\bibitem[{Kiepe et~al.(2002)Kiepe, Horstmann, Fischer, and
+  Gmehling}]{Kiepe2002}
+\bibinfo{author}{J.~Kiepe}, \bibinfo{author}{S.~Horstmann},
+  \bibinfo{author}{K.~Fischer}, \bibinfo{author}{J.~Gmehling},
+\newblock \bibinfo{title}{Experimental determination and prediction of gas
+  solubility data for {CO$_2$} + {H$_2$O} mixtures containing {NaCl} or {KCl}
+  at temperatures between 313 and 393 {K} and pressures up to 10 {MPa}},
+\newblock \bibinfo{journal}{Ind. Eng. Chem. Res.} \bibinfo{volume}{41}
+  (\bibinfo{year}{2002}) \bibinfo{pages}{4393--4398}.
+  \DOIprefix\doi{10.1021/ie020041h}.
+%Type = Article
+\bibitem[{Nighswander et~al.(1989)Nighswander, Kalogerakis, and
+  Mehrotra}]{Nighswander1989}
+\bibinfo{author}{J.~A. Nighswander}, \bibinfo{author}{N.~Kalogerakis},
+  \bibinfo{author}{A.~K. Mehrotra},
+\newblock \bibinfo{title}{Solubilities of carbon dioxide in water and 1 wt.\ \%
+  {NaCl} solution at pressures up to 10 {MPa} and temperatures from 80 to 200
+  {$^\circ$C}},
+\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{34}
+  (\bibinfo{year}{1989}) \bibinfo{pages}{355--360}.
+  \DOIprefix\doi{10.1021/je00057a027}.
+%Type = Article
+\bibitem[{Bando et~al.(2003)Bando, Takemura, Nishio, Hihara, and
+  Akai}]{Bando2003}
+\bibinfo{author}{S.~Bando}, \bibinfo{author}{F.~Takemura},
+  \bibinfo{author}{M.~Nishio}, \bibinfo{author}{E.~Hihara},
+  \bibinfo{author}{M.~Akai},
+\newblock \bibinfo{title}{Solubility of \ce{CO2} in aqueous solutions of nacl
+  at (30 to 60) °c and (10 to 20) mpa},
+\newblock \bibinfo{journal}{Journal of Chemical \& Engineering Data}
+  \bibinfo{volume}{48} (\bibinfo{year}{2003}) \bibinfo{pages}{576--579}.
+%Type = Article
+\bibitem[{Liu et~al.(2021)Liu, Mahmood, Mohammadian, Khaksar~Manshad, Rosli,
+  and Ostadhassan}]{Liu2021}
+\bibinfo{author}{B.~Liu}, \bibinfo{author}{B.~S. Mahmood},
+  \bibinfo{author}{E.~Mohammadian}, \bibinfo{author}{A.~Khaksar~Manshad},
+  \bibinfo{author}{N.~R. Rosli}, \bibinfo{author}{M.~Ostadhassan},
 \newblock \bibinfo{title}{Measurement of solubility of \ce{CO2} in nacl,
   \ce{CaCl2}, \ce{MgCl2} and \ce{MgCl2} + \ce{CaCl2} brines at temperatures
   from 298 to 373 k and pressures up to 20 mpa using the potentiometric
-  titration method}.
-\newblock \bibinfo{journal}{Energies} \bibinfo{volume}{14},
-  \bibinfo{pages}{7222}.
-\newblock \URLprefix \url{https://www.mdpi.com/1996-1073/14/21/7222}.
-%Type = Article
-\bibitem[{Liu et~al.(2011)Liu, Hou, Yang and Han}]{Liu2011b}
-\bibinfo{author}{Liu, Y.}, \bibinfo{author}{Hou, M.}, \bibinfo{author}{Yang,
-  G.}, \bibinfo{author}{Han, B.}, \bibinfo{year}{2011}.
-\newblock \bibinfo{title}{Solubility of \ce{CO2} in aqueous solutions of nacl,
-  kcl, \ce{CaCl2} and their mixed salts at different temperatures and
-  pressures}.
-\newblock \bibinfo{journal}{The Journal of Supercritical Fluids}
-  \bibinfo{volume}{56}, \bibinfo{pages}{125--129}.
-%Type = Article
-\bibitem[{Maribo-Mogensen et~al.(2015)Maribo-Mogensen, Thomsen and
-  Kontogeorgis}]{MaribMogensen2015}
-\bibinfo{author}{Maribo-Mogensen, B.}, \bibinfo{author}{Thomsen, K.},
-  \bibinfo{author}{Kontogeorgis, G.M.}, \bibinfo{year}{2015}.
-\newblock \bibinfo{title}{An electrolyte {CPA} equation of state for mixed
-  solvent electrolytes}.
-\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61},
-  \bibinfo{pages}{2933--2950}.
-\newblock \DOIprefix\doi{10.1002/aic.14829}.
-%Type = Article
-\bibitem[{Messabeb et~al.(2016)Messabeb, Contamine, Cézac, Serin and
-  Gaucher}]{Messabeb2016}
-\bibinfo{author}{Messabeb, H.}, \bibinfo{author}{Contamine, F.},
-  \bibinfo{author}{Cézac, P.}, \bibinfo{author}{Serin, J.P.},
-  \bibinfo{author}{Gaucher, E.C.}, \bibinfo{year}{2016}.
-\newblock \bibinfo{title}{Experimental measurement of {CO$_2$} solubility in
-  aqueous {NaCl} solution at temperature from 323.15 to 423.15 {K} and pressure
-  of up to 20 {MPa}}.
-\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{61},
-  \bibinfo{pages}{3573--3584}.
-\newblock \DOIprefix\doi{10.1021/acs.jced.6b00505}.
-%Type = Book
-\bibitem[{Metz et~al.(2005)Metz, Davidson, de~Coninck, Loos and
-  Meyer}]{Metz2005}
-\bibinfo{editor}{Metz, B.}, \bibinfo{editor}{Davidson, O.},
-  \bibinfo{editor}{de~Coninck, H.C.}, \bibinfo{editor}{Loos, M.},
-  \bibinfo{editor}{Meyer, L.A.} (Eds.), \bibinfo{year}{2005}.
-\newblock \bibinfo{title}{{IPCC Special Report on Carbon Dioxide Capture and
-  Storage}}.
-\newblock \bibinfo{publisher}{Cambridge University Press},
-  \bibinfo{address}{Cambridge, UK}.
-%Type = Article
-\bibitem[{Meyer and Harvey(2015)}]{Meyer2015}
-\bibinfo{author}{Meyer, C.W.}, \bibinfo{author}{Harvey, A.H.},
-  \bibinfo{year}{2015}.
-\newblock \bibinfo{title}{Dew-point measurements for water in compressed carbon
-  dioxide}.
-\newblock \bibinfo{journal}{AIChE J.} \bibinfo{volume}{61},
-  \bibinfo{pages}{2913--2925}.
-\newblock \DOIprefix\doi{10.1002/aic.14818}.
-%Type = Article
-\bibitem[{Michelsen(1982)}]{Michelsen1982a}
-\bibinfo{author}{Michelsen, M.L.}, \bibinfo{year}{1982}.
-\newblock \bibinfo{title}{The isothermal flash problem. {Part I}: Stability}.
-\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{9},
-  \bibinfo{pages}{1--19}.
-\newblock \DOIprefix\doi{10.1016/0378-3812(82)85001-2}.
-%Type = Article
-\bibitem[{Moortgat(2018)}]{moortgat2018reservoir}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{year}{2018}.
-\newblock \bibinfo{title}{Reservoir simulation with the cubic plus (cross-)
-  association equation of state for water, \ce{CO2}, hydrocarbons, and
-  tracers}.
-\newblock \bibinfo{journal}{Advances in Water Resources} \bibinfo{volume}{114},
-  \bibinfo{pages}{29--44}.
-%Type = Article
-\bibitem[{Moortgat(2025)}]{moortgat2025vapor}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{year}{2025}.
-\newblock \bibinfo{title}{Vapor-liquid equilibrium of water-hydrogen mixtures:
-  A review of experimental data and modeling with a cubic-plus-association
-  equation-of-state}.
-\newblock \bibinfo{journal}{PLoS One} \bibinfo{volume}{20},
-  \bibinfo{pages}{e0332157}.
-%Type = Article
-\bibitem[{Moortgat and Firoozabadi(2013)}]{moortgat2013higher}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Firoozabadi, A.},
-  \bibinfo{year}{2013}.
-\newblock \bibinfo{title}{Higher-order compositional modeling of three-phase
-  flow in 3d fractured porous media based on cross-flow equilibrium}.
-\newblock \bibinfo{journal}{Journal of Computational Physics}
-  \bibinfo{volume}{250}, \bibinfo{pages}{425--445}.
-%Type = Article
-\bibitem[{Moortgat and Firoozabadi(2016)}]{moortgat2016mixed}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Firoozabadi, A.},
-  \bibinfo{year}{2016}.
-\newblock \bibinfo{title}{Mixed-hybrid and vertex-discontinuous-galerkin finite
-  element modeling of multiphase compositional flow on 3d unstructured grids}.
-\newblock \bibinfo{journal}{Journal of Computational Physics}
-  \bibinfo{volume}{315}, \bibinfo{pages}{476--500}.
-%Type = Inproceedings
-\bibitem[{Moortgat et~al.(2011a)Moortgat, Li and
-  Firoozabadi}]{moortgat2011three}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Li, Z.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2011}a.
-\newblock \bibinfo{title}{Three-phase compositional modeling of \ce{CO2}
-  injection by higher-order finite element methods with cpa equation of state},
-  in: \bibinfo{booktitle}{SPE Reservoir Simulation Conference},
-  \bibinfo{organization}{SPE}. pp. \bibinfo{pages}{SPE--141907}.
-%Type = Article
-\bibitem[{Moortgat et~al.(2011b)Moortgat, Sun and
-  Firoozabadi}]{moortgat2011compositional}
-\bibinfo{author}{Moortgat, J.}, \bibinfo{author}{Sun, S.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2011}b.
-\newblock \bibinfo{title}{Compositional modeling of three-phase flow with
-  gravity using higher-order finite element methods}.
-\newblock \bibinfo{journal}{Water Resources Research} \bibinfo{volume}{47}.
-%Type = Article
-\bibitem[{Nasrabadi et~al.(2016)Nasrabadi, Moortgat and
-  Firoozabadi}]{nasrabadi2016new}
-\bibinfo{author}{Nasrabadi, H.}, \bibinfo{author}{Moortgat, J.},
-  \bibinfo{author}{Firoozabadi, A.}, \bibinfo{year}{2016}.
-\newblock \bibinfo{title}{New three-phase multicomponent compositional model
-  for asphaltene precipitation during \ce{CO2} injection using cpa-eos}.
-\newblock \bibinfo{journal}{Energy \& Fuels} \bibinfo{volume}{30},
-  \bibinfo{pages}{3306--3319}.
-%Type = Article
-\bibitem[{Nighswander et~al.(1989)Nighswander, Kalogerakis and
-  Mehrotra}]{Nighswander1989}
-\bibinfo{author}{Nighswander, J.A.}, \bibinfo{author}{Kalogerakis, N.},
-  \bibinfo{author}{Mehrotra, A.K.}, \bibinfo{year}{1989}.
-\newblock \bibinfo{title}{Solubilities of carbon dioxide in water and 1 wt.\ \%
-  {NaCl} solution at pressures up to 10 {MPa} and temperatures from 80 to 200
-  {$^\circ$C}}.
-\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{34},
-  \bibinfo{pages}{355--360}.
-\newblock \DOIprefix\doi{10.1021/je00057a027}.
-%Type = Article
-\bibitem[{Orr(2004)}]{Orr2004}
-\bibinfo{author}{Orr, F.M.}, \bibinfo{year}{2004}.
-\newblock \bibinfo{title}{Storage of carbon dioxide in geologic formations}.
-\newblock \bibinfo{journal}{J. Pet. Technol.} \bibinfo{volume}{56},
-  \bibinfo{pages}{90--97}.
-\newblock \DOIprefix\doi{10.2118/88842-JPT}.
-%Type = Article
-\bibitem[{P{\'e}neloux et~al.(1982)P{\'e}neloux, Rauzy and
-  Fr{\'e}ze}]{Peneloux1982}
-\bibinfo{author}{P{\'e}neloux, A.}, \bibinfo{author}{Rauzy, E.},
-  \bibinfo{author}{Fr{\'e}ze, R.}, \bibinfo{year}{1982}.
-\newblock \bibinfo{title}{A consistent correction for {Redlich-Kwong-Soave}
-  volumes}.
-\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{8},
-  \bibinfo{pages}{7--23}.
-\newblock \DOIprefix\doi{10.1016/0378-3812(82)80002-2}.
-%Type = Article
-\bibitem[{Peng and Robinson(1976)}]{PengRobinson1976}
-\bibinfo{author}{Peng, D.Y.}, \bibinfo{author}{Robinson, D.B.},
-  \bibinfo{year}{1976}.
-\newblock \bibinfo{title}{A new two-constant equation of state}.
-\newblock \bibinfo{journal}{Ind. Eng. Chem. Fundam.} \bibinfo{volume}{15},
-  \bibinfo{pages}{59--64}.
-\newblock \DOIprefix\doi{10.1021/i160057a011}.
-%Type = Article
-\bibitem[{Rasmussen et~al.(2021)Rasmussen, Sandve, Bao, Lauser, Hove,
-  Sk{\aa}flestad, Kl{\"o}fkorn, Blatt, Rustad, Sævareid, Lie and
-  Thune}]{Rasmussen2021}
-\bibinfo{author}{Rasmussen, A.F.}, \bibinfo{author}{Sandve, T.H.},
-  \bibinfo{author}{Bao, K.}, \bibinfo{author}{Lauser, A.},
-  \bibinfo{author}{Hove, J.}, \bibinfo{author}{Sk{\aa}flestad, B.},
-  \bibinfo{author}{Kl{\"o}fkorn, R.}, \bibinfo{author}{Blatt, M.},
-  \bibinfo{author}{Rustad, A.B.}, \bibinfo{author}{Sævareid, O.},
-  \bibinfo{author}{Lie, K.A.}, \bibinfo{author}{Thune, A.},
-  \bibinfo{year}{2021}.
-\newblock \bibinfo{title}{The open porous media flow reservoir simulator}.
-\newblock \bibinfo{journal}{Comput. Math. Appl.} \bibinfo{volume}{81},
-  \bibinfo{pages}{159--185}.
-\newblock \DOIprefix\doi{10.1016/j.camwa.2020.05.014}.
-%Type = Article
-\bibitem[{Rumpf et~al.(1994)Rumpf, Nicolaisen, Öcal and Maurer}]{Rumpf1994}
-\bibinfo{author}{Rumpf, B.}, \bibinfo{author}{Nicolaisen, H.},
-  \bibinfo{author}{Öcal, C.}, \bibinfo{author}{Maurer, G.},
-  \bibinfo{year}{1994}.
-\newblock \bibinfo{title}{Solubility of carbon dioxide in aqueous solutions of
-  sodium chloride: Experimental results and correlation}.
-\newblock \bibinfo{journal}{J. Solution Chem.} \bibinfo{volume}{23},
-  \bibinfo{pages}{431--448}.
-\newblock \DOIprefix\doi{10.1007/BF00973113}.
-%Type = Article
-\bibitem[{Savary et~al.(2012)Savary, Berger, Dubois, Lacharpagne, Pages,
-  Thibeau and Lescanne}]{Savary2012}
-\bibinfo{author}{Savary, V.}, \bibinfo{author}{Berger, G.},
-  \bibinfo{author}{Dubois, M.}, \bibinfo{author}{Lacharpagne, J.C.},
-  \bibinfo{author}{Pages, A.}, \bibinfo{author}{Thibeau, S.},
-  \bibinfo{author}{Lescanne, M.}, \bibinfo{year}{2012}.
-\newblock \bibinfo{title}{The solubility of \ce{CO2}+\ce{H2S} mixtures in water
-  and 2m nacl at 120°c and pressures up to 35mpa}.
-\newblock \bibinfo{journal}{International Journal of Greenhouse Gas Control}
-  \bibinfo{volume}{10}, \bibinfo{pages}{123--133}.
-%Type = Article
-\bibitem[{Soave(1972)}]{Soave1972}
-\bibinfo{author}{Soave, G.}, \bibinfo{year}{1972}.
-\newblock \bibinfo{title}{Equilibrium constants from a modified {Redlich-Kwong}
-  equation of state}.
-\newblock \bibinfo{journal}{Chem. Eng. Sci.} \bibinfo{volume}{27},
-  \bibinfo{pages}{1197--1203}.
-\newblock \DOIprefix\doi{10.1016/0009-2509(72)80096-4}.
-%Type = Inproceedings
-\bibitem[{Solovsk{\`y} and Firoozabadi(2025)}]{solovsky2025efficient}
-\bibinfo{author}{Solovsk{\`y}, J.}, \bibinfo{author}{Firoozabadi, A.},
-  \bibinfo{year}{2025}.
-\newblock \bibinfo{title}{Efficient numerical simulation of \ce{CO2}
-  sequestration in aquifers with consideration of thermal effects using the
-  fully unstructured dynamic adaptive gridding}, in: \bibinfo{booktitle}{SPE
-  Reservoir Simulation Conference}, \bibinfo{organization}{SPE}. p.
-  \bibinfo{pages}{D011S004R004}.
-%Type = Article
-\bibitem[{Solovsk{\`y} and Firoozabadi(2026)}]{solovsky2026efficient}
-\bibinfo{author}{Solovsk{\`y}, J.}, \bibinfo{author}{Firoozabadi, A.},
-  \bibinfo{year}{2026}.
-\newblock \bibinfo{title}{Efficient numerical simulation of heat extraction
-  from fractured media in enhanced geothermal systems (egs) by water and
-  \ce{CO2}}.
-\newblock \bibinfo{journal}{International Journal of Heat and Mass Transfer}
-  \bibinfo{volume}{256}, \bibinfo{pages}{128065}.
+  titration method},
+\newblock \bibinfo{journal}{Energies} \bibinfo{volume}{14}
+  (\bibinfo{year}{2021}) \bibinfo{pages}{7222}. \URLprefix
+  \url{https://www.mdpi.com/1996-1073/14/21/7222}.
 %Type = Article
 \bibitem[{Takenouchi and Kennedy(1965)}]{Takenouchi1965}
-\bibinfo{author}{Takenouchi, S.}, \bibinfo{author}{Kennedy, G.C.},
-  \bibinfo{year}{1965}.
+\bibinfo{author}{S.~Takenouchi}, \bibinfo{author}{G.~C. Kennedy},
 \newblock \bibinfo{title}{The solubility of carbon dioxide in {NaCl} solutions
-  at high temperatures and pressures}.
-\newblock \bibinfo{journal}{Am. J. Sci.} \bibinfo{volume}{263},
-  \bibinfo{pages}{445--454}.
-\newblock \DOIprefix\doi{10.2475/ajs.263.5.445}.
+  at high temperatures and pressures},
+\newblock \bibinfo{journal}{Am. J. Sci.} \bibinfo{volume}{263}
+  (\bibinfo{year}{1965}) \bibinfo{pages}{445--454}.
+  \DOIprefix\doi{10.2475/ajs.263.5.445}.
 %Type = Article
-\bibitem[{T{\"o}dheide and Franck(1963)}]{Todheide1963}
-\bibinfo{author}{T{\"o}dheide, K.}, \bibinfo{author}{Franck, E.U.},
-  \bibinfo{year}{1963}.
-\newblock \bibinfo{title}{Das {Zweiphasengebiet} und die kritische {Kurve} im
-  {System} {Kohlendioxid-Wasser} bis zu {Drucken} von 3500 bar}.
-\newblock \bibinfo{journal}{Z. Phys. Chem.} \bibinfo{volume}{37},
-  \bibinfo{pages}{387--401}.
+\bibitem[{Koschel et~al.(2006)Koschel, Coxam, Rodier, and Majer}]{Koschel2006}
+\bibinfo{author}{D.~Koschel}, \bibinfo{author}{J.-Y. Coxam},
+  \bibinfo{author}{L.~Rodier}, \bibinfo{author}{V.~Majer},
+\newblock \bibinfo{title}{Enthalpy and solubility data of {CO$_2$} in water and
+  {NaCl(aq)} at conditions of interest for geological sequestration},
+\newblock \bibinfo{journal}{Fluid Phase Equilib.} \bibinfo{volume}{247}
+  (\bibinfo{year}{2006}) \bibinfo{pages}{107--120}.
+  \DOIprefix\doi{10.1016/j.fluid.2006.06.016}.
 %Type = Article
-\bibitem[{Wagner and Pru{\ss}(2002)}]{IAPWS2016}
-\bibinfo{author}{Wagner, W.}, \bibinfo{author}{Pru{\ss}, A.},
-  \bibinfo{year}{2002}.
-\newblock \bibinfo{title}{The {IAPWS} formulation 1995 for the thermodynamic
-  properties of ordinary water substance for general and scientific use}.
-\newblock \bibinfo{journal}{Journal of Physical and Chemical Reference Data}
-  \bibinfo{volume}{31}, \bibinfo{pages}{387--535}.
-\newblock \DOIprefix\doi{10.1063/1.1461829}. \bibinfo{note}{iAPWS-95; revised
-  release 2016}.
-%Type = Article
-\bibitem[{Wertheim(1984)}]{Wertheim1984}
-\bibinfo{author}{Wertheim, M.S.}, \bibinfo{year}{1984}.
-\newblock \bibinfo{title}{Fluids with highly directional attractive forces.
-  {I}. statistical thermodynamics}.
-\newblock \bibinfo{journal}{J. Stat. Phys.} \bibinfo{volume}{35},
-  \bibinfo{pages}{19--34}.
-\newblock \DOIprefix\doi{10.1007/BF01017362}.
-%Type = Article
-\bibitem[{Yan et~al.(2011)Yan, Huang and Stenby}]{Yan2011}
-\bibinfo{author}{Yan, W.}, \bibinfo{author}{Huang, S.},
-  \bibinfo{author}{Stenby, E.H.}, \bibinfo{year}{2011}.
-\newblock \bibinfo{title}{Measurement and modeling of {CO$_2$} solubility in
-  {NaCl} brine and {CO$_2$} + {NaCl} brine + {CH$_4$} systems}.
+\bibitem[{Chabab et~al.(2020)Chabab, Théveneau, Coquelet, Corvisier, and
+  Fossion}]{Chabab2020}
+\bibinfo{author}{S.~Chabab}, \bibinfo{author}{P.~Théveneau},
+  \bibinfo{author}{C.~Coquelet}, \bibinfo{author}{J.~Corvisier},
+  \bibinfo{author}{P.~Fossion},
+\newblock \bibinfo{title}{Measurements and predictive models of high-pressure
+  {H$_2$S} solubility in brine ({NaCl} aqueous solution) and mixed gas
+  ({CO$_2$} + {H$_2$S}) solubilities in various aqueous solutions at high
+  pressures},
 \newblock \bibinfo{journal}{Int. J. Greenhouse Gas Control}
-  \bibinfo{volume}{5}, \bibinfo{pages}{1460--1477}.
-\newblock \DOIprefix\doi{10.1016/j.ijggc.2011.08.004}.
+  \bibinfo{volume}{93} (\bibinfo{year}{2020}) \bibinfo{pages}{102894}.
+  \DOIprefix\doi{10.1016/j.ijggc.2019.102894}, \bibinfo{note}{cO$_2$ + NaCl
+  data at $m_s = 6$\,mol\,kg$^{-1}$}.
 %Type = Article
-\bibitem[{Zhao et~al.(2015)Zhao, Dilmore, Allen, Hedges, Soong and
+\bibitem[{Messabeb et~al.(2016)Messabeb, Contamine, Cézac, Serin, and
+  Gaucher}]{Messabeb2016}
+\bibinfo{author}{H.~Messabeb}, \bibinfo{author}{F.~Contamine},
+  \bibinfo{author}{P.~Cézac}, \bibinfo{author}{J.~P. Serin},
+  \bibinfo{author}{E.~C. Gaucher},
+\newblock \bibinfo{title}{Experimental measurement of {CO$_2$} solubility in
+  aqueous {NaCl} solution at temperature from 323.15 to 423.15 {K} and pressure
+  of up to 20 {MPa}},
+\newblock \bibinfo{journal}{J. Chem. Eng. Data} \bibinfo{volume}{61}
+  (\bibinfo{year}{2016}) \bibinfo{pages}{3573--3584}.
+  \DOIprefix\doi{10.1021/acs.jced.6b00505}.
+%Type = Article
+\bibitem[{Hou et~al.(2013)Hou, Maitland, and Trusler}]{Hou2013}
+\bibinfo{author}{S.-X. Hou}, \bibinfo{author}{G.~C. Maitland},
+  \bibinfo{author}{J.~P.~M. Trusler},
+\newblock \bibinfo{title}{Measurement and modeling of the phase behavior of the
+  ({Carbon Dioxide} + {Water}) and ({Carbon Dioxide} + {Water} + {NaCl})
+  systems at temperatures from 298.15 to 448.15 {K}},
+\newblock \bibinfo{journal}{J. Supercrit. Fluids} \bibinfo{volume}{73}
+  (\bibinfo{year}{2013}) \bibinfo{pages}{87--96}.
+  \DOIprefix\doi{10.1016/j.supflu.2012.11.011}.
+%Type = Article
+\bibitem[{Yan et~al.(2011)Yan, Huang, and Stenby}]{Yan2011}
+\bibinfo{author}{W.~Yan}, \bibinfo{author}{S.~Huang}, \bibinfo{author}{E.~H.
+  Stenby},
+\newblock \bibinfo{title}{Measurement and modeling of {CO$_2$} solubility in
+  {NaCl} brine and {CO$_2$} + {NaCl} brine + {CH$_4$} systems},
+\newblock \bibinfo{journal}{Int. J. Greenhouse Gas Control} \bibinfo{volume}{5}
+  (\bibinfo{year}{2011}) \bibinfo{pages}{1460--1477}.
+  \DOIprefix\doi{10.1016/j.ijggc.2011.08.004}.
+%Type = Article
+\bibitem[{Zhao et~al.(2015)Zhao, Dilmore, Allen, Hedges, Soong, and
   Lvov}]{Zhao2015}
-\bibinfo{author}{Zhao, H.}, \bibinfo{author}{Dilmore, R.},
-  \bibinfo{author}{Allen, D.E.}, \bibinfo{author}{Hedges, S.W.},
-  \bibinfo{author}{Soong, Y.}, \bibinfo{author}{Lvov, S.N.},
-  \bibinfo{year}{2015}.
+\bibinfo{author}{H.~Zhao}, \bibinfo{author}{R.~Dilmore}, \bibinfo{author}{D.~E.
+  Allen}, \bibinfo{author}{S.~W. Hedges}, \bibinfo{author}{Y.~Soong},
+  \bibinfo{author}{S.~N. Lvov},
 \newblock \bibinfo{title}{Measurement and model predictions of solubility of
   {CO$_2$} in {NaCl} aqueous solution at temperatures from 323 to 423 {K} and
-  pressures up to 40 {MPa}}.
+  pressures up to 40 {MPa}},
 \newblock \bibinfo{journal}{Int. J. Greenhouse Gas Control}
-  \bibinfo{volume}{37}, \bibinfo{pages}{59--69}.
-\newblock \DOIprefix\doi{10.1016/j.ijggc.2015.02.008}.
+  \bibinfo{volume}{37} (\bibinfo{year}{2015}) \bibinfo{pages}{59--69}.
+  \DOIprefix\doi{10.1016/j.ijggc.2015.02.008}.
+%Type = Article
+\bibitem[{Liu et~al.(2011)Liu, Hou, Yang, and Han}]{Liu2011b}
+\bibinfo{author}{Y.~Liu}, \bibinfo{author}{M.~Hou}, \bibinfo{author}{G.~Yang},
+  \bibinfo{author}{B.~Han},
+\newblock \bibinfo{title}{Solubility of \ce{CO2} in aqueous solutions of nacl,
+  kcl, \ce{CaCl2} and their mixed salts at different temperatures and
+  pressures},
+\newblock \bibinfo{journal}{The Journal of Supercritical Fluids}
+  \bibinfo{volume}{56} (\bibinfo{year}{2011}) \bibinfo{pages}{125--129}.
+%Type = Article
+\bibitem[{Savary et~al.(2012)Savary, Berger, Dubois, Lacharpagne, Pages,
+  Thibeau, and Lescanne}]{Savary2012}
+\bibinfo{author}{V.~Savary}, \bibinfo{author}{G.~Berger},
+  \bibinfo{author}{M.~Dubois}, \bibinfo{author}{J.-C. Lacharpagne},
+  \bibinfo{author}{A.~Pages}, \bibinfo{author}{S.~Thibeau},
+  \bibinfo{author}{M.~Lescanne},
+\newblock \bibinfo{title}{The solubility of \ce{CO2}+\ce{H2S} mixtures in water
+  and 2m nacl at 120°c and pressures up to 35mpa},
+\newblock \bibinfo{journal}{International Journal of Greenhouse Gas Control}
+  \bibinfo{volume}{10} (\bibinfo{year}{2012}) \bibinfo{pages}{123--133}.
+%Type = Article
+\bibitem[{Wagner and Pru{\ss}(2002)}]{IAPWS2016}
+\bibinfo{author}{W.~Wagner}, \bibinfo{author}{A.~Pru{\ss}},
+\newblock \bibinfo{title}{The {IAPWS} formulation 1995 for the thermodynamic
+  properties of ordinary water substance for general and scientific use},
+\newblock \bibinfo{journal}{Journal of Physical and Chemical Reference Data}
+  \bibinfo{volume}{31} (\bibinfo{year}{2002}) \bibinfo{pages}{387--535}.
+  \DOIprefix\doi{10.1063/1.1461829}, \bibinfo{note}{iAPWS-95; revised release
+  2016}.
+%Type = Article
+\bibitem[{Moortgat et~al.(2011)Moortgat, Sun, and
+  Firoozabadi}]{moortgat2011compositional}
+\bibinfo{author}{J.~Moortgat}, \bibinfo{author}{S.~Sun},
+  \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Compositional modeling of three-phase flow with
+  gravity using higher-order finite element methods},
+\newblock \bibinfo{journal}{Water Resources Research} \bibinfo{volume}{47}
+  (\bibinfo{year}{2011}).
+%Type = Article
+\bibitem[{Moortgat and Firoozabadi(2013)}]{moortgat2013higher}
+\bibinfo{author}{J.~Moortgat}, \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Higher-order compositional modeling of three-phase
+  flow in 3d fractured porous media based on cross-flow equilibrium},
+\newblock \bibinfo{journal}{Journal of Computational Physics}
+  \bibinfo{volume}{250} (\bibinfo{year}{2013}) \bibinfo{pages}{425--445}.
+%Type = Article
+\bibitem[{Moortgat and Firoozabadi(2016)}]{moortgat2016mixed}
+\bibinfo{author}{J.~Moortgat}, \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Mixed-hybrid and vertex-discontinuous-galerkin finite
+  element modeling of multiphase compositional flow on 3d unstructured grids},
+\newblock \bibinfo{journal}{Journal of Computational Physics}
+  \bibinfo{volume}{315} (\bibinfo{year}{2016}) \bibinfo{pages}{476--500}.
+%Type = Inproceedings
+\bibitem[{Solovsk{\`y} and Firoozabadi(2025)}]{solovsky2025efficient}
+\bibinfo{author}{J.~Solovsk{\`y}}, \bibinfo{author}{A.~Firoozabadi},
+\newblock \bibinfo{title}{Efficient numerical simulation of \ce{CO2}
+  sequestration in aquifers with consideration of thermal effects using the
+  fully unstructured dynamic adaptive gridding},
+\newblock in: \bibinfo{booktitle}{SPE Reservoir Simulation Conference},
+  \bibinfo{organization}{SPE}, \bibinfo{year}{2025}, p.
+  \bibinfo{pages}{D011S004R004}.
 
 \end{thebibliography}
 
