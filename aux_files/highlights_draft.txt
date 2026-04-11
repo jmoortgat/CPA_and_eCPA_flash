@@ -1,5 +1,0 @@
-* CPA and eCPA EoS validated for CO2+H2O/brine from 0 to 425°C, 1 to 1500 bar
-* Newton–Raphson solvers with analytical Jacobians approach the speed of a cubic EoS
-* 100% flash convergence across ~10,000 conditions; AARE 6.5% vs. experiments
-* Pre-computed solution table cuts flash cost by over two orders of magnitude
-* Speed and robustness demonstrated in a prototype CO2 reservoir simulator

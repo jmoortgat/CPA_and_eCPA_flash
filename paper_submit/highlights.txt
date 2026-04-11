@@ -1,7 +1,0 @@
-Highlights
-
-- Analytical eCPA Jacobians cut inner-loop cost to ~3x that of a cubic EoS
-- Hierarchical flash: 100% convergence over 9,825 two-phase T-P conditions
-- Precomputed 3D table warm-starts flash, cutting mean iterations by 3.2x
-- Validated against >1100 data points: AARE 6.5% CO2 solubility, 0.30% density
-- Valid from 0 to 425 deg C: CO2 storage, geothermal, and brine systems covered

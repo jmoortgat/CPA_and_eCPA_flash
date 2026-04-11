@@ -1,9 +1,0 @@
-#Briones (1987) -> Ternary phase equilibria for acetic acid-water mixtures with supercritical carbon dioxide
-P [bar]    xc_W    yw_C
-68.2	0.01651	0.00339
-75.3	0.01750	0.00345
-87.2	0.01768	0.00364
-101.3	0.02081	0.00436
-122.1	0.02096	0.00543
-147.5	0.02215	0.00608
-176.8	0.02262	0.00643

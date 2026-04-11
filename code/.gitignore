@@ -1,0 +1,48 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Large scan tables (exceed GitHub 100MB limit or are intermediate)
+results/scan_v3_table.npz
+results/scan_v4_table.npz
+results/solution_table.npz
+
+# Exclude most results parquets (intermediate/reproducible outputs)
+results/*.parquet
+# But include the solution table (needed to run flash without recomputing)
+!results/CPA_ELV_all.parquet
+
+# Experimental data parquets (small, include them)
+# CO2_WATER_exp.parquet and CPA_ELV_all.parquet at root are duplicates; exclude
+*.parquet
+
+# Large data and reference directories
+CO2/
+paper/*.pdf
+paper/*.html
+paper/*.webarchive
+figures/
+
+# Claude memory (managed separately)
+.claude/
+
+# Logs
+logs/
+
+# EXP raw text files (parquet versions are in results/)
+EXP/
