@@ -35,3 +35,9 @@ dev/
 *.log
 *.slurm
 
+
+# Workspace-local items backed up in their own private repos or regenerable
+CO2/
+ecpa/
+main.run.xml
+results/
