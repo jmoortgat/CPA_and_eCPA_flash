@@ -1,5 +1,5 @@
 """
-cpa2_worker.py — top-level worker for parallel CPA (salt-free CO₂ + H₂O)
+cpa_worker.py — top-level worker for parallel CPA (salt-free CO₂ + H₂O)
 phase-envelope computation.
 
 Must live at the top level so ProcessPoolExecutor can pickle tasks.

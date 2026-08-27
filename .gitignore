@@ -35,14 +35,11 @@ dev/
 *.log
 *.slurm
 
-# Claude memory (managed separately)
-.claude/
 
 # Workspace-local items backed up in their own private repos or regenerable
-CLAUDE.md
 CO2/
 Multi_Salt/
-ecpa/
+/ecpa/   # root-level legacy copy; the package lives at code/ecpa/
 main.run.xml
 paper_ACS.zip
 paper_ACS/
