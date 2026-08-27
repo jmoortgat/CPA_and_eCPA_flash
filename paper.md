@@ -42,7 +42,7 @@ two-phase flash (phase-split) calculations in mixtures of carbon dioxide,
 water, and sodium chloride, using the electrolyte Cubic-Plus-Association
 (eCPA) equation of state (EoS). The package implements the complete eCPA
 model — a Soave–Redlich–Kwong cubic term [@Soave1972], Wertheim association
-with CO$_2$–H$_2$O cross-association [@Kontogeorgis1996], and Debye–Hückel
+with $\mathrm{CO_2}$–$\mathrm{H_2O}$ cross-association [@Kontogeorgis1996], and Debye–Hückel
 and Born electrostatic terms [@MaribMogensen2015] — with the recent
 parameterization of @Coelho2025. A hierarchical algorithm couples Michelsen
 tangent-plane-distance (TPD) stability analysis [@Michelsen1982a] with
@@ -52,7 +52,7 @@ is 100% flash convergence across more than 9,800 two-phase conditions
 spanning $T$ = 0–425 °C and $P$ = 1–1500 bar, at salinities from fresh
 water to 6 mol/kg NaCl.
 
-That coverage — from shallow CO$_2$-storage aquifers to deep hydrothermal
+That coverage — from shallow $\mathrm{CO_2}$-storage aquifers to deep hydrothermal
 systems — makes the package useful to researchers modeling geological
 carbon storage, geothermal energy extraction, and coupled flow and
 transport in saline reservoirs, where equilibrium phase compositions and
@@ -63,7 +63,7 @@ simulator demonstrating production-level throughput.
 
 # Statement of need
 
-Practical CO$_2$–brine phase-behavior modeling still leans on
+Practical $\mathrm{CO_2}$–brine phase-behavior modeling still leans on
 activity-coefficient correlations [@DuanSun2003; @SpycherPruess2005] that
 are accurate inside their fitted ranges but are not a single consistent
 EoS valid across storage and geothermal conditions; reference equations
@@ -72,13 +72,12 @@ not for the mixture. Association EoS such as eCPA capture hydrogen
 bonding, cross-association, and ion electrostatics in one framework, yet
 published eCPA studies have focused on equilibrium conditions (equality of
 fugacities) without solving the coupled material-balance problem. In the
-salt-containing ternary this coupling is essential: as CO$_2$ partitions
+salt-containing ternary this coupling is essential: as $\mathrm{CO_2}$ partitions
 into its own phase it removes water, so the equilibrium aqueous molality
 depends on the phase fraction (salting-out), and stability testing plus a
 full flash must be solved self-consistently. To our knowledge no open,
 production-grade stability-plus-flash implementation for an electrolyte
-EoS was previously available; `eCPA Flash` fills that gap for the CO$_2$ +
-H$_2$O + NaCl system with the algorithmic rigor that is standard in
+EoS was previously available; `eCPA Flash` fills that gap for the $\mathrm{CO_2 + H_2O + NaCl}$ system with the algorithmic rigor that is standard in
 hydrocarbon flash computations.
 
 # Functionality
@@ -106,7 +105,7 @@ The repository provides five deliverables:
 
 The algorithms, their derivation, and the full validation study are
 documented in the peer-reviewed companion paper [@Moortgat2026]. Headline
-results: 6.5% average absolute relative error (AARE) for CO$_2$ solubility
+results: 6.5% average absolute relative error (AARE) for $\mathrm{CO_2}$ solubility
 against more than 1,100 experimental data points, and 0.33% AARE for
 aqueous-phase density against the IAPWS-95 standard [@IAPWS2016]. Every
 figure in the companion paper can be regenerated from the repository;
