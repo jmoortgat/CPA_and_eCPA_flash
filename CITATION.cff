@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite both the software itself and the
+  companion journal article below.
+title: "eCPA Flash: phase stability and flash calculations for CO2 + H2O + NaCl"
+type: software
+authors:
+  - family-names: Moortgat
+    given-names: Joachim
+    affiliation: "School of Earth Sciences, The Ohio State University"
+    email: moortgat.1@osu.edu
+  - family-names: Coelho
+    given-names: Felipe Mourão
+    affiliation: "Universidade Estadual de Campinas (UNICAMP)"
+  - family-names: Firoozabadi
+    given-names: Abbas
+    affiliation: "Rice University"
+repository-code: "https://github.com/jmoortgat/CPA_and_eCPA_flash"
+license: MIT
+version: 1.0.0
+date-released: 2026-08-27
+preferred-citation:
+  type: article
+  title: >-
+    Fast and Robust Phase Equilibrium Computations for CO2 + H2O + NaCl
+    Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State
+  authors:
+    - family-names: Moortgat
+      given-names: Joachim
+    - family-names: Coelho
+      given-names: Felipe Mourão
+    - family-names: Firoozabadi
+      given-names: Abbas
+  journal: "Industrial & Engineering Chemistry Research"
+  year: 2026
+  notes: "In press"

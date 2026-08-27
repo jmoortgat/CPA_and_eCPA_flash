@@ -29,7 +29,7 @@ from ecpa.flash import flash_co2_h2o_salt_ssi, flash_co2_h2o_salt_kv
 params = make_params()
 
 # Load the salt-free CPA guess table (needed for SSI cold start)
-PARQUET = "../Claude_code/CO2/CPA_ELV_all.parquet"
+PARQUET = "CO2/CPA_ELV_all.parquet"  # local data dir (see REPRODUCING_FIGURES.md)
 print(f"Loading CPA guess table: {PARQUET}")
 _grps, _temps = load_cpa_guess_table(PARQUET)
 guess_table_fn = make_guess_fn(_grps, _temps)

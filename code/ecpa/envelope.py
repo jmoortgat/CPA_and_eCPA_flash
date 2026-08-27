@@ -335,13 +335,13 @@ def build_cpa2_envelope(
     force_recompute: bool = False,
 ):
     """
-    Build CPA salt-free phase envelopes in parallel using cpa2_worker.
+    Build CPA salt-free phase envelopes in parallel using cpa_worker.
 
     Returns
     -------
     envelopes_df : dict[z_key -> DataFrame(T, P_lo, P_hi)]
     """
-    import cpa2_worker  # top-level module
+    import cpa_worker  # top-level module
 
     os.makedirs(os.path.dirname(cache_file) or ".", exist_ok=True)
 
@@ -376,7 +376,7 @@ def build_cpa2_envelope(
 
         print(f"Launching {n_use} workers ...\n")
         with ProcessPoolExecutor(max_workers=n_use) as executor:
-            futures = {executor.submit(cpa2_worker.compute_one_point, task): task
+            futures = {executor.submit(cpa_worker.compute_one_point, task): task
                        for task in all_tasks}
             for future in as_completed(futures):
                 result = future.result()

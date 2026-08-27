@@ -2,11 +2,18 @@
 
 ### Fast, robust phase equilibrium for CO₂ + H₂O + NaCl
 
-![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
-![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey.svg)
-![Paper](https://img.shields.io/badge/paper-under%20review%20%40%20CEJ-orange.svg)
-![Coverage](https://img.shields.io/badge/T%20range-0–425%20°C-teal.svg)
-![Coverage](https://img.shields.io/badge/P%20range-1–1500%20bar-teal.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-BA0C2F.svg?style=flat-square)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![tests](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml/badge.svg)](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml)
+[![Paper](https://img.shields.io/badge/paper-in%20press%20%40%20I%26ECR-2563EB.svg?style=flat-square)](https://pubs.acs.org/journal/iecred)
+![Coverage](https://img.shields.io/badge/T%20range-0–425%20°C-teal.svg?style=flat-square)
+![Coverage](https://img.shields.io/badge/P%20range-1–1500%20bar-teal.svg?style=flat-square)
+<!-- Add after Zenodo archive is minted:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+-->
+<!-- Add after JOSS submission:
+[![status](https://joss.theoj.org/papers/XXXX/status.svg)](https://joss.theoj.org/papers/XXXX)
+-->
 
 Phase stability and flash calculations for the **CO₂ + H₂O + NaCl** ternary system
 using the electrolyte Cubic-Plus-Association (eCPA) equation of state of
@@ -52,50 +59,46 @@ guide to regenerating every figure in the paper.
 
 ---
 
-## Requirements
+## Installation
 
-```
-python >= 3.11
-numpy · scipy · pandas · pyarrow · matplotlib
-jupyter   # optional, for the notebook
-```
+Requires Python ≥ 3.11.
 
 ```bash
-pip install numpy scipy pandas pyarrow matplotlib jupyter
+git clone https://github.com/jmoortgat/CPA_and_eCPA_flash.git
+cd CPA_and_eCPA_flash
+pip install -e ".[test]"     # editable install + pytest
+pytest                       # run the test suite
 ```
+
+Optional extras: `pip install -e ".[nn]"` adds PyTorch for the
+neural-network warm-start experiments; a conda environment is provided in
+`code/environment.yml`.
 
 ---
 
 ## Quick start
 
-```bash
-git clone https://github.com/jmoortgat/CPA_and_eCPA_flash.git
-cd CPA_and_eCPA_flash/code
-```
-
-**eCPA ternary flash** (CO₂ + H₂O + NaCl):
+**eCPA ternary flash** (CO₂ + H₂O + NaCl) — after `pip install -e .`,
+from anywhere:
 
 ```python
-import sys; sys.path.insert(0, '.')
-import pandas as pd
-from ecpa.parameters import make_params
-from ecpa.guess_table  import make_guess_fn
-from ecpa.flash        import flash_co2_h2o_salt_kv
+from ecpa.flash import flash_co2_h2o_salt_kv
 
-params   = make_params()
-guess_fn = make_guess_fn(pd.read_parquet('results/CPA_ELV_all.parquet'))
+# T [K], P [bar], overall CO2 mole fraction, NaCl molality [mol/kg]
+r = flash_co2_h2o_salt_kv(323.15, 100.0, 0.3, 1.0)
 
-result = flash_co2_h2o_salt_kv(T=350.0, P=100.0, z=0.3, ms=1.0,
-                                params=params, guess_fn=guess_fn)
-print(result)
+print(r["beta"])            # vapor fraction              -> 0.2814
+print(r["x_aq"]["x4w"])     # CO2 solubility in brine     -> 1.670e-02
+print(r["x_c"]["x1c"])      # H2O content of CO2 phase    -> 2.727e-03
+print(r["ms_aq"])           # equilibrium aqueous molality
 ```
 
-**Salt-free CPA binary** (CO₂ + H₂O):
+**Salt-free CPA binary** (CO₂ + H₂O) — run from the `code/` directory:
 
 ```python
 import CPA
 r = CPA.flash_co2_h2o_tpz(T=323.15, P_bar=100.0, z_co2=0.3)
-print(r['phase'], r['x'], r['tie']['rho_mass'] * 1000, 'kg/m³')
+print(r['phase'], r['beta'], r['x'])
 ```
 
 ---
@@ -242,9 +245,9 @@ If you use this code, please cite:
   author  = {Moortgat, Joachim and Coelho, Felipe Mour{\~a}o and Firoozabadi, Abbas},
   title   = {Fast and Robust Phase Equilibrium Computations for {CO}$_2$ + {H}$_2${O} + {NaCl}
              Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State},
-  journal = {Chemical Engineering Journal},
+  journal = {Industrial \& Engineering Chemistry Research},
   year    = {2026},
-  note    = {under review}
+  note    = {in press}
 }
 ```
 
@@ -252,7 +255,7 @@ And the underlying eCPA parametrisation:
 
 ```bibtex
 @article{coelho2025ecpa,
-  author  = {Coelho, Lu{\'i}s and Franco, Luis F. M. and Firoozabadi, Abbas},
+  author  = {Coelho, Felipe Mour{\~a}o and Franco, Lu{\'i}s Fernando Mercier and Firoozabadi, Abbas},
   title   = {Phase Equilibria of {CO}$_2$--Water and {CO}$_2$--Brine at High Temperatures:
              From {Monte Carlo} Simulations to the Equation of State},
   journal = {Industrial \& Engineering Chemistry Research},
@@ -266,8 +269,15 @@ And the underlying eCPA parametrisation:
 
 ---
 
+## Contributing
+
+Bug reports, questions, and pull requests are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md). Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
-To be added upon acceptance. Code will be released under an open-source license.
+[MIT](LICENSE). If you use this software, please cite it (see
+[CITATION.cff](CITATION.cff)) together with the companion paper above.
 
 [coelho2025]: https://doi.org/10.1021/acs.iecr.5c00134

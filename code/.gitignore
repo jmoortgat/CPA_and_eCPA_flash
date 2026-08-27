@@ -38,8 +38,6 @@ paper/*.html
 paper/*.webarchive
 figures/
 
-# Claude memory (managed separately)
-.claude/
 
 # Logs
 logs/

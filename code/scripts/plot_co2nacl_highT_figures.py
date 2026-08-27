@@ -1,7 +1,7 @@
 """Regenerate T573K.png and T623K.png without rainbow ribbon background."""
 import warnings; warnings.filterwarnings('ignore')
 import sys
-sys.path.insert(0, '/Users/moortgat/Software/2026/eCPA_SALTbasis/Claude_code')
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1]))
 
 import matplotlib
 matplotlib.use('Agg')

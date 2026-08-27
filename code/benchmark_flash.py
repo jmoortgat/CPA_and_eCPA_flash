@@ -30,7 +30,7 @@ import importlib
 import CPA
 importlib.reload(CPA)
 
-os.chdir('/Users/moortgat/Software/2026/eCPA_SALTbasis/Claude_code')
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, '.')
 
 # === Cell 3 ===
