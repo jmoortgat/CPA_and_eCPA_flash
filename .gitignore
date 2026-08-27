@@ -38,6 +38,6 @@ dev/
 
 # Workspace-local items backed up in their own private repos or regenerable
 CO2/
-ecpa/
+/ecpa/   # root-level legacy copy; the package lives at code/ecpa/
 main.run.xml
 results/
