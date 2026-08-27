@@ -1,9 +1,12 @@
 # Reproducing the Figures
 
-All commands are run from the `code/` subdirectory unless noted otherwise.
+All commands are run from the `code/` subdirectory unless noted otherwise, with the
+repository importable — either `pip install -e .` from the repo root (recommended),
+or prefix each command with `PYTHONPATH=.`:
 
 ```bash
 cd code
+export PYTHONPATH=.
 ```
 
 ---
