@@ -44,8 +44,9 @@ Repository = "https://github.com/jmoortgat/CPA_and_eCPA_flash"
 Issues = "https://github.com/jmoortgat/CPA_and_eCPA_flash/issues"
 
 [tool.setuptools]
-package-dir = { "ecpa" = "code/ecpa" }
+package-dir = { "" = "code", "ecpa" = "code/ecpa" }
 packages = ["ecpa"]
+py-modules = ["CPA", "cpa_worker", "co2brine_simulator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

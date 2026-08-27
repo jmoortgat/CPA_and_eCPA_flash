@@ -1,0 +1,5 @@
+#DOHRN (1993) -> Experimental measurements of phase equilibria for ternary and quaternary systems of glucose, water, CO2 and ethanol with a novel apparatus
+P [bar]    xc_W    yw_C
+101	0.02075	0.00547
+201	0.02347	0.00682
+301	0.02514	0.00782
