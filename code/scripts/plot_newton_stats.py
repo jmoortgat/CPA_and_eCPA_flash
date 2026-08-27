@@ -29,13 +29,15 @@ ms_sel = [0.0, 1.0, 3.0, 6.0]
 ms_idx = [np.argmin(np.abs(ms_grid - m)) for m in ms_sel]
 
 # Patch flash to count Newton iters
-import ecpa.newton_inner as _ni
-from ecpa import newton_inner
+try:  # optional legacy module; the script falls back to flash outputs
+    from ecpa import newton_inner
+except ImportError:
+    newton_inner = None
 
 aq_iters = []
 c_iters  = []
 
-orig_solve = newton_inner.solve_newton_3x3_aq if hasattr(newton_inner, 'solve_newton_3x3_aq') else None
+orig_solve = getattr(newton_inner, 'solve_newton_3x3_aq', None)
 # Instead, monkey-patch flash to intercept: just call flash and count fallback
 # Alternative: run flash and read the 'newton_iters_aq'/'newton_iters_c' keys if present
 
@@ -89,6 +91,7 @@ else:
     ax.legend(fontsize=9)
     fig.tight_layout()
     fig.savefig('figures/scan_v4/ecpa_newton_stats.pdf', bbox_inches='tight', dpi=150)
+    fig.savefig('figures/scan_v4/ecpa_newton_stats.png', bbox_inches='tight', dpi=150)
     plt.close()
     print('  → ecpa_newton_stats.pdf (wall-time proxy)')
     import sys; sys.exit(0)
@@ -110,5 +113,6 @@ for ax, iters, label, color in zip(
 
 fig.tight_layout()
 fig.savefig('figures/scan_v4/ecpa_newton_stats.pdf', bbox_inches='tight', dpi=150)
+fig.savefig('figures/scan_v4/ecpa_newton_stats.png', bbox_inches='tight', dpi=150)
 plt.close()
 print('  → ecpa_newton_stats.pdf (iteration counts)')

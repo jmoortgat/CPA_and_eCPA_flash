@@ -103,6 +103,24 @@ print(r['phase'], r['beta'], r['x'])
 
 ---
 
+## The executable paper
+
+The complete journal article and its Supporting Information are available as
+a single executable notebook — full text, table of contents, and collapsed
+code cells that regenerate every figure from the code and data in this
+repository:
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ecpa_flash_paper.ipynb)
+&nbsp;[`notebooks/ecpa_flash_paper.ipynb`](notebooks/ecpa_flash_paper.ipynb)
+
+Fast figures render from result caches shipped with the repository; the
+long parameter-space scans and the reservoir-simulation demo can be
+recomputed from scratch by setting `RUN_LONG = True` in the setup cell
+(30–60 min total). See [REPRODUCING_FIGURES.md](REPRODUCING_FIGURES.md)
+for the script-by-script equivalent.
+
+---
+
 ## Repository structure
 
 ```
@@ -124,7 +142,7 @@ CPA_and_eCPA_flash/
     │   └── ...
     ├── CPA.py                     # Salt-free CPA binary flash
     ├── co2brine_simulator.py      # IMPEC reservoir simulator
-    ├── eCPA_notebook.ipynb        # Jupyter walkthrough
+    ├── ...
     ├── scripts/                   # Validation, benchmark & figure scripts
     │   ├── validate_co2h2o.py
     │   ├── validate_co2nacl_full.py

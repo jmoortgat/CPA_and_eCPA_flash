@@ -116,6 +116,7 @@ for text in leg.get_texts():
     text.set_fontweight('bold')
 fig.tight_layout(rect=[0, 0.04, 1, 1])
 fig.savefig('figures/scan_v4/ecpa_phase_map.pdf', bbox_inches='tight', dpi=150)
+fig.savefig('figures/scan_v4/ecpa_phase_map.png', bbox_inches='tight', dpi=150)
 plt.close()
 print('  → ecpa_phase_map.pdf', flush=True)
 
@@ -169,6 +170,7 @@ for tick in cb.ax.get_yticklabels():
     tick.set_fontweight('bold')
 fig.tight_layout(rect=[0, 0, 0.91, 1])
 fig.savefig('figures/scan_v4/ecpa_composition_aq_grid.pdf', bbox_inches='tight', dpi=150)
+fig.savefig('figures/scan_v4/ecpa_composition_aq_grid.png', bbox_inches='tight', dpi=150)
 plt.close()
 print('  → ecpa_composition_aq_grid.pdf', flush=True)
 
@@ -222,6 +224,7 @@ for tick in cb.ax.get_yticklabels():
     tick.set_fontweight('bold')
 fig.tight_layout(rect=[0, 0, 0.91, 1])
 fig.savefig('figures/scan_v4/ecpa_composition_c_grid.pdf', bbox_inches='tight', dpi=150)
+fig.savefig('figures/scan_v4/ecpa_composition_c_grid.png', bbox_inches='tight', dpi=150)
 plt.close()
 print('  → ecpa_composition_c_grid.pdf', flush=True)
 
@@ -281,6 +284,7 @@ for tick in cb.ax.get_yticklabels():
     tick.set_fontweight('bold')
 fig.tight_layout(rect=[0, 0, 0.91, 1])
 fig.savefig('figures/scan_v4/ecpa_timing_heatmap.pdf', bbox_inches='tight', dpi=150)
+fig.savefig('figures/scan_v4/ecpa_timing_heatmap.png', bbox_inches='tight', dpi=150)
 plt.close()
 print('  → ecpa_timing_heatmap.pdf', flush=True)
 
