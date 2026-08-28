@@ -39,7 +39,11 @@ dev/
 # Workspace-local items backed up in their own private repos or regenerable
 CO2/
 Multi_Salt/
-/ecpa/   # root-level legacy copy; the package lives at code/ecpa/
+# root-level legacy copy; the package lives at code/ecpa/
+/ecpa/
+
+# Packaging artifacts
+*.egg-info/
 main.run.xml
 paper_ACS.zip
 paper_ACS/
