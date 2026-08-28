@@ -42,7 +42,7 @@ two-phase flash (phase-split) calculations in mixtures of carbon dioxide,
 water, and sodium chloride, using the electrolyte Cubic-Plus-Association
 (eCPA) equation of state (EoS). The package implements the complete eCPA
 model — a Soave–Redlich–Kwong cubic term [@Soave1972], Wertheim association
-with $\mathrm{CO_2}$–$\mathrm{H_2O}$ cross-association [@Kontogeorgis1996], and Debye–Hückel
+with $\mathrm{CO_2\text{–}H_2O}$ cross-association [@Kontogeorgis1996], and Debye–Hückel
 and Born electrostatic terms [@MaribMogensen2015] — with the recent
 parameterization of @Coelho2025. A hierarchical algorithm couples Michelsen
 tangent-plane-distance (TPD) stability analysis [@Michelsen1982a] with
@@ -63,7 +63,7 @@ simulator demonstrating production-level throughput.
 
 # Statement of need
 
-Practical $\mathrm{CO_2}$–brine phase-behavior modeling still leans on
+Practical $\mathrm{CO_2}\text{–brine}$ phase-behavior modeling still leans on
 activity-coefficient correlations [@DuanSun2003; @SpycherPruess2005] that
 are accurate inside their fitted ranges but are not a single consistent
 EoS valid across storage and geothermal conditions; reference equations
