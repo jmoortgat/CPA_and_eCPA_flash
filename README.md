@@ -103,12 +103,20 @@ print(r['phase'], r['beta'], r['x'])
 
 ---
 
-## The executable paper
+## Notebooks
 
-The complete journal article and its Supporting Information are available as
-a single executable notebook — full text, table of contents, and collapsed
-code cells that regenerate every figure from the code and data in this
-repository:
+**Interactive tutorial** — a hands-on user manual covering the basic
+workflows: single CPA and eCPA flash calculations, pressure sweeps compared
+against experimental data, CO₂ solubility in NaCl brines of different
+salinity, phase densities, and warm-started high-throughput calls:
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ecpa_flash_tutorial.ipynb)
+&nbsp;[`notebooks/ecpa_flash_tutorial.ipynb`](notebooks/ecpa_flash_tutorial.ipynb)
+
+**The executable paper** — the complete journal article and its Supporting
+Information as a single executable notebook — full text, table of contents,
+and collapsed code cells that regenerate every figure from the code and data
+in this repository:
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ecpa_flash_paper.ipynb)
 &nbsp;[`notebooks/ecpa_flash_paper.ipynb`](notebooks/ecpa_flash_paper.ipynb)
