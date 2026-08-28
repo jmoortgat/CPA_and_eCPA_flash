@@ -6,8 +6,9 @@ Same logic as _scan_parameter_space.py but with expanded grid:
   P: 1–1500 bar (20 points, semi-log)
   z: same 19 points
 
-Saves to scan_results_extended.npz
+Saves to results/scan_results_extended.npz
 """
+import os
 import time
 import sys
 import numpy as np
@@ -305,7 +306,8 @@ if np.any(mask_both):
 # ═══════════════════════════════════════════════════════════════════════════════
 # Save
 # ═══════════════════════════════════════════════════════════════════════════════
-outfile = "scan_results_extended.npz"
+os.makedirs("results", exist_ok=True)
+outfile = "results/scan_results_extended.npz"
 np.savez_compressed(
     outfile,
     T_grid=T_grid, P_grid=P_grid, z_grid=z_grid,
