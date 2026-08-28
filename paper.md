@@ -106,8 +106,9 @@ The repository provides five deliverables:
 The algorithms, their derivation, and the full validation study are
 documented in the peer-reviewed companion paper [@Moortgat2026]. Headline
 results: 6.5% average absolute relative error (AARE) for $\mathrm{CO_2}$ solubility
-against more than 1,100 experimental data points, and 0.33% AARE for
-aqueous-phase density against the IAPWS-95 standard [@IAPWS2016]. Every
+against more than 1,100 experimental data points, and 0.30% AARE for
+pure-water density against the IAPWS-95 standard [@IAPWS2016] over 475
+liquid conditions. Every
 figure in the companion paper can be regenerated from the repository;
 `REPRODUCING_FIGURES.md` maps each figure to its data-generation and
 plotting scripts.

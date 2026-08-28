@@ -29,7 +29,7 @@ Covers the full spectrum from shallow CO₂ storage aquifers to deep geothermal 
 | ✅ **100% flash convergence** | across >9,800 conditions, *T* = 0–425 °C, *P* = 1–1500 bar |
 | ⚡ **3.2× faster** than cold-start SSI | via precomputed 4D solution table warm-start |
 | 🎯 **6.5% AARE** on CO₂ solubility | validated against >1,100 experimental data points |
-| 🔬 **0.33% AARE** on aqueous density | 475 IAPWS-95 reference conditions |
+| 🔬 **0.30% AARE** on pure-water density | 475 IAPWS-95 reference conditions |
 | 🏗️ **Reservoir simulator demo** | 50×50 grid, 300 time steps, zero flash failures |
 
 ---
@@ -135,12 +135,22 @@ for the script-by-script equivalent.
 CPA_and_eCPA_flash/
 ├── README.md
 ├── REPRODUCING_FIGURES.md
+├── LICENSE, CITATION.cff, CHANGELOG.md
+├── CONTRIBUTING.md, CODE_OF_CONDUCT.md
+├── pyproject.toml                 # pip install -e .
+├── paper.md, paper.bib            # JOSS paper
+├── tests/                         # pytest regression suite
+├── notebooks/
+│   ├── ecpa_flash_tutorial.ipynb  # interactive user manual
+│   └── ecpa_flash_paper.ipynb     # executable paper
+├── EXP/                           # experimental VLE database (raw)
 └── code/
     ├── ecpa/                      # eCPA package
     │   ├── flash.py               #   flash_co2_h2o_salt_kv  ← production flash
-    │   ├── stability.py           #   ecpa_stability, stability_map
-    │   ├── guess_table.py         #   make_guess_fn (parquet warm-start)
+    │   ├── stability.py           #   ecpa_stability, ecpa_stability_flash
+    │   ├── guess_table.py         #   parquet warm-start lookup
     │   ├── solution_table.py      #   build_solution_table
+    │   ├── warmstart.py           #   ScanTableWarmStart (4D npz lookup)
     │   ├── constants.py           #   EoS parameters & Péneloux shifts
     │   ├── parameters.py          #   make_params()
     │   ├── elv.py                 #   ELV residual + analytical Jacobian
@@ -154,13 +164,14 @@ CPA_and_eCPA_flash/
     ├── scripts/                   # Validation, benchmark & figure scripts
     │   ├── validate_co2h2o.py
     │   ├── validate_co2nacl_full.py
-    │   ├── validate_density.py
+    │   ├── benchmark_pure_water_density.py
     │   ├── run_benchmark.py
     │   ├── plot_co2h2o_figures.py
     │   ├── plot_co2nacl_figures.py
     │   └── ...
     └── results/
-        └── CPA_ELV_all.parquet    # Precomputed solution table (25 MB)
+        ├── CPA_ELV_all.parquet    # Precomputed solution table (25 MB)
+        └── scan_v4_table.npz      # 4D warm-start table (23 MB)
 ```
 
 ---
@@ -172,7 +183,7 @@ CPA_and_eCPA_flash/
 | Function | Description |
 |:---|:---|
 | `flash_co2_h2o_salt_kv(T, P, z, ms, params, guess_fn)` | **Production flash.** Hierarchical stability+flash with K-value SSI and optional Newton polish. |
-| `flash_co2_h2o_salt_ssi(T, P, z, ms, params)` | Cold-start SSI flash (ω = 0.7). No guess table needed. |
+| `flash_co2_h2o_salt_ssi(T, P, z, ms, params)` | Legacy cold-start SSI flash (ω = 0.7). Kept for reference — prefer `flash_co2_h2o_salt_kv`. |
 
 ### `ecpa/stability.py`
 
@@ -222,22 +233,27 @@ CPA_and_eCPA_flash/
 | CO₂ + H₂O (eCPA) | *x*_CO₂ in water | 451 | 8.2% |
 | CO₂ + NaCl (eCPA) | *m*_CO₂ [mol/kg] | 440 | 6.9% |
 | CO₂ + NaCl (eCPA) | *x*_CO₂ [mole fraction] | 99 | 7.0% |
-| Aqueous density | ρ_W [kg/m³] | 37 | **0.33%** |
+| Pure-water density vs. IAPWS-95 | ρ_W [kg/m³] | 475 | **0.30%** |
+| CO₂-saturated aqueous density (exp.) | ρ_W [kg/m³] | 37 | 0.76% |
 
 ---
 
 ## Péneloux volume shifts
 
-All shifts are in `code/ecpa/constants.py` and applied automatically via `make_params()`.
+All shifts live in `code/ecpa/constants.py`.
 
 | Parameter | Value | Source |
 |:---|:---:|:---|
-| `Penelouxs` (NaCl) | −53.5 cm³/mol | Coelho et al. (2025) |
-| `Peneloux_H2O` | **+0.1105 cm³/mol** | Optimised in this work |
-| `Peneloux_CO2` | 0 | Off by default |
+| `Penelouxs` (NaCl) | −53.5 cm³/mol | Coelho et al. (2025); applied via `make_params()` |
+| `peneloux_h2o(T)` | degree-4 polynomial in *T*/*T*c | Fitted in this work to 475 IAPWS-95 liquid-water conditions |
+| `Peneloux_CO2` | 0 | Evaluated against Span–Wagner; unshifted performs best |
 
-The H₂O shift is isofugacity-preserving — it improves density predictions without
-affecting phase compositions or VLE results.
+The temperature-dependent H₂O shift is isofugacity-preserving — it improves
+density predictions without affecting phase compositions or VLE results. It is
+applied in the density validation (`scripts/benchmark_pure_water_density.py`,
+which produces the paper's density figures); flash routines report unshifted
+EoS densities unless the shift is passed explicitly (`vshift_h2o`/`vshift_co2`
+in the CPA flash functions).
 
 ---
 

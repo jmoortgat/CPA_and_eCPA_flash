@@ -24,6 +24,16 @@ article in *Industrial & Engineering Chemistry Research*.
   `cpa_worker`, matching the module shipped in the repository.
 - Several benchmark/plot scripts contained machine-specific absolute
   paths; they now resolve paths relative to the repository.
+- Restored `scripts/plot_speedup_figures.py` (generates the two panels of
+  paper Figure 6), which had been dropped during the repository
+  reorganization; `run_parameter_scan.py` now writes its npz output to
+  `results/` where the plotting scripts expect it.
+- `REPRODUCING_FIGURES.md` and `code/scripts/README.md` updated to the
+  accepted paper's final figure numbering (S1–S12), including the correct
+  scripts for the density figures S5/S6
+  (`benchmark_pure_water_density.py`, optional `iapws` dependency).
+- Removed stale committed PDF copies of `README.md` and
+  `REPRODUCING_FIGURES.md` (GitHub renders the markdown natively).
 
 ### Earlier development
 

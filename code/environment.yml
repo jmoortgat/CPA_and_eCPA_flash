@@ -13,4 +13,5 @@ dependencies:
   - ipykernel
   - pip
   - pip:
-    - colour          # Color interpolation used in eCPA_flash_04142026.ipynb
+    - colour          # color interpolation used by benchmark_flash.py
+    - iapws           # IAPWS-95 reference, used by scripts/benchmark_pure_water_density.py
