@@ -37,8 +37,9 @@ article in *Industrial & Engineering Chemistry Research*.
 
 ### Earlier development
 
-The full development history (95+ commits, 2026) is preserved in the git
-log: CPA salt-free flash with Michelsen stability testing and accelerated
-SSI; eCPA extension to CO2 + H2O + NaCl; warm-start solution tables;
-validation against experimental CO2-solubility and density data; and the
-prototype reservoir-simulation demonstration.
+The full development history (100+ commits, March–August 2026) is
+preserved in the git log: CPA salt-free flash with Michelsen stability
+testing and accelerated SSI; eCPA extension to CO2 + H2O + NaCl;
+warm-start solution tables; validation against experimental
+CO2-solubility and density data; and the prototype reservoir-simulation
+demonstration.
