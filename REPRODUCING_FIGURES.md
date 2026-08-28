@@ -110,9 +110,16 @@ Output: `figures/scan/newton_heatmap.pdf` and `figures/scan/newton_heatmap.png`.
 
 ### Figure 6 — SSI speedup ratio and best stability initial guess
 
-Same prerequisites and script as Fig. 5.
+Same data prerequisites as Fig. 5 (`run_parameter_scan.py`; also reads
+`results/scan_v4_table.npz`, see Figs. 7–9).
 
-Output: `figures/scan/strategy_comparison_bar.pdf` and `.png`.
+**Plotting**:
+```bash
+python scripts/plot_speedup_figures.py
+```
+Outputs (in `figures/scan/`):
+- `speedup_ratio_heatmap.png`  — Fig. 6a (standard/accelerated SSI iteration ratio)
+- `stability_best_trial.png`   — Fig. 6b (distribution of the best stability initial guess)
 
 ---
 
@@ -135,16 +142,15 @@ Outputs (in `figures/scan_v4/`):
 
 ---
 
-### Figures 10, 11, 12 — Reservoir simulator results
+### Figure 10 — Reservoir simulator: final spatial fields (CPA vs. eCPA)
 
 **Run the simulator** (~10 min on a laptop, 50×50 grid, 300 time steps):
 ```bash
 python scripts/run_simulator_paper.py
 ```
-Outputs (in `figures/simulator/`):
-- `fig_compositions.png` — Fig. 10 (final spatial fields, CPA vs. eCPA)
-- `fig_simulator.png`    — Fig. 11 (spatial maps at multiple time steps)
-- `fig_perf.png`         — Fig. 12 (CO₂ trapping fractions over time)
+Output: `figures/simulator/fig_compositions.png`.
+The same run also writes `fig_simulator.png` (spatial maps at multiple time
+steps) and `fig_perf.png` (used in Fig. S12).
 
 ---
 
@@ -152,27 +158,28 @@ Outputs (in `figures/simulator/`):
 
 ---
 
-### Figure S1 — CO₂ + H₂O full temperature panel (35 isotherms, 0–350 °C)
+### Figure S1 — CO₂ + H₂O panels at further temperatures
 
 Same data and script as Fig. 1. All panels in `figures/co2h2o/T*.png` are used.
 
 ---
 
-### Figure S2 — CO₂ + NaCl brine full temperature panel (moderate T)
+### Figure S2 — CO₂ + NaCl brine panels at further temperatures
 
-Same data and script as Fig. 2. Panels from `figures/co2nacl/T*.png` for T ≤ 523 K.
+Same data and script as Fig. 2 (requires `validate_co2nacl_full.py`). Panels
+from `figures/co2nacl/T*.png`; the two hottest panels (300 and 350 °C) are
+written by:
 
----
-
-### Figure S3 — CO₂ + NaCl brine at high temperatures (300 and 350 °C)
-
-Same data as Fig. 2 (requires `validate_co2nacl_full.py`).
-
-**Plotting**:
 ```bash
 python scripts/plot_co2nacl_highT_figures.py
 ```
-Outputs: `figures/co2nacl/T573K.png` and `figures/co2nacl/T623K.png`.
+
+---
+
+### Figure S3 — CO₂ + NaCl at 100 °C, molality and mole-fraction views
+
+Same data and script as Fig. 2. Panels used: `figures/co2nacl/T373K.png` and
+`figures/co2nacl_ws/T373K.png`.
 
 ---
 
@@ -182,26 +189,41 @@ Same data and script as Fig. 2. Output: `figures/validation_heatmap_extended.png
 
 ---
 
-### Figures S5 and S5b — Aqueous density parity plot and error surface
+### Figures S5 and S6 — Pure-water density parity plot and signed error map
 
-**Data generation** (~1 min):
+**Data generation and plotting** (~1 min, single script; requires the optional
+`iapws` package, `pip install iapws`):
 ```bash
-python scripts/validate_density.py
+python scripts/benchmark_pure_water_density.py
 ```
-Saves `results/pure_water_density_iapws.parquet`.
+Saves `results/pure_water_density_iapws.parquet` and writes
+`figures/density/iapws_parity.png` (Fig. S5) and
+`figures/density/iapws_error_map.png` (Fig. S6).
 
-**Plotting** (integrated into the same script):
-Output: `figures/density/parity_ecpa.png`.
+A companion comparison against the 37 experimental CO₂-saturated aqueous
+density points (not a paper figure) is produced by
+`python scripts/validate_density.py`.
 
 ---
 
-### Figure S6 — ARE scatter plot and error heatmap (CO₂ + H₂O)
+### Figure S7 — ARE scatter plot and error heatmap (CO₂ + H₂O)
 
 Same data and script as Fig. 1. Output: `figures/co2h2o/error_heatmap.png`.
 
 ---
 
-### Figure S7 — SSI + Newton polish iteration breakdown
+### Figures S8 and S9 — Simplified-flash benchmark
+
+**Data generation and plotting** (~10 min, 3,285 conditions, single script):
+```bash
+python scripts/benchmark_simplified_flash.py
+```
+Outputs: `figures/simplified/accuracy_vs_T.png` (Fig. S8) and
+`figures/simplified/accuracy_by_ms.png` (Fig. S9).
+
+---
+
+### Figure S10 — SSI + Newton polish iteration breakdown
 
 Same prerequisites as Figs. 5–6 (requires `run_warmstart_scan.py`).
 
@@ -209,25 +231,25 @@ Same prerequisites as Figs. 5–6 (requires `run_warmstart_scan.py`).
 ```bash
 python scripts/plot_newton_stats.py
 ```
-Output: `figures/scan_v4/ecpa_newton_stats.pdf`.
+Output: `figures/scan_v4/ecpa_newton_stats.png`.
 
 ---
 
-### Figure S8 — CPA flash strategy comparison (all 9,825 two-phase conditions)
+### Figure S11 — CPA flash strategy comparison (all 9,825 two-phase conditions)
 
-Same prerequisites and script as Figs. 5–6. The strategy comparison bar chart is
+Same prerequisites and script as Fig. 5. The strategy comparison bar chart is
 generated alongside the Fig. 5 heatmap:
 
 ```bash
 python scripts/plot_newton_figures.py
 ```
-Output: `figures/scan/strategy_comparison_bar.pdf`.
+Output: `figures/scan/strategy_comparison_bar.png`.
 
 ---
 
-### Figure S9 — CO₂ trapping fractions over time
+### Figure S12 — CO₂ trapping fractions over time
 
-Same script as Figs. 10–12:
+Same script and run as Fig. 10:
 ```bash
 python scripts/run_simulator_paper.py
 ```
@@ -252,8 +274,8 @@ python scripts/validate_co2h2o.py
 # 3. CO₂ + NaCl ternary validation                                           [~30 min]
 python scripts/validate_co2nacl_full.py
 
-# 4. Aqueous density validation
-python scripts/validate_density.py
+# 4. Pure-water density vs IAPWS-95 (writes Figs. S5, S6; needs `pip install iapws`)
+python scripts/benchmark_pure_water_density.py
 
 # 5. CPA binary parameter-space scan                                         [~20 min]
 python scripts/run_parameter_scan.py
@@ -269,12 +291,13 @@ python scripts/run_simulator_paper.py
 
 # ── Plotting ──────────────────────────────────────────────────────────────────
 
-python scripts/plot_co2h2o_figures.py          # Figs. 1, S1, S6
-python scripts/plot_co2nacl_figures.py         # Figs. 2, 3, S2, S4
-python scripts/plot_co2nacl_highT_figures.py   # Fig. S3
+python scripts/plot_co2h2o_figures.py          # Figs. 1, S1, S7
+python scripts/plot_co2nacl_figures.py         # Figs. 2, 3, S2, S3, S4
+python scripts/plot_co2nacl_highT_figures.py   # high-T panels of Fig. S2
 python scripts/plot_flash_vs_z.py              # Fig. 4
-python scripts/plot_newton_figures.py          # Figs. 5, 6, S8
+python scripts/plot_newton_figures.py          # Figs. 5, S11
+python scripts/plot_speedup_figures.py         # Fig. 6
 python scripts/plot_scan_figures.py            # Figs. 7, 8, 9
-python scripts/plot_newton_stats.py            # Fig. S7
-python scripts/benchmark_simplified_flash.py   # Figs. 11, 12
+python scripts/plot_newton_stats.py            # Fig. S10
+python scripts/benchmark_simplified_flash.py   # Figs. S8, S9
 ```
