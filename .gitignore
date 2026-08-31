@@ -25,7 +25,6 @@ paper/
 paper_submit/
 aux_files/
 figures/
-EXP/
 logs/
 
 # Root-level dev scripts and outputs
