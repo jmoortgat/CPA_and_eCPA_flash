@@ -156,6 +156,9 @@ def load_co2nacl_exp(
     force_reparse: bool = False,
 ) -> pd.DataFrame:
     """Load CO2-NaCl experimental data (parses from text files or loads cache)."""
+    from .exp_data import _resolve_data_path
+    data_dir = _resolve_data_path(data_dir)
+    parquet_cache = _resolve_data_path(parquet_cache)
     if not force_reparse and parquet_cache.exists():
         return pd.read_parquet(parquet_cache)
     df = _parse_co2nacl_dir(data_dir)

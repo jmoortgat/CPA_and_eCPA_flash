@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     # ── Load CPA_ELV_all.parquet ──────────────────────────────────────────────
     print("Loading CPA_ELV_all.parquet …")
-    cpa_df = pd.read_parquet('CPA_ELV_all.parquet')
+    cpa_df = pd.read_parquet('results/CPA_ELV_all.parquet')
 
     # Build per-T lookup: T_K → dict(P_arr, sol_mat)
     cpa_cache = {}

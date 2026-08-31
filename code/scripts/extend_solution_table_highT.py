@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # ── Load CPA_ELV_all.parquet — warm starts for ms=0 at T≤533 K ───────────
     print("\nLoading CPA_ELV_all.parquet …")
-    cpa_df = pd.read_parquet('CPA_ELV_all.parquet')
+    cpa_df = pd.read_parquet('results/CPA_ELV_all.parquet')
     cpa_cache = {}
     for T_K, grp in cpa_df.groupby('T_K'):
         grp = grp.sort_values('P_bar')

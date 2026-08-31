@@ -37,7 +37,7 @@ import CPA
 # ─────────────────────────────────────────────────────────────────────────────
 # 0. Paths and configuration
 # ─────────────────────────────────────────────────────────────────────────────
-ELV_SRC   = "CPA_ELV_all.parquet"
+ELV_SRC   = "results/CPA_ELV_all.parquet"
 ELV_EXT   = "CPA_ELV_all_extended.parquet"   # extended table written here
 SCAN_FILE = "scan_results_extended.npz"
 OUT_FILE  = "scan_newton_results.npz"

@@ -27,14 +27,15 @@ if __name__ == '__main__':
     print("Loading saved parquets …")
     results = pd.read_parquet('results/validation_co2h2o.parquet')
     smooth  = pd.read_parquet('results/smooth_co2h2o.parquet')
-    elv_df  = pd.read_parquet('CPA_ELV_all.parquet')
+    elv_df  = pd.read_parquet('results/CPA_ELV_all.parquet')
 
     print(f"  results: {len(results)} rows")
     print(f"  smooth : {len(smooth)} rows")
     print(f"  ELV    : {len(elv_df)} rows  "
           f"T={elv_df['T_K'].min():.0f}–{elv_df['T_K'].max():.0f} K")
 
-    exp_df = pd.read_parquet('CO2_WATER_exp.parquet')
+    from ecpa.exp_data import load_exp_data
+    exp_df, _ = load_exp_data()
     exp_T_vals = sorted(exp_df['T_K'].unique())
 
     # ── Optional: re-run smooth curves at temperatures with low eCPA coverage ──

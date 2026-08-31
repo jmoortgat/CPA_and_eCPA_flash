@@ -36,7 +36,7 @@ print(f"Grid: {nT}T x {nP}P x {nz}z = {nT*nP*nz:,} points, {n_2ph} two-phase")
 # Load solution table and build K-value lookup
 # ═══════════════════════════════════════════════════════════════════════════════
 print("Loading solution table (CPA_ELV_all.parquet at ms=0)...")
-df = pd.read_parquet("CO2/CPA_ELV_all.parquet")
+df = pd.read_parquet("results/CPA_ELV_all.parquet")
 
 # Compute K-values: K_CO2 = (1 - xw_C) / (1 - xw_W), K_H2O = xw_C / xw_W
 df["K_CO2"] = (1.0 - df["xw_C"]) / (1.0 - df["xw_W"])

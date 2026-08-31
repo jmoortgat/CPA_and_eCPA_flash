@@ -102,7 +102,7 @@ else:
 
 
 # === Cell 7 ===
-def load_cpa_guess_table(parquet_path="CO2/CPA_ELV_all.parquet"):
+def load_cpa_guess_table(parquet_path="results/CPA_ELV_all.parquet"):
     parquet_path = Path(parquet_path)
     if not parquet_path.exists():
         raise FileNotFoundError(f"{parquet_path} not found.")
@@ -202,7 +202,7 @@ def guess_from_table(T, P_bar, groups, temps):
 
 # === Cell 13 ===
 # One-time setup: load guess table into memory
-CPA_GROUPS, CPA_TEMPS = load_cpa_guess_table("CO2/CPA_ELV_all.parquet")
+CPA_GROUPS, CPA_TEMPS = load_cpa_guess_table("results/CPA_ELV_all.parquet")
 print(f"Loaded table: {len(CPA_TEMPS)} temperatures, "
       f"T = {CPA_TEMPS[0]:.0f}–{CPA_TEMPS[-1]:.0f} K")
 
