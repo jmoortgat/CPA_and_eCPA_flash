@@ -11,7 +11,7 @@ elv.py          ELV() residual system + complex-step Jacobian
 flash.py        Continuation cache, ELV solver, Brent + SSI flash
 stability.py         Phase-stability analysis: ecpa_lnphi_aq/c, ecpa_stability, ecpa_stability_flash
 flash_simplified.py  Simplified flash assuming y_H2O=0 (pure-CO2 phase): flash_co2_h2o_simplified
-warmstart.py         Warm-start providers: ScanTableWarmStart, NNWarmStart, WarmStartGuess
+warmstart.py         Warm-start providers: ScanTableWarmStart, WarmStartGuess
 scan.py         run_flash_scan() — grid scan over (T, P, z, ms)
 envelope.py     find_envelope_from_scan(), build_cpa2_envelope()
 plotting.py     All figure-generating functions

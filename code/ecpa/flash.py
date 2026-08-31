@@ -919,8 +919,7 @@ def flash_co2_h2o_salt_kv(
         If provided and ``K_init`` is None, it is called first to obtain
         K_init, sol_aq_x0, and sol_c_x0.  On failure (returns None or raises)
         the solver falls back to its own cold-start candidates.
-        Typical providers: ``ScanTableWarmStart``, ``NNWarmStart``
-        (from ``ecpa.warmstart``).
+        Typical provider: ``ScanTableWarmStart`` (from ``ecpa.warmstart``).
     tol : float
         Convergence tolerance on ‖lnK_new − lnK‖ (= fugacity residual).
     accelerated : bool

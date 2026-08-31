@@ -78,9 +78,7 @@ pip install -e ".[test]"     # editable install + pytest
 pytest                       # run the test suite
 ```
 
-Optional extras: `pip install -e ".[nn]"` adds PyTorch for the
-neural-network warm-start experiments; a conda environment is provided in
-`code/environment.yml`.
+A conda environment is provided in `code/environment.yml`.
 
 ---
 
