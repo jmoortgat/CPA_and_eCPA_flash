@@ -57,7 +57,7 @@ def build_parquet(dat_dir: Path = Path("CO2"),
     print(f"Wrote {out_path}  ({len(all_df):,} rows)")
 
 
-def load_cpa_guess_table(parquet_path: str | Path = "CO2/CPA_ELV_all.parquet"):
+def load_cpa_guess_table(parquet_path: str | Path = "results/CPA_ELV_all.parquet"):
     """
     Load the CPA guess table from Parquet.
 

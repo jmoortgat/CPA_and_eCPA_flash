@@ -29,6 +29,22 @@ import pandas as pd
 _DEFAULT_DATA_DIR    = Path("EXP/CO2-WATER")
 _DEFAULT_PARQUET     = Path("CO2/CO2_WATER_exp.parquet")
 
+# Repository root (two levels above this file: ecpa/ -> code/ -> root).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _resolve_data_path(p: Path | str) -> Path:
+    """Resolve a data path: as given (cwd-relative), else from the repo root.
+
+    The tracked data directories (EXP/, CO2/) live at the repository root,
+    while scripts conventionally run from code/ — this makes both work.
+    """
+    p = Path(p)
+    if p.exists():
+        return p
+    alt = _REPO_ROOT / p
+    return alt if alt.exists() else p
+
 
 def _parse_co2water_dir(data_dir: Path) -> pd.DataFrame:
     """Read every EXP*.txt in the CO2-WATER folder tree."""
@@ -111,8 +127,8 @@ def load_exp_data(data_dir: Path | str = _DEFAULT_DATA_DIR,
     df    : pd.DataFrame  (all experimental rows)
     temps : np.ndarray    (sorted unique T values [K])
     """
-    data_dir     = Path(data_dir)
-    parquet_path = Path(parquet_path)
+    data_dir     = _resolve_data_path(data_dir)
+    parquet_path = _resolve_data_path(parquet_path)
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
 
     if parquet_path.exists():

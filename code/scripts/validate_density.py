@@ -120,7 +120,7 @@ if __name__ == '__main__':
     from ecpa.parameters import make_params
 
     params = make_params()
-    elv_df = pd.read_parquet('CPA_ELV_all.parquet')
+    elv_df = pd.read_parquet('results/CPA_ELV_all.parquet')
 
     SOL_COLS = ['Z_W', 'xw_W', 'eps_r', 'Z_C', 'xw_C',
                 'chiw_W', 'chiw_C', 'Ndchi1w_dNw', 'Ndchi1w_dNc', 'Vdchi1w_dV']
