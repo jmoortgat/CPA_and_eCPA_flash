@@ -1,0 +1,36 @@
+{
+  "title": "eCPA Flash: Phase stability and flash calculations for CO2 + H2O + NaCl mixtures with the electrolyte Cubic-Plus-Association equation of state",
+  "description": "<p>Open-source Python package for phase-stability and two-phase flash (phase-split) calculations in mixtures of carbon dioxide, water, and sodium chloride, using the electrolyte Cubic-Plus-Association (eCPA) equation of state. A hierarchical algorithm couples Michelsen tangent-plane-distance stability analysis with accelerated successive substitution and Newton inner solvers, achieving 100% flash convergence across more than 9,800 two-phase conditions spanning T = 0-425 &deg;C and P = 1-1500 bar at salinities from fresh water to 6 mol/kg NaCl. The repository includes the complete eCPA implementation, a salt-free CPA flash, precomputed warm-start solution tables, the full experimental validation database, a prototype reservoir simulator, and executable notebooks that reproduce every figure of the companion journal article (Industrial &amp; Engineering Chemistry Research, in press).</p>",
+  "creators": [
+    {
+      "name": "Moortgat, Joachim",
+      "affiliation": "School of Earth Sciences, The Ohio State University",
+      "orcid": "0000-0002-0259-3597"
+    },
+    {
+      "name": "Coelho, Felipe Mourão",
+      "affiliation": "Universidade Estadual de Campinas (UNICAMP)",
+      "orcid": "0000-0002-7572-1991"
+    },
+    {
+      "name": "Firoozabadi, Abbas",
+      "affiliation": "Rice University",
+      "orcid": "0000-0001-6102-9534"
+    }
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "thermodynamics",
+    "equation of state",
+    "phase equilibrium",
+    "flash calculations",
+    "electrolytes",
+    "CO2 storage",
+    "carbon sequestration",
+    "geothermal energy",
+    "reservoir simulation",
+    "Python"
+  ]
+}
