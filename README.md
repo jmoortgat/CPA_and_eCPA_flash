@@ -2,6 +2,7 @@
 
 ### Fast, robust phase equilibrium for CO₂ + H₂O + NaCl
 
+[![PyPI](https://img.shields.io/pypi/v/ecpa-flash.svg?style=flat-square&color=3775A9&logo=pypi&logoColor=white)](https://pypi.org/project/ecpa-flash/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-BA0C2F.svg?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![tests](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml/badge.svg)](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml)
@@ -59,7 +60,16 @@ guide to regenerating every figure in the paper.
 
 ## Installation
 
-Requires Python ≥ 3.11.
+Requires Python ≥ 3.11. The solvers are on PyPI:
+
+```bash
+pip install ecpa-flash
+```
+
+This installs the CPA and eCPA flash routines (cold-start capable at all
+conditions). The precomputed warm-start tables, experimental database,
+notebooks, and figure-reproduction scripts live in this repository — for
+those, install from source:
 
 ```bash
 git clone https://github.com/jmoortgat/CPA_and_eCPA_flash.git
