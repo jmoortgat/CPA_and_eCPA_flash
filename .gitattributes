@@ -1,0 +1,5 @@
+# Tell GitHub's Linguist that the notebooks are documentation, not source.
+# The executable-paper and tutorial notebooks embed rendered figures as
+# base64 inside the .ipynb JSON (~7 MB), which would otherwise dominate the
+# repository's language statistics over the actual Python sources.
+notebooks/*.ipynb linguist-documentation

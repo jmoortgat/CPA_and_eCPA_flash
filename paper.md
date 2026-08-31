@@ -111,6 +111,14 @@ figure in the companion paper can be regenerated from the repository;
 `REPRODUCING_FIGURES.md` maps each figure to its data-generation and
 plotting scripts.
 
+# Author contributions
+
+J.M. designed and implemented the software, performed the validation study,
+and wrote the documentation. F.M.C. developed the eCPA parameterization for
+the $\mathrm{CO_2 + H_2O + NaCl}$ system that the package implements. A.F.
+directed the development of the thermodynamic model and the flash
+algorithms.
+
 # Acknowledgements
 
 Abbas Firoozabadi was supported by the member companies of the Reservoir
