@@ -9,7 +9,7 @@
 [![Paper](https://img.shields.io/badge/paper-in%20press%20%40%20I%26ECR-2563EB.svg?style=flat-square)](https://pubs.acs.org/journal/iecred)
 ![Coverage](https://img.shields.io/badge/T%20range-0–425%20°C-teal.svg?style=flat-square)
 ![Coverage](https://img.shields.io/badge/P%20range-1–1500%20bar-teal.svg?style=flat-square)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22212018.svg)](https://doi.org/10.5281/zenodo.22212018)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22212018-1682D4.svg?style=flat-square)](https://doi.org/10.5281/zenodo.22212018)
 <!-- Add after JOSS submission:
 [![status](https://joss.theoj.org/papers/XXXX/status.svg)](https://joss.theoj.org/papers/XXXX)
 -->
