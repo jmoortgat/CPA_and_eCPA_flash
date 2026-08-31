@@ -11,9 +11,8 @@ No solution table.  For each grid point:
 
 Goal: compare convergence rate, iteration count, and speed across methods.
 
-Usage:
-    cd /Users/moortgat/Software/2026/eCPA_SALTbasis/eCPA_improvements
-    python _bench_cold_start.py
+Usage (from the code/ directory):
+    PYTHONPATH=. python scripts/benchmark_cold_start.py
 """
 import sys, time, warnings
 import numpy as np
