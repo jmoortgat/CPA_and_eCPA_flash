@@ -12,17 +12,15 @@ tags:
   - geothermal energy
   - reservoir simulation
 authors:
-  # TODO(user): verify/fill ORCIDs. Moortgat's ORCID below is copied from the
-  # geoai-datacubes JOSS submission; Coelho and Firoozabadi ORCIDs must be added.
   - name: Joachim Moortgat
     orcid: 0000-0002-0259-3597
     corresponding: true
     affiliation: '1'
   - name: Felipe Mourão Coelho
-    # TODO(user): add ORCID for Felipe Mourão Coelho
+    orcid: 0000-0002-7572-1991
     affiliation: '2'
   - name: Abbas Firoozabadi
-    # TODO(user): add ORCID for Abbas Firoozabadi
+    orcid: 0000-0001-6102-9534
     affiliation: '3'
 affiliations:
   - name: 'School of Earth Sciences, The Ohio State University, Columbus, OH, USA'
