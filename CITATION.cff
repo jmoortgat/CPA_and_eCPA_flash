@@ -16,9 +16,10 @@ authors:
     given-names: Abbas
     affiliation: "Rice University"
 repository-code: "https://github.com/jmoortgat/CPA_and_eCPA_flash"
+doi: 10.5281/zenodo.22212018
 license: MIT
 version: 1.0.0
-date-released: 2026-08-27
+date-released: 2026-08-31
 preferred-citation:
   type: article
   title: >-
