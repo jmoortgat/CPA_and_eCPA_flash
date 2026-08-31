@@ -1,10 +1,9 @@
 """
 Benchmark warm-start strategies for flash_co2_h2o_salt_kv.
 
-Compares three initialisation strategies:
+Compares two initialisation strategies:
   cold  — default cold start (4 K-value candidate pairs)
-  table — ScanTableWarmStart interpolated from scan_v3_table.npz
-  nn    — NNWarmStart (PhysicsFlashNet, flash_nn_v1.pt)
+  table — ScanTableWarmStart interpolated from the precomputed scan table
 
 Metrics reported per strategy:
   - Convergence rate (fraction of points that converge)
@@ -13,12 +12,10 @@ Metrics reported per strategy:
   - Composition error vs. cold-start reference (AARE on x4w, x1c)
   - Fallback rate: fraction where warm-start K failed → used cold-start candidates
 
-Usage
------
-    python _bench_warmstart.py                     # default 500 random points
-    python _bench_warmstart.py --n 2000            # more points
-    python _bench_warmstart.py --no-nn             # skip NN (faster)
-    python _bench_warmstart.py --out figures/nn/warmstart_bench.png
+Usage (from the code/ directory)
+--------------------------------
+    PYTHONPATH=. python scripts/benchmark_warmstart.py            # 500 random points
+    PYTHONPATH=. python scripts/benchmark_warmstart.py --n 2000   # more points
 """
 import argparse
 import time
@@ -33,7 +30,7 @@ from pathlib import Path
 
 from ecpa.flash import flash_co2_h2o_salt_kv
 from ecpa.parameters import make_params
-from ecpa.warmstart import ScanTableWarmStart, NNWarmStart
+from ecpa.warmstart import ScanTableWarmStart
 
 
 # ── Grid bounds ────────────────────────────────────────────────────────────────
@@ -115,7 +112,7 @@ def _print_summary(label: str, df: pd.DataFrame, ref: pd.DataFrame | None = None
 
 def _plot(results: dict, out_path: str):
     labels   = list(results.keys())
-    colors   = {"cold": "#555", "table": "#2196F3", "nn": "#E91E63"}
+    colors   = {"cold": "#555", "table": "#2196F3"}
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
 
     # Panel 1: SSI iteration CDF
@@ -177,11 +174,8 @@ def main():
     ap.add_argument("--n",     type=int,  default=500,
                     help="Number of random test points (default 500)")
     ap.add_argument("--seed",  type=int,  default=42)
-    ap.add_argument("--no-nn", action="store_true",
-                    help="Skip NN warm-start benchmark")
-    ap.add_argument("--table", default="results/scan_v3_table.npz")
-    ap.add_argument("--nn-model", default="results/flash_nn_v1.pt")
-    ap.add_argument("--out",   default="figures/nn/warmstart_bench.png")
+    ap.add_argument("--table", default="results/scan_v4_table.npz")
+    ap.add_argument("--out",   default="figures/warmstart_bench.png")
     args = ap.parse_args()
 
     rng    = np.random.default_rng(args.seed)
@@ -205,23 +199,13 @@ def main():
     _print_summary("cold", results["cold"])
 
     # ── Table warm-start ───────────────────────────────────────────────────
-    print("\nLoading scan_v3 table …")
+    print("\nLoading scan table …")
     ws_tab = ScanTableWarmStart.load(args.table)
     print("Running table warm-start benchmark …")
     t0 = time.time()
     results["table"] = _run_strategy(df_all, params, warm_start=ws_tab, label="table")
     print(f"  done in {time.time()-t0:.1f}s")
     _print_summary("table", results["table"], ref=results["cold"])
-
-    # ── NN warm-start ──────────────────────────────────────────────────────
-    if not args.no_nn and Path(args.nn_model).exists():
-        print(f"\nLoading NN model from {args.nn_model} …")
-        ws_nn = NNWarmStart.load(args.nn_model)
-        print("Running NN warm-start benchmark …")
-        t0 = time.time()
-        results["nn"] = _run_strategy(df_all, params, warm_start=ws_nn, label="nn")
-        print(f"  done in {time.time()-t0:.1f}s")
-        _print_summary("nn", results["nn"], ref=results["cold"])
 
     # ── Summary table ──────────────────────────────────────────────────────
     print(f"\n{'='*60}")

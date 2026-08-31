@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Removed
+- The experimental neural-network warm-start (`ecpa/nn_flash.py`, the
+  `NNWarmStart` provider, and the `[nn]`/PyTorch extra). It never
+  outperformed the solution-table warm-start, its trained checkpoint was
+  not distributed, and it is not used in the companion paper. The
+  solution-table warm-start (`ScanTableWarmStart`) is unaffected.
+
 ## [1.0.0] — 2026-08-27
 
 First public release, accompanying the acceptance of the companion journal

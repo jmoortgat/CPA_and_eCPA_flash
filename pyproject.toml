@@ -36,7 +36,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-nn = ["torch>=2.0"]
 test = ["pytest>=7"]
 
 [project.urls]

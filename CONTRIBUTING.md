@@ -33,8 +33,8 @@ Alternatively use the conda environment in `code/environment.yml`.
 
 1. Fork the repository and create a feature branch.
 2. Make your changes. Please keep the numerical core free of new required
-   dependencies; heavyweight extras (e.g., the optional neural-network
-   warm-start, which needs `torch`) belong behind optional imports.
+   dependencies; heavyweight optional features belong behind optional
+   imports and `pyproject.toml` extras.
 3. Run the test suite (`pytest`) and confirm it passes.
 4. If your change affects computed results, say so explicitly in the pull
    request and include before/after numbers for at least one of the
