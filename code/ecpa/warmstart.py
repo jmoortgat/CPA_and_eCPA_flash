@@ -18,28 +18,17 @@ Strategies
 ----------
 ScanTableWarmStart
     Interpolates K-values and Newton initial states from the pre-computed
-    scan_v3_table.npz (70T × 50P × 25z × 14ms dense grid, ~1.3M points).
+    scan table (scan_v4_table.npz, shipped with the repository; the legacy
+    4-D scan_v3 format is also supported).
     Uses 4-D linear interpolation in (T, log₁₀P, z, ms) space with
     nearest-neighbour NaN-fill for single-phase cells.
     *Fastest* warm-start — no model inference, just array lookups.
 
-NNWarmStart
-    Inference via the trained ``PhysicsFlashNet`` (nn_flash.py).
-    Returns physics-consistent K-values + Newton states from the NN model.
-    Slower than table lookup (~1 ms MPS/CPU forward pass) but generalises
-    outside the training grid and does not require the large NPZ in memory.
-
 Usage
 -----
-    from ecpa.warmstart import ScanTableWarmStart, NNWarmStart
+    from ecpa.warmstart import ScanTableWarmStart
 
-    # --- table ---
-    ws = ScanTableWarmStart.load("results/scan_v3_table.npz")
-
-    # --- NN ---
-    ws = NNWarmStart.load("results/flash_nn_v1.pt")
-
-    # both support the same call signature
+    ws = ScanTableWarmStart.load("results/scan_v4_table.npz")
     result = flash_co2_h2o_salt_kv(T, P, z, ms, warm_start=ws)
 """
 from __future__ import annotations
@@ -394,85 +383,3 @@ class ScanTableWarmStart:
             "is_two_phase": is2ph,
             "source":       source,
         }
-
-
-# ── NN-based warm start ────────────────────────────────────────────────────────
-
-class NNWarmStart:
-    """
-    Warm-start provider backed by the trained ``PhysicsFlashNet``.
-
-    Wraps ``FlashNNGuess`` + ``flash_nn_guess`` from ``ecpa.nn_flash``.
-    Returns ``None`` when the NN predicts single-phase or produces invalid
-    K-values (both K < 1), so the flash solver can fall back to cold-start.
-
-    Parameters
-    ----------
-    model_path : str or Path
-        Path to the ``.pt`` checkpoint saved by ``_train_flash_nn.py``.
-    device : str or None
-        PyTorch device string ('cpu', 'mps', 'cuda').  None = auto-select
-        (MPS if available, else CPU).
-    phase_threshold : float
-        Minimum p(two-phase) from the classifier head to attempt a flash
-        warm-start.  Default 0.35 (conservative; avoids wasting a flash call
-        on a likely single-phase condition).
-    """
-
-    def __init__(
-        self,
-        model_path: str | Path,
-        *,
-        device: Optional[str] = None,
-        phase_threshold: float = 0.35,
-    ):
-        from .nn_flash import FlashNNGuess
-        self._nn = FlashNNGuess.load(str(model_path), device=device)
-        self._phase_threshold = phase_threshold
-
-    @classmethod
-    def load(
-        cls,
-        model_path: str | Path,
-        **kw,
-    ) -> "NNWarmStart":
-        """Convenience constructor. Same as ``NNWarmStart(path)``."""
-        return cls(model_path, **kw)
-
-    def __call__(
-        self,
-        T: float,
-        P_bar: float,
-        z_co2: float,
-        m_tot: float,
-    ) -> Optional[WarmStartGuess]:
-        """
-        Run NN inference and return a warm-start guess, or None.
-
-        Returns None when the NN predicts single-phase or produces degenerate
-        K-values; the flash solver will use its own cold-start fallback.
-        """
-        from .nn_flash import flash_nn_guess
-        nn_result = flash_nn_guess(
-            T, P_bar, z_co2, m_tot,
-            nn=self._nn,
-            phase_threshold=self._phase_threshold,
-        )
-        if nn_result is None:
-            return None
-
-        K1, K4 = nn_result["K_vals"]
-
-        # sol_aq_x0 from flash_nn_guess is [Z_aq, χ₁w, ε_r] (NN head order).
-        # flash_co2_h2o_salt_kv expects [Z_aq, ε_r, χ₁w].  Reorder here.
-        raw_aq = nn_result["sol_aq_x0"]   # [Z_aq, chi1w, epsr]
-        sol_aq_x0 = np.array([raw_aq[0], raw_aq[2], raw_aq[1]], dtype=float)
-        sol_c_x0  = nn_result["sol_c_x0"]  # [Z_c, chi1c] — already correct
-
-        return WarmStartGuess(
-            K_init      = (float(K1), float(K4)),
-            sol_aq_x0   = sol_aq_x0,
-            sol_c_x0    = sol_c_x0,
-            is_two_phase= True,   # NN returned non-None → predicted two-phase
-            source      = "nn",
-        )
