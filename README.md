@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-BA0C2F.svg?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![tests](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml/badge.svg)](https://github.com/jmoortgat/CPA_and_eCPA_flash/actions/workflows/tests.yml)
-[![Paper](https://img.shields.io/badge/paper-in%20press%20%40%20I%26ECR-2563EB.svg?style=flat-square)](https://pubs.acs.org/journal/iecred)
+[![Paper](https://img.shields.io/badge/paper-10.1021%2Facs.iecr.6c02626-2563EB.svg?style=flat-square)](https://doi.org/10.1021/acs.iecr.6c02626)
 ![Coverage](https://img.shields.io/badge/T%20range-0–425%20°C-teal.svg?style=flat-square)
 ![Coverage](https://img.shields.io/badge/P%20range-1–1500%20bar-teal.svg?style=flat-square)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22212018-1682D4.svg?style=flat-square)](https://doi.org/10.5281/zenodo.22212018)
@@ -295,6 +295,7 @@ If you use this code, please cite:
              Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State},
   journal = {Industrial \& Engineering Chemistry Research},
   year    = {2026},
+  doi     = {10.1021/acs.iecr.6c02626},
   note    = {in press}
 }
 ```
