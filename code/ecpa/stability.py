@@ -537,9 +537,9 @@ def _eval_aq_all(Zw: float, epsr: float, chi1w: float,
     NddeltadN1 =  delta*eta*b1*dg_deta/(g_eta*b)
     NddeltadN4 =  delta*eta*b4*dg_deta/(g_eta*b)
     dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-    dFdchic  = 2*x2w*rho*S14*delta*chi4w**2
+    dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
     dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
-    dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x2w*S14*delta*chi4w)*chi1w**2
+    dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
     dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
     dFdNw    = 2*rho*delta*chi1w**3
     dGdNw    = 2*rho*S14*delta*chi1w**3
@@ -555,7 +555,7 @@ def _eval_aq_all(Zw: float, epsr: float, chi1w: float,
                    + dFdchic*(dGdNw + dGddelta*NddeltadN1)) / det)
     Ndchi4WdNw = -(dGdchiw*Ndchi1WdNw + dGdNw + dGddelta*NddeltadN1)
     Ndchi1WdNc = ((-(dFdNc + dFddelta*NddeltadN4)
-                   + dFdchic*(-dGddelta*NddeltadN4)) / det)  # dGdNc=0
+                   + dFdchic*(dGddelta*NddeltadN4)) / det)  # dGdNc=0
     Ndchi4WdNc = -(dGdchiw*Ndchi1WdNc + dGddelta*NddeltadN4)
 
     # Permittivity lnφ contributions
@@ -698,9 +698,9 @@ def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
     NddeltadN1 =  delta*eta*b1*dg_deta/(g_eta*b)
     NddeltadN4 =  delta*eta*b4*dg_deta/(g_eta*b)
     dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-    dFdchic  = 2*x2w*rho*S14*delta*chi4w**2
+    dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
     dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
-    dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x2w*S14*delta*chi4w)*chi1w**2
+    dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
     dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
     dFdNw    = 2*rho*delta*chi1w**3
     dGdNw    = 2*rho*S14*delta*chi1w**3
@@ -716,7 +716,7 @@ def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
                    + dFdchic*(dGdNw + dGddelta*NddeltadN1)) / det)
     Ndchi4WdNw = -(dGdchiw*Ndchi1WdNw + dGdNw + dGddelta*NddeltadN1)
     Ndchi1WdNc = ((-(dFdNc + dFddelta*NddeltadN4)
-                   + dFdchic*(-dGddelta*NddeltadN4)) / det)  # dGdNc=0
+                   + dFdchic*(dGddelta*NddeltadN4)) / det)  # dGdNc=0
     Ndchi4WdNc = -(dGdchiw*Ndchi1WdNc + dGddelta*NddeltadN4)
 
     dgwdPw   = -(gw-1)*np.cos(THETA1)/(Pw*np.cos(THETA1) + 1)
@@ -874,10 +874,10 @@ def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
         # Differentiate M_cd·[Vdchi1WdV, Vdchi4WdV]=RHS_V w.r.t. chi1w.
         # VddeltadV does not depend on chi1w.
         d2_dFdchiw_xd = 4*x1w*rho*delta*chi1w
-        d2_dFdchic_xd = 4*x2w*rho*S14*delta*chi4w*d2_chi4w
+        d2_dFdchic_xd = 4*x4w*rho*S14*delta*chi4w*d2_chi4w
         d2_dGdchiw_xd = 4*x1w*rho*S14*delta*chi1w
         d2_dFdV_xd    = (-6*rho*x1w*delta*chi1w**2
-                          - 2*rho*x2w*S14*delta*(d2_chi4w*chi1w**2 + 2*chi4w*chi1w))
+                          - 2*rho*x4w*S14*delta*(d2_chi4w*chi1w**2 + 2*chi4w*chi1w))
         d2_dGdV_xd    = -6*rho*x1w*S14*delta*chi1w**2
         P_F_xd = 2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14
         P_G_xd = 2*rho*x1w*chi1w*S14
