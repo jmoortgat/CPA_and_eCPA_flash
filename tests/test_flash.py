@@ -1,6 +1,8 @@
 """Regression tests for the eCPA K-value flash.
 
-Reference values were computed with the released code at v1.0.0. They pin
+Reference values were recomputed at v1.0.1 after the permittivity-chain
+fix (see CHANGELOG); the v1.0.0 values differed by up to ~3% relative in
+x_CO2_aq at the highest salinities and are no longer valid. They pin
 the two-phase split of the CO2 + H2O + NaCl ternary at three representative
 conditions spanning the validated window (storage-aquifer to deep
 geothermal). Tolerances are loose enough for cross-platform floating-point
@@ -13,9 +15,9 @@ from ecpa.flash import flash_co2_h2o_salt_kv
 
 # (T [K], P [bar], z_CO2, m_NaCl [mol/kg]) -> (x_CO2_aq, beta, y_H2O)
 REFERENCE = {
-    (323.15, 100.0, 0.3, 1.0): (1.670443e-02, 0.281389, 2.727190e-03),
-    (323.15, 100.0, 0.3, 3.0): (1.108594e-02, 0.271518, 2.502037e-03),
-    (423.15, 500.0, 0.5, 6.0): (9.465707e-03, 0.471360, 5.325096e-02),
+    (323.15, 100.0, 0.3, 1.0): (1.675571e-02, 0.281352, 2.727038e-03),
+    (323.15, 100.0, 0.3, 3.0): (1.129073e-02, 0.271367, 2.503144e-03),
+    (423.15, 500.0, 0.5, 6.0): (9.729840e-03, 0.471440, 5.370682e-02),
 }
 
 

@@ -149,10 +149,10 @@ def ELV(x0, T, P, ms, params=None):
         T2    = Na*rho/(9*eps0*kb*T)*(x1w*gw*dip01**2)
 
         dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-        dFdchic  = 2*x2w*rho*S14*delta*chi4w**2
+        dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
         dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
         dGdchic  = 1
-        dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x2w*S14*delta*chi4w)*chi1w**2
+        dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
         dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
         dFdNw    = 2*rho*delta*chi1w**3
         dGdNw    = 2*rho*S14*delta*chi1w**3
