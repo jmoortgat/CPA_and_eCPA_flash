@@ -3,7 +3,68 @@
 All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.2] — 2026-09-13
+
+### Fixed
+- **Phase-stability SSI did not iterate.** In `_stability_ssi`
+  (`code/ecpa/stability.py`) the "previous" iterate `lnW_old` was recomputed
+  from the current `lnphi` and was therefore algebraically identical to the
+  direct-substitution update `lnW_new`. The step `lnW_new - lnW_old` was
+  identically zero, so every trial reported convergence on its first pass,
+  `max_iter`, `tol` and the Jex et al. (2024) acceleration were dead code,
+  and the reported tangent-plane distance was a one-step estimate from the
+  initial guess rather than a stationary-point value. The iteration now
+  carries `W` as its state, as Michelsen's method requires.
+  Consequence of the defect: the TPD returned at some conditions was too
+  weakly negative to clear the `-0.02` hard threshold in
+  `ecpa_stability_flash`, which then classified a genuinely two-phase state
+  as single-phase. Example: T = 423.15 K, P = 1000 bar, z_CO2 = 0.5,
+  m_NaCl = 1 mol/kg returned `single_phase` with tpd = -0.0139 while the
+  K-value flash finds a valid split at beta = 0.532; the corrected
+  iteration returns tpd = -0.0382 and the point is correctly two-phase.
+- **Phase-stability verdict could rest on a non-converged trial.**
+  `ecpa_stability` scored every trial by `1 - sum_W` regardless of whether
+  the trial had reached a stationary point. With the iteration now live, an
+  aborted trial carries a transient `sum_W`; such trials are no longer
+  allowed to drive the stable/unstable decision, and the "stable" message
+  now states how many trials actually converged.
+- **Permittivity chain derivatives (remaining defects).** In all four
+  aqueous kernels (`code/ecpa/elv.py`, `code/ecpa/stability.py` x2,
+  `code/benchmark_flash.py`) the `chi1w**2` / `chi4w**2` prefactors of the
+  implicit chi-system Jacobian were swapped between the F and G rows
+  (`dFdchic`, `dGdchiw`, `dGdV`, `dGdNw`), and `dFddelta` / `dGddelta`
+  carried a spurious `-(1 + (delta-1)*...)` grouping instead of the plain
+  derivative. The dependent second-derivative lines in
+  `code/ecpa/stability.py` were updated to match.
+- **`_cpa2_label` argument order** (`code/ecpa/scan.py`): `(z, T, P)` was
+  passed into a `(T, P_bar, z_co2)` signature. Because the callee swallows
+  exceptions, the CPA cross-check silently never fired, so the
+  `single_phase_gas` / `single_phase_liquid` buckets in the scan failure
+  statistics were not what they claimed to be. Diagnostics only; no
+  computed equilibrium was affected.
+- **Brent flash returned `inf`/`NaN` as success.** When the salt bracketing
+  collapsed onto `ms_aq = 0`, `N_aq = n_salt / x2w` divided by zero and the
+  function returned `beta = NaN` without raising. It now raises.
+- **`scripts/validate_co2h2o.py`** read `CO2_WATER_exp.parquet` from the
+  working directory; the tracked database lives at `CO2/` in the repository
+  root, so the script could not run from a fresh clone.
+- Regression reference values in `tests/test_flash.py` recomputed.
+
+### Changed
+- `code/ecpa/__init__.py` now exports `__version__`.
+- `REPRODUCING_FIGURES.md`: `results/solution_table.npz` is required by the
+  two validation drivers and is *not* distributed (it must be built with
+  `scripts/build_solution_table.py`); and `run_warmstart_scan.py` does not
+  write `results/scan_v4_table.npz` — that table ships with the repository
+  and no script here regenerates it.
+
+### Verification
+The corrected chain derivatives were checked against complex-step
+differentiation of the code's own defining equations for chi1w and chi4w
+(`code/ecpa/elv.py`), which shares no derivative algebra with the kernels.
+The corrected expressions agree with the complex-step reference to 3e-14
+relative; the previous expressions were in error by up to 1.6 (i.e. 160%)
+relative on the chi4w derivatives.
 
 ### Removed
 - The experimental neural-network warm-start (`ecpa/nn_flash.py`, the
@@ -11,6 +72,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   outperformed the solution-table warm-start, its trained checkpoint was
   not distributed, and it is not used in the companion paper. The
   solution-table warm-start (`ScanTableWarmStart`) is unaffected.
+- Two stale duplicate files in the experimental database
+  (`EXP/CO2-WATER/T423K/EXP4_T423K (copy).txt` and the T473K equivalent).
+  The loader already skipped them, so no data changed.
 
 ## [1.0.1] — 2026-09-12
 
@@ -34,10 +98,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shift by roughly 1e-4 to 1e-2 relative at 4-6 mol/kg NaCl through the
   ELV route, and by up to ~3e-2 relative through the K-value flash — well
   within the ~5% experimental scatter and the reported AAREs (6.9-8.2%
-  for CO2 solubility). After the fix, the aqueous kernels agree with an
-  independent reimplementation of the same model to better than 4e-9
-  relative on solved equilibrium compositions at 1-6 mol/kg (previously
-  up to 4e-3).
+  for CO2 solubility).
+
+  *Note added in 1.0.2:* the original entry supported this fix by
+  reporting agreement "to better than 4e-9 relative" with an independent
+  reimplementation of the same model. That agreement is real, but it is
+  not evidence of correctness: the reimplementation was derived from the
+  same hand-differentiated chain and inherits the same algebra, so it
+  agrees with the kernels whether or not that algebra is right. It did
+  not, and could not, detect the further defects fixed in 1.0.2. The
+  verification that does carry weight is complex-step differentiation of
+  the defining equations themselves, which shares no derivative algebra
+  with either implementation; see the 1.0.2 entry.
 - Regression reference values in `tests/test_flash.py` recomputed for the
   corrected model (x_CO2_aq shifts of +3.1e-3, +1.8e-2, and +2.8e-2
   relative at the 1, 3, and 6 mol/kg pinned points).

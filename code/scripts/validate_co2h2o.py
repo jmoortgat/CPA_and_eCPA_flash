@@ -28,7 +28,10 @@ if __name__ == '__main__':
     params = make_params()
 
     # ── Load experimental data ─────────────────────────────────────────────────
-    exp_df = pd.read_parquet('CO2_WATER_exp.parquet')
+    # The tracked database lives at <repo root>/CO2/; resolve it the same way
+    # ecpa.exp_data does so the script works from code/ and from the root.
+    from ecpa.exp_data import _resolve_data_path
+    exp_df = pd.read_parquet(_resolve_data_path('CO2/CO2_WATER_exp.parquet'))
     print(f"Loaded {len(exp_df)} experimental points  "
           f"T={exp_df['T_K'].min()}–{exp_df['T_K'].max()} K")
     print(f"  xc_W available: {exp_df['xc_W'].notna().sum()}  "

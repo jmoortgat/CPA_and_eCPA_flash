@@ -244,28 +244,6 @@ CPA_and_eCPA_flash/
 
 ---
 
-## Erratum (fixed in v1.0.1)
-
-Version 1.0.0 carried an indexing slip in the electrolyte permittivity
-term of the aqueous eCPA kernels: two chain-derivative terms (`dFdchic`,
-`dFdV`) used the Na⁺ mole fraction where the CO₂ mole fraction belongs
-(`code/ecpa/elv.py`, `code/ecpa/stability.py`, `code/benchmark_flash.py`),
-and the closed-form composition derivative of the water association
-fraction in `code/ecpa/stability.py` carried a sign slip in the same
-chain. Both terms vanish without salt, so all salt-free results are
-unchanged. With salt, the corrections shift predicted compositions by
-roughly 0.1–1% relative at 4–6 mol/kg NaCl through the route used for
-the published figures, and by up to ~3% relative in the K-value flash —
-within the ~5% scatter of the experimental data and well below the AAREs
-in the table above, so no conclusion of the companion paper is affected.
-After the fix the aqueous kernels agree with an independent
-reimplementation of the same model to better than 1e-8 relative at all
-salinities (previously the disagreement reached the 1e-3 level at high
-salinity). The pinned regression values in `tests/test_flash.py` were
-recomputed; details are in the v1.0.1 CHANGELOG entry.
-
----
-
 ## Péneloux volume shifts
 
 All shifts live in `code/ecpa/constants.py`.

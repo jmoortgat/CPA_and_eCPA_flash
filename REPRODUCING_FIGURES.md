@@ -21,8 +21,26 @@ Figure generation is a two-step process:
    write figures to `figures/`.
 
 The sections below are organised by figure number and list both steps.
-The precomputed solution table (`results/CPA_ELV_all.parquet`, included in the
-repository) is required by most scripts — no additional setup is needed for it.
+
+### Input artifacts
+
+Two precomputed tables sit upstream of most scripts:
+
+| File | In the repository? | Needed by |
+|:---|:---|:---|
+| `code/results/CPA_ELV_all.parquet` | yes (26 MB) | most scripts |
+| `code/results/solution_table.npz` | **no** | `validate_co2h2o.py`, `validate_co2nacl_full.py` |
+| `code/results/scan_v4_table.npz` | yes (23 MB) | Figs. 4, 6b, 7, 8, 9, S10 |
+
+`solution_table.npz` is the 3-D $(T,P,m_s)$ warm-start table. It is not
+distributed (it is a regenerable intermediate) and must be built once with
+`python scripts/build_solution_table.py` — 1–4 h — before the two validation
+drivers will run. It supplies initial guesses only: it changes how fast the
+solvers converge, not what they converge to.
+
+`scan_v4_table.npz` is shipped ready to use. **No script in this repository
+regenerates it**; the plotting scripts for Figs. 4, 6b, 7, 8, 9 and S10 read
+it directly.
 
 ---
 
@@ -125,11 +143,10 @@ Outputs (in `figures/scan/`):
 
 ### Figures 7, 8, 9 — eCPA ternary composition and timing grids
 
-**Data generation — eCPA warm-start scan** (~27 min, uses all CPU cores):
-```bash
-python scripts/run_warmstart_scan.py
-```
-Saves `results/scan_v4_table.npz` and `results/scan_v4_metrics.parquet`.
+**Data**: `results/scan_v4_table.npz` and `results/scan_v4_metrics.parquet`,
+both shipped with the repository (361 T × 100 P × 14 m_s). No script here
+regenerates them; `run_warmstart_scan.py` is a separate CPA warm-start
+*benchmark* and does not write these files.
 
 **Plotting**:
 ```bash
@@ -265,8 +282,9 @@ Steps marked *(slow)* take more than a few minutes.
 ```bash
 cd code
 
-# 1. Build solution table (if not using the pre-built CPA_ELV_all.parquet)  [slow: 1–4 h]
-# python scripts/build_solution_table.py
+# 1. Build the warm-start solution table.  REQUIRED for steps 2 and 3:
+#    results/solution_table.npz is not distributed.                        [slow: 1–4 h]
+python scripts/build_solution_table.py
 
 # 2. CO₂ + H₂O binary validation                                            [~5 min]
 python scripts/validate_co2h2o.py
@@ -283,7 +301,8 @@ python scripts/run_parameter_scan.py
 # 6. CPA Newton polish scan                                                   [~10 min]
 python scripts/run_newton_scan.py
 
-# 7. eCPA warm-start scan (generates scan_v4_table.npz)                     [~27 min]
+# 7. CPA warm-start benchmark (reports table-warm-start speedups; does NOT
+#    write scan_v4_table.npz, which ships with the repository)              [~27 min]
 python scripts/run_warmstart_scan.py
 
 # 8. Reservoir simulator
