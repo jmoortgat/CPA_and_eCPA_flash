@@ -148,21 +148,26 @@ def ELV(x0, T, P, ms, params=None):
         T1    = (2*epsr + eps_inf)*(epsr - eps_inf)/(epsr*(eps_inf + 2)**2)
         T2    = Na*rho/(9*eps0*kb*T)*(x1w*gw*dip01**2)
 
+        # Implicit χ system (see the defining equations a few lines above):
+        #   F ≡ χ₁W − 1/D = 0,  D = 1 + 2ρδ(x₁χ₁W + x₄S₁₄χ₄W)   (= 1/χ₁W)
+        #   G ≡ χ₄W − 1/E = 0,  E = 1 + 2ρδ x₁χ₁W S₁₄            (= 1/χ₄W)
+        # so ∂F/∂• = χ₁W²·∂D/∂•  and  ∂G/∂• = χ₄W²·∂E/∂•.  The χ₁W²/χ₄W²
+        # prefactors therefore follow the *row* (F vs G), not the column.
         dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-        dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
-        dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
+        dFdchic  = 2*x4w*rho*S14*delta*chi1w**2
+        dGdchiw  = 2*x1w*rho*S14*delta*chi4w**2
         dGdchic  = 1
         dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
-        dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
+        dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi4w**2
         dFdNw    = 2*rho*delta*chi1w**3
-        dGdNw    = 2*rho*S14*delta*chi1w**3
+        dGdNw    = 2*rho*S14*delta*chi1w*chi4w**2
         dFdNc    = 2*rho*S14*delta*chi1w**2*chi4w
         dGdNc    = 0
         VddeltadV   = -delta*eta*dg_deta/g_eta
         NddeltadN1  = delta*eta*b1*dg_deta/(g_eta*b)
         NddeltadN4  = delta*eta*b4*dg_deta/(g_eta*b)
-        dFddelta = -chi1w**2*(1 + (delta-1)*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14))
-        dGddelta = -chi4w**2*(1 + (delta-1)*(2*rho*x1w*chi1w*S14))
+        dFddelta = chi1w**2*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14)
+        dGddelta = chi4w**2*(2*rho*x1w*chi1w*S14)
 
         Vdchi4WdV   = -dGdchic**-1*(dGdchiw*Vdchi1WdV  + dGdV  + dGddelta*VddeltadV)
         Ndchi4WdNw  = -dGdchic**-1*(dGdchiw*Ndchi1WdNw + dGdNw + dGddelta*NddeltadN1)

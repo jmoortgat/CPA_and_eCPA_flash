@@ -56,7 +56,7 @@ Notebook variable mapping (eCPA → this module)
   Zw  = aqueous Z          →  Zx
   Zc  = CO₂-rich Z         →  Zy
 
-Author: J. Moortgat. Derived from CPA_040926.py and eCPA_VLE_04102026.ipynb.
+Author: J. Moortgat.
 """
 
 from __future__ import annotations

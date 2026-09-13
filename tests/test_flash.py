@@ -1,12 +1,14 @@
 """Regression tests for the eCPA K-value flash.
 
-Reference values were recomputed at v1.0.1 after the permittivity-chain
-fix (see CHANGELOG); the v1.0.0 values differed by up to ~3% relative in
-x_CO2_aq at the highest salinities and are no longer valid. They pin
-the two-phase split of the CO2 + H2O + NaCl ternary at three representative
-conditions spanning the validated window (storage-aquifer to deep
-geothermal). Tolerances are loose enough for cross-platform floating-point
-variation and tight enough to catch any change in the physics.
+Reference values were last recomputed at v1.0.2, after the remaining
+permittivity-chain defects were corrected (see CHANGELOG).  Relative to
+v1.0.1 they move by at most 3.1e-4 in x_CO2_aq, 1.1e-5 in beta and
+1.9e-5 in y_H2O; relative to v1.0.0 they differ by up to ~3% in
+x_CO2_aq at the highest salinities.  They pin the two-phase split of the
+CO2 + H2O + NaCl ternary at three representative conditions spanning the
+validated window (storage-aquifer to deep geothermal).  Tolerances are
+loose enough for cross-platform floating-point variation and tight enough
+to catch any change in the physics.
 """
 
 import pytest
@@ -15,9 +17,9 @@ from ecpa.flash import flash_co2_h2o_salt_kv
 
 # (T [K], P [bar], z_CO2, m_NaCl [mol/kg]) -> (x_CO2_aq, beta, y_H2O)
 REFERENCE = {
-    (323.15, 100.0, 0.3, 1.0): (1.675571e-02, 0.281352, 2.727038e-03),
-    (323.15, 100.0, 0.3, 3.0): (1.129073e-02, 0.271367, 2.503144e-03),
-    (423.15, 500.0, 0.5, 6.0): (9.729840e-03, 0.471440, 5.370682e-02),
+    (323.15, 100.0, 0.3, 1.0): (1.675865e-02, 0.281349, 2.727042e-03),
+    (323.15, 100.0, 0.3, 3.0): (1.129390e-02, 0.271364, 2.503165e-03),
+    (423.15, 500.0, 0.5, 6.0): (9.732861e-03, 0.471438, 5.370583e-02),
 }
 
 

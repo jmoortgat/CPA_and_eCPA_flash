@@ -536,16 +536,21 @@ def _eval_aq_all(Zw: float, epsr: float, chi1w: float,
     VddeltadV  = -delta*eta*dg_deta/g_eta
     NddeltadN1 =  delta*eta*b1*dg_deta/(g_eta*b)
     NddeltadN4 =  delta*eta*b4*dg_deta/(g_eta*b)
+    # Implicit chi system:
+    #   F = chi1w - 1/D,  D = 1 + 2*rho*delta*(x1w*chi1w + x4w*S14*chi4w)
+    #   G = chi4w - 1/E,  E = 1 + 2*rho*delta*x1w*chi1w*S14
+    # so dF/d* = chi1w**2 * dD/d*  and  dG/d* = chi4w**2 * dE/d*: the
+    # chi1w**2 / chi4w**2 prefactor follows the *row* (F vs G).
     dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-    dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
-    dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
+    dFdchic  = 2*x4w*rho*S14*delta*chi1w**2
+    dGdchiw  = 2*x1w*rho*S14*delta*chi4w**2
     dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
-    dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
+    dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi4w**2
     dFdNw    = 2*rho*delta*chi1w**3
-    dGdNw    = 2*rho*S14*delta*chi1w**3
+    dGdNw    = 2*rho*S14*delta*chi1w*chi4w**2
     dFdNc    = 2*rho*S14*delta*chi1w**2*chi4w
-    dFddelta = -chi1w**2*(1 + (delta-1)*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14))
-    dGddelta = -chi4w**2*(1 + (delta-1)*(2*rho*x1w*chi1w*S14))
+    dFddelta = chi1w**2*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14)
+    dGddelta = chi4w**2*(2*rho*x1w*chi1w*S14)
     det      = dFdchiw - dFdchic*dGdchiw
 
     Vdchi1WdV  = ((-(dFdV + dFddelta*VddeltadV)
@@ -697,16 +702,21 @@ def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
     VddeltadV  = -delta*eta*dg_deta/g_eta
     NddeltadN1 =  delta*eta*b1*dg_deta/(g_eta*b)
     NddeltadN4 =  delta*eta*b4*dg_deta/(g_eta*b)
+    # Implicit chi system:
+    #   F = chi1w - 1/D,  D = 1 + 2*rho*delta*(x1w*chi1w + x4w*S14*chi4w)
+    #   G = chi4w - 1/E,  E = 1 + 2*rho*delta*x1w*chi1w*S14
+    # so dF/d* = chi1w**2 * dD/d*  and  dG/d* = chi4w**2 * dE/d*: the
+    # chi1w**2 / chi4w**2 prefactor follows the *row* (F vs G).
     dFdchiw  = 1 + 2*x1w*rho*delta*chi1w**2
-    dFdchic  = 2*x4w*rho*S14*delta*chi4w**2
-    dGdchiw  = 2*x1w*rho*S14*delta*chi1w**2
+    dFdchic  = 2*x4w*rho*S14*delta*chi1w**2
+    dGdchiw  = 2*x1w*rho*S14*delta*chi4w**2
     dFdV     = -(2*rho*x1w*delta*chi1w + 2*rho*x4w*S14*delta*chi4w)*chi1w**2
-    dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi1w**2
+    dGdV     = -(2*rho*x1w*S14*delta*chi1w)*chi4w**2
     dFdNw    = 2*rho*delta*chi1w**3
-    dGdNw    = 2*rho*S14*delta*chi1w**3
+    dGdNw    = 2*rho*S14*delta*chi1w*chi4w**2
     dFdNc    = 2*rho*S14*delta*chi1w**2*chi4w
-    dFddelta = -chi1w**2*(1 + (delta-1)*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14))
-    dGddelta = -chi4w**2*(1 + (delta-1)*(2*rho*x1w*chi1w*S14))
+    dFddelta = chi1w**2*(2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14)
+    dGddelta = chi4w**2*(2*rho*x1w*chi1w*S14)
     det      = dFdchiw - dFdchic*dGdchiw
 
     Vdchi1WdV  = ((-(dFdV + dFddelta*VddeltadV)
@@ -874,18 +884,18 @@ def _eval_aq_all_with_jac(Zw: float, epsr: float, chi1w: float,
         # Differentiate M_cd·[Vdchi1WdV, Vdchi4WdV]=RHS_V w.r.t. chi1w.
         # VddeltadV does not depend on chi1w.
         d2_dFdchiw_xd = 4*x1w*rho*delta*chi1w
-        d2_dFdchic_xd = 4*x4w*rho*S14*delta*chi4w*d2_chi4w
-        d2_dGdchiw_xd = 4*x1w*rho*S14*delta*chi1w
+        d2_dFdchic_xd = 4*x4w*rho*S14*delta*chi1w
+        d2_dGdchiw_xd = 4*x1w*rho*S14*delta*chi4w*d2_chi4w
         d2_dFdV_xd    = (-6*rho*x1w*delta*chi1w**2
                           - 2*rho*x4w*S14*delta*(d2_chi4w*chi1w**2 + 2*chi4w*chi1w))
-        d2_dGdV_xd    = -6*rho*x1w*S14*delta*chi1w**2
+        d2_dGdV_xd    = -2*rho*x1w*S14*delta*(chi4w**2
+                                              + 2*chi1w*chi4w*d2_chi4w)
         P_F_xd = 2*rho*x1w*chi1w + 2*rho*x4w*chi4w*S14
         P_G_xd = 2*rho*x1w*chi1w*S14
         d2_P_F_xd = 2*rho*x1w + 2*rho*x4w*S14*d2_chi4w
-        d2_dFddelta_xd = (-2*chi1w*(1 + (delta-1)*P_F_xd)
-                           - chi1w**2*(delta-1)*d2_P_F_xd)
-        d2_dGddelta_xd = (-2*chi4w*d2_chi4w*(1 + (delta-1)*P_G_xd)
-                           - chi4w**2*(delta-1)*2*rho*x1w*S14)
+        d2_dFddelta_xd = 2*chi1w*P_F_xd + chi1w**2*d2_P_F_xd
+        d2_dGddelta_xd = (2*chi4w*d2_chi4w*P_G_xd
+                          + chi4w**2*2*rho*x1w*S14)
         new_RHS_F = (-(d2_dFdV_xd + d2_dFddelta_xd*VddeltadV)
                      - d2_dFdchiw_xd*Vdchi1WdV - d2_dFdchic_xd*Vdchi4WdV)
         new_RHS_G = (-(d2_dGdV_xd + d2_dGddelta_xd*VddeltadV)
@@ -1138,7 +1148,17 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
         d4 = np.log(max(x4c_feed, 1e-300)) + d4_ref
 
         # ── SSI loop (warm-started within iterations, accelerated) ────────────
-        x1_t       = float(x_init)
+        # The iteration state is the mole-number-like vector W = (W_h2o, W_co2).
+        # It is initialised from the trial composition (so sum_W = 1 and the
+        # first lnφ evaluation happens exactly at ``x_init``) and is *carried
+        # across iterations*; the trial composition is recovered each pass as
+        # w_i = W_i / ΣW.  Michelsen's stationarity condition is
+        #     g_i = ln W_i + lnφ_i(w) − d_i = 0,
+        # and the direct-substitution update is ln W_i ← d_i − lnφ_i(w), i.e.
+        # the step in log-space is exactly −g.
+        x1_t       = float(np.clip(x_init, 1e-300, 1.0 - 1e-300))
+        W          = np.array([x1_t, 1.0 - x1_t])
+        W          = np.clip(W, 1e-300, None)
         sol_prev   = None
         converged  = False
         sum_W_prev = np.nan
@@ -1147,6 +1167,11 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
         _g_prev = None     # previous residual vector for acceleration
 
         for _ in range(max_iter):
+            sum_W = W[0] + W[1]
+            if not np.isfinite(sum_W) or sum_W <= 0:
+                break
+            x1_t = float(np.clip(W[0] / sum_W, 1e-12, 1.0 - 1e-12))
+
             try:
                 if trial == "co2_rich":
                     lnphi1, lnphi4, sol_prev = _lnphi_c_inner(x1_t, T, P,
@@ -1158,20 +1183,16 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
                 sol_prev = None
                 break
 
-            # Current W in log-space
-            lnW1 = np.clip(d1 - lnphi1, -500, 500)
-            lnW4 = np.clip(d4 - lnphi4, -500, 500)
-
-            W1    = np.exp(lnW1)
-            W4    = np.exp(lnW4)
-            sum_W = W1 + W4
-            if not np.isfinite(sum_W) or sum_W <= 0:
+            if not (np.isfinite(lnphi1) and np.isfinite(lnphi4)):
                 break
 
-            # Stationary-condition residual: g_i = ln(W_i) + lnphi_i - d_i
-            lnW_old = np.array([np.log(max(W1, 1e-300)), np.log(max(W4, 1e-300))])
+            # Stationary-condition residual at the *current* W (previous
+            # iterate), g_i = ln(W_i) + lnphi_i(w) - d_i.
+            lnW_old = np.log(np.clip(W, 1e-300, None))
             g_vec   = np.array([lnW_old[0] + lnphi1 - d1,
                                 lnW_old[1] + lnphi4 - d4])
+            if not np.all(np.isfinite(g_vec)):
+                break
 
             # Accelerated step-size (Jex et al. 2024, Eq. 7)
             if accelerated and _g_prev is not None:
@@ -1184,28 +1205,27 @@ def _stability_ssi(z_co2: float, ms: float, T: float, P: float,
                     _m = 1.0
             _g_prev = g_vec.copy()
 
-            # Direct substitution update in log-space
-            lnW_new = np.array([d1 - lnphi1, d4 - lnphi4])
+            # Direct substitution update in log-space: lnW_new = d - lnphi.
+            # Note lnW_step == -g_vec, so the step norm below *is* the
+            # stationarity residual norm.
+            lnW_new  = np.array([d1 - lnphi1, d4 - lnphi4])
             lnW_step = np.clip(lnW_new - lnW_old, -5.0, 5.0)
 
             # Apply acceleration
-            W_acc = np.exp(lnW_old + _m * lnW_step)
+            W_acc = np.exp(np.clip(lnW_old + _m * lnW_step, -500.0, 500.0))
             W_acc = np.clip(W_acc, 1e-300, 1e10)
             sum_W = W_acc[0] + W_acc[1]
             if not np.isfinite(sum_W) or sum_W <= 0:
                 break
 
-            x1_new = W_acc[0] / sum_W
-
-            # Convergence on step norm (not sum_W difference)
-            if np.linalg.norm(lnW_step) < tol:
-                converged  = True
-                x1_t       = x1_new
-                sum_W_prev = sum_W
-                break
-
-            x1_t       = x1_new
+            W          = W_acc
             sum_W_prev = sum_W
+            x1_t       = float(W[0] / sum_W)
+
+            # Convergence on the stationarity-residual (== step) norm
+            if np.linalg.norm(lnW_step) < tol:
+                converged = True
+                break
 
         tpd_neg = bool(sum_W_prev > 1.0 + 1e-8) if converged else True
         return dict(
@@ -1380,8 +1400,16 @@ def ecpa_stability(
         elif trial_type == "aqueous" and result.get("ref_sol") is not None:
             ref_x0_aq = result["ref_sol"]
 
+        # TPD = 1 − ΣW is the tangent-plane distance only *at a stationary
+        # point*.  A trial that aborted (inner-solver failure) or ran out of
+        # iterations carries a transient ΣW that is not a TPD at all, so it
+        # must not be allowed to drive the verdict: score it as 0 (this trial
+        # found nothing), exactly as a NaN ΣW is scored.
         sum_W = result["sum_W"]
-        tpd = (1.0 - sum_W) if np.isfinite(sum_W) else 0.0
+        if result["converged"] and np.isfinite(sum_W):
+            tpd = 1.0 - sum_W
+        else:
+            tpd = 0.0
         all_trials.append((label, trial_type, float(tpd),
                            result["converged"], result["x1_final"]))
 
@@ -1430,7 +1458,16 @@ def ecpa_stability(
             msg = "Aqueous trial indicates instability"
     else:
         trial_type = None
-        msg = "Stable (all trials converged with tpd ≥ 0)"
+        n_conv = sum(1 for _, _, _, conv, _ in all_trials if conv)
+        n_run  = len(all_trials)
+        if n_conv == n_run:
+            msg = "Stable (all trials converged with tpd ≥ 0)"
+        else:
+            # Be explicit: a "stable" verdict resting on trials that never
+            # reached a stationary point is weaker evidence than one that
+            # does, and the caller should be able to see the difference.
+            msg = (f"Stable (tpd ≥ 0); {n_conv}/{n_run} trials converged, "
+                   f"the rest did not reach a stationary point")
 
     return dict(
         stable=stable,

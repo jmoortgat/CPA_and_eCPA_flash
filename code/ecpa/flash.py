@@ -340,6 +340,14 @@ def flash_co2_h2o_salt_1d(
     x3w = x2w
     x4w = 1.0 - x1w - x2w - x3w
     x4c = 1.0 - x1c
+    # The aqueous phase amount is recovered from salt conservation,
+    # N_aq = n_salt / x2w.  If the bracketing collapsed onto ms_aq = 0 the
+    # salt has nowhere to go: N_aq would be +inf and beta NaN, yet the
+    # function would still return "successfully".  Fail loudly instead.
+    if not (x2w > 0.0) or not np.isfinite(x2w):
+        raise RuntimeError(
+            f"Brent flash degenerate: ms_aq={ms_aq:g} gives x2w={x2w:g}; "
+            "salt conservation cannot set the aqueous phase amount.")
     N_aq = n_salt / x2w
     N_c  = (n_co2_tot - N_aq * x4w) / x4c
 
