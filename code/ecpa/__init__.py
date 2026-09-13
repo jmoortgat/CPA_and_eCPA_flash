@@ -17,3 +17,5 @@ envelope.py     find_envelope_from_scan(), build_cpa2_envelope()
 plotting.py     All figure-generating functions
 utils.py        print_flash_report, pct_diff, test_tieline_invariance
 """
+
+__version__ = "1.0.2"

@@ -1,4 +1,4 @@
-"""Generate scan_v4 figures to replace scan_v3 figures in the paper.
+"""Generate the scan figures used in the paper.
 
 Produces (in figures/scan_v4/):
   ecpa_phase_map.pdf           — binary two-phase/single-phase map
@@ -6,7 +6,7 @@ Produces (in figures/scan_v4/):
   ecpa_composition_c_grid.pdf  — H2O mol frac in CO2-rich
   ecpa_timing_heatmap.pdf      — mean wall time per call as proxy for solver effort
 
-Columns shown: ms = 1e-5, 1.0, 2.0, 6.0  (ms=0, 0.5, 4.0 removed per reviewer)
+Columns shown: ms = 1e-5, 1.0, 2.0, 6.0 mol/kg.
 All fonts are bold throughout.
 """
 import warnings; warnings.filterwarnings('ignore')

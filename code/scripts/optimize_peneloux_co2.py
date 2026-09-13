@@ -6,12 +6,11 @@ component of the CPA/eCPA equation of state (SRK backbone) to minimise
 CO2-rich-phase density errors against the Span-Wagner (1996) reference
 equation of state for CO2, accessed via CoolProp.
 
-Motivation: reviewer 2 on ms ie-2026-02626f asked why no volume translation
-is applied to CO2, given that cubic EoS can misrepresent dense/supercritical
-CO2 density at high P/T. `Peneloux_CO2` in ecpa/constants.py is currently 0.0
-(off). Peneloux translation is isofugacity-preserving (main.tex:336-337), so
-this cannot change any previously reported phase-composition/solubility
-result -- only CO2-rich-phase density.
+Motivation: cubic equations of state can misrepresent dense/supercritical
+CO2 density at high P/T, and no volume translation is applied to CO2 here --
+`Peneloux_CO2` in ecpa/constants.py is 0.0 (off). A Peneloux translation is
+isofugacity-preserving, so switching it on cannot change any phase
+composition or solubility -- only the CO2-rich-phase density.
 
 Strategy (mirrors optimize_peneloux_h2o.py)
 --------------------------------------------

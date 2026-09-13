@@ -16,36 +16,55 @@ __pycache__/
 .venv
 env/
 venv/
+ENV/
 
 # Large scan tables (>100MB, exceed GitHub limit)
 code/results/scan_v3_table.npz
 
-# Manuscript and auxiliary files (local only)
-paper/
-paper_submit/
+# Manuscript, figure and auxiliary material — local only, never published.
+# The glob covers paper/, paper_submit/, paper_ACS/, paper_*.zip, etc.
+paper*/
+paper_ACS.zip
 aux_files/
 figures/
 logs/
+main.run.xml
+*.tex
+*.bbl
+*.blg
+*.aux
+*.synctex.gz
 
 # Root-level dev scripts and outputs
 dev/
 *.npz
 *.png
+*.pdf
 *.log
 *.slurm
 
-
-# Workspace-local items backed up in their own private repos or regenerable
+# Local working directories that are not part of this release.  They are
+# either regenerable, kept in their own repositories, or not for
+# distribution.  Listed explicitly so they can never be added by accident.
 CO2/
+EXP_raw/
 Multi_Salt/
-# root-level legacy copy; the package lives at code/ecpa/
-/ecpa/
-
-# Packaging artifacts
-*.egg-info/
-main.run.xml
-paper_ACS.zip
-paper_ACS/
+EoS_Benchmark/
+GasBrineBench/
 results/
 sync_back_from_unity.sh
 sync_to_unity.sh
+HPC_instructions.md
+CLAUDE.md
+.claude/
+
+# Root-level legacy package copy; the package lives at code/ecpa/
+/ecpa/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/

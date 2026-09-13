@@ -64,7 +64,8 @@ def _cpa2_label(z_co2: float, T: float, P: float, params,
     CPA is salt-free; salt only shrinks the two-phase window, so if CPA
     says single-phase the eCPA (with salt) system is also single-phase.
     """
-    hint = _cpa2_phase_check(float(z_co2), float(T), float(P), params)
+    # _cpa2_phase_check signature is (T, P_bar, z_co2, params).
+    hint = _cpa2_phase_check(float(T), float(P), float(z_co2), params)
     if hint == "single_phase_gas":
         return "single_phase_gas"
     if hint == "single_phase_liquid":
