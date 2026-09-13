@@ -10,6 +10,25 @@ def test_import_core_modules():
     from ecpa import constants, parameters, elv, flash, stability  # noqa: F401
 
 
+def test_version_is_consistent():
+    """ecpa.__version__, pyproject.toml and CITATION.cff must agree."""
+    import re
+
+    import ecpa
+
+    root = Path(__file__).resolve().parents[1]
+    pyproj = (root / "pyproject.toml").read_text()
+    cff = (root / "CITATION.cff").read_text()
+
+    m = re.search(r'^version\s*=\s*"([^"]+)"', pyproj, re.M)
+    assert m, "no version in pyproject.toml"
+    assert m.group(1) == ecpa.__version__
+
+    m = re.search(r"^version:\s*(\S+)\s*$", cff, re.M)
+    assert m, "no version in CITATION.cff"
+    assert m.group(1).strip('"\'') == ecpa.__version__
+
+
 def test_make_params():
     from ecpa.parameters import make_params
     params = make_params()

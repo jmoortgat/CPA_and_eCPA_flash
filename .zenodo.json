@@ -21,6 +21,8 @@
   "license": "MIT",
   "upload_type": "software",
   "access_right": "open",
+  "version": "1.0.2",
+  "publication_date": "2026-09-13",
   "keywords": [
     "thermodynamics",
     "equation of state",
