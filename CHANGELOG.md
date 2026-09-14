@@ -63,7 +63,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `plot_newton_figures.py` reads them from `results/`; and
   `run_warmstart_scan.py` read the bare filename too. The documented
   reproduction route for Figs. 5, 6 and S11 therefore could not run from a
-  clean clone. All three paths corrected.
+  clean clone — including the `RUN_LONG = True` full-recompute path in
+  `notebooks/ecpa_flash_paper.ipynb`, which chains
+  `run_parameter_scan.py` -> `run_newton_scan.py` -> `plot_newton_figures.py`.
+  All three paths corrected.
 - **`code/scripts/README.md`** claimed `run_warmstart_scan.py` "generates
   `results/scan_v4_table.npz`". It does not, and cannot: it works on the
   salt-free CPA (T, P, z) grid of 86x18x19 and reports convergence and
