@@ -73,7 +73,7 @@ prerequisites. In brief:
 | `run_parameter_scan.py` | Extended CPA parameter-space scan (86 T × 18 P × 19 z = 29,412 conditions). Writes `results/scan_results_extended.npz` with the convergence statistics reported in the paper. |
 | `run_newton_scan.py` | SSI + Newton polish on the full two-phase scan grid; produces the reported iteration statistics. |
 | `scan_experimental_points.py` | CPA stability + flash at all 631 experimental CO₂+H₂O data points. |
-| `run_warmstart_scan.py` | Add the warm-start strategy to the scan comparison; generates `results/scan_v4_table.npz`. |
+| `run_warmstart_scan.py` | Adds a fifth flash strategy — solution-table warm start — to the four cold-start strategies already in `results/scan_results_extended.npz`, and prints the convergence and iteration-count comparison. Reporting only: it writes no file. (It does **not** produce `results/scan_v4_table.npz`; that is the eCPA ternary table, on a different grid, and no script here regenerates it.) |
 
 ---
 
