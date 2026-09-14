@@ -329,11 +329,13 @@ places where a solver could report success without actually having solved
 anything, an argument-order slip in a diagnostic label, and two errors in
 the figure-reproduction instructions.
 
-The conclusions of the companion paper are unaffected. Re-running the full
-experimental validation with the corrected code moves every reported average
-absolute relative error by at most 0.02 percentage points, and predicted
-compositions by at most 3.1e-4 relative; the set of converged two-phase
-conditions is unchanged.
+The conclusions of the companion paper are unaffected. The full validation and
+figure pipeline was re-run under both the published and the corrected code and
+compared point by point. Every reported average absolute relative error moves
+by at most 0.05 percentage points; predicted compositions move by at most
+8.5e-4 relative; the set of converged two-phase conditions is unchanged; and
+of the 22 figures, one panel of Fig. 4 changes, by a single point out of 300
+on one isotherm. The measured before/after numbers are in `CHANGELOG.md`.
 
 `CHANGELOG.md` gives the detail for each version: what the defect was, how
 the fix was verified, and the measured before/after numbers.
