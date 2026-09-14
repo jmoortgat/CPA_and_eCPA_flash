@@ -28,7 +28,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   aborted trial carries a transient `sum_W`; such trials are no longer
   allowed to drive the stable/unstable decision, and the "stable" message
   now states how many trials actually converged.
-- **Permittivity chain derivatives (remaining defects).** In all four
+- **Permittivity chain derivatives.** v1.0.1 corrected two slips in this
+  chain; the ones below are the rest of that family, found in the same
+  audit and corrected here. In all four
   aqueous kernels (`code/ecpa/elv.py`, `code/ecpa/stability.py` x2,
   `code/benchmark_flash.py`) the `chi1w**2` / `chi4w**2` prefactors of the
   implicit chi-system Jacobian were swapped between the F and G rows
