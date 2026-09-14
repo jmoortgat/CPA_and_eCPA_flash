@@ -1,48 +1,26 @@
-# Local-only notes
-HPC_instructions.md
+# ── code/ allowlist ──────────────────────────────────────────────────────────
+# Same approach as the repository-root .gitignore: ignore every entry in this
+# directory by default and re-include the ones that belong in the release, so
+# local notes, scratch data, cluster job files and generated output can never
+# be added by accident.  Adding a new module or script means listing it here.
+/*
+!/.gitignore
+!/environment.yml
+!/CPA.py
+!/benchmark_flash.py
+!/co2brine_simulator.py
+!/cpa_worker.py
+!/ecpa_worker.py
+!/ecpa_worker_brent.py
+!/ecpa_worker_ssi.py
+!/ecpa/
+!/scripts/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Jupyter checkpoints
-.ipynb_checkpoints/
-
-# macOS
-.DS_Store
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-
-# Intermediate scan tables: too large to distribute, and superseded.
-# (results/scan_v4_table.npz and results/solution_table.npz ARE distributed —
-# REPRODUCING_FIGURES.md depends on them — so they are deliberately absent
-# from this list.)
-results/scan_v3_table.npz
-results/scan_v2_table.npz
-
-# Exclude all parquets by default (intermediate/reproducible outputs)
-*.parquet
-
-# But include the tables that ship with the repository
-!results/CPA_ELV_all.parquet
-
-# Large data and reference directories
-CO2/
-paper/*.pdf
-paper/*.html
-paper/*.webarchive
-figures/
-
-
-# Logs
-logs/
-
-# EXP raw text files (parquet versions are in results/)
-EXP/
+# results/ is ignored by the repository-root .gitignore because everything in
+# it is a regenerable intermediate.  Four tables are exceptions and are tracked
+# explicitly so a fresh clone can reproduce the figures:
+#     results/CPA_ELV_all.parquet
+#     results/solution_table.npz
+#     results/scan_v4_table.npz
+#     results/scan_v4_metrics.parquet
+# plus the validation parquets the plotting scripts read.
