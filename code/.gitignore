@@ -20,15 +20,17 @@ __pycache__/
 env/
 venv/
 
-# Large scan tables (exceed GitHub 100MB limit or are intermediate)
+# Intermediate scan tables: too large to distribute, and superseded.
+# (results/scan_v4_table.npz and results/solution_table.npz ARE distributed —
+# REPRODUCING_FIGURES.md depends on them — so they are deliberately absent
+# from this list.)
 results/scan_v3_table.npz
-results/scan_v4_table.npz
-results/solution_table.npz
+results/scan_v2_table.npz
 
 # Exclude all parquets by default (intermediate/reproducible outputs)
 *.parquet
 
-# But include the solution table (needed to run flash without recomputing)
+# But include the tables that ship with the repository
 !results/CPA_ELV_all.parquet
 
 # Large data and reference directories

@@ -24,23 +24,29 @@ The sections below are organised by figure number and list both steps.
 
 ### Input artifacts
 
-Two precomputed tables sit upstream of most scripts:
+Four precomputed tables sit upstream of the figure scripts. **All four are
+distributed with the repository**, so a fresh clone can regenerate every
+figure below without any additional setup:
 
-| File | In the repository? | Needed by |
-|:---|:---|:---|
-| `code/results/CPA_ELV_all.parquet` | yes (26 MB) | most scripts |
-| `code/results/solution_table.npz` | **no** | `validate_co2h2o.py`, `validate_co2nacl_full.py` |
-| `code/results/scan_v4_table.npz` | yes (23 MB) | Figs. 4, 6b, 7, 8, 9, S10 |
+| File | Size | Needed by | Regenerable here? |
+|:---|---:|:---|:---|
+| `code/results/CPA_ELV_all.parquet` | 26 MB | most scripts | `build_solution_table.py` (1–4 h) |
+| `code/results/solution_table.npz` | 4.3 MB | `validate_co2h2o.py`, `validate_co2nacl_full.py` | `build_solution_table.py` (1–4 h) |
+| `code/results/scan_v4_table.npz` | 23 MB | Figs. 4, 6b, 7, 8, 9, S10 | **no** — see below |
+| `code/results/scan_v4_metrics.parquet` | 3.7 MB | Figs. 9, S10 | **no** — see below |
 
-`solution_table.npz` is the 3-D $(T,P,m_s)$ warm-start table. It is not
-distributed (it is a regenerable intermediate) and must be built once with
-`python scripts/build_solution_table.py` — 1–4 h — before the two validation
-drivers will run. It supplies initial guesses only: it changes how fast the
-solvers converge, not what they converge to.
+`solution_table.npz` is the 3-D $(T,P,m_s)$ warm-start table. It supplies
+initial guesses only: it changes how fast the solvers converge, not what they
+converge to.
 
-`scan_v4_table.npz` is shipped ready to use. **No script in this repository
-regenerates it**; the plotting scripts for Figs. 4, 6b, 7, 8, 9 and S10 read
-it directly.
+**One honest caveat.** `scan_v4_table.npz` and `scan_v4_metrics.parquet` are
+shipped as data, and **no script in this repository regenerates them**. The
+plotting scripts for Figs. 4, 6b, 7, 8, 9 and S10 read them directly, so those
+figures can be *re-plotted* from a clean clone but not *recomputed* from the
+equation of state. (`run_warmstart_scan.py` is a separate CPA warm-start
+benchmark and does not write these files, despite what earlier versions of
+this guide said.) Every other figure below is recomputed end to end from the
+scripts listed.
 
 ---
 
@@ -94,7 +100,9 @@ Same data and script as Fig. 2. Panels used:
 
 ### Figure 4 — eCPA flash results vs. CO₂ feed mole fraction *z*
 
-**Data generation**: requires `results/scan_v4_table.npz` (see Figs. 7–9 below).
+The flash results themselves are computed live by the plotting script; only
+the warm-start K-values come from the shipped `results/scan_v4_table.npz`
+(see Figs. 7–9 below).
 
 **Plotting**:
 ```bash
@@ -144,9 +152,10 @@ Outputs (in `figures/scan/`):
 ### Figures 7, 8, 9 — eCPA ternary composition and timing grids
 
 **Data**: `results/scan_v4_table.npz` and `results/scan_v4_metrics.parquet`,
-both shipped with the repository (361 T × 100 P × 14 m_s). No script here
-regenerates them; `run_warmstart_scan.py` is a separate CPA warm-start
-*benchmark* and does not write these files.
+both shipped with the repository (361 T × 100 P × 14 m_s). ⚠ **No script in
+this repository regenerates them**, so these panels can be re-plotted but not
+recomputed from a clean clone. `run_warmstart_scan.py` is a separate CPA
+warm-start *benchmark* and does not write these files.
 
 **Plotting**:
 ```bash
@@ -282,9 +291,9 @@ Steps marked *(slow)* take more than a few minutes.
 ```bash
 cd code
 
-# 1. Build the warm-start solution table.  REQUIRED for steps 2 and 3:
-#    results/solution_table.npz is not distributed.                        [slow: 1–4 h]
-python scripts/build_solution_table.py
+# 1. Rebuild the warm-start solution table.  OPTIONAL: results/solution_table.npz
+#    and results/CPA_ELV_all.parquet ship with the repository.             [slow: 1–4 h]
+# python scripts/build_solution_table.py
 
 # 2. CO₂ + H₂O binary validation                                            [~5 min]
 python scripts/validate_co2h2o.py
