@@ -56,6 +56,22 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`scripts/validate_co2h2o.py`** read `CO2_WATER_exp.parquet` from the
   working directory; the tracked database lives at `CO2/` in the repository
   root, so the script could not run from a fresh clone.
+- **The CPA scan chain was broken by three missing `results/` prefixes.**
+  `run_parameter_scan.py` writes `results/scan_results_extended.npz`, but
+  `run_newton_scan.py` read `scan_results_extended.npz` and wrote
+  `scan_newton_results.npz` (both relative to `code/`), while
+  `plot_newton_figures.py` reads them from `results/`; and
+  `run_warmstart_scan.py` read the bare filename too. The documented
+  reproduction route for Figs. 5, 6 and S11 therefore could not run from a
+  clean clone. All three paths corrected.
+- **`code/scripts/README.md`** claimed `run_warmstart_scan.py` "generates
+  `results/scan_v4_table.npz`". It does not, and cannot: it works on the
+  salt-free CPA (T, P, z) grid of 86x18x19 and reports convergence and
+  iteration counts, whereas `scan_v4_table.npz` holds eCPA *ternary*
+  compositions on a (T, P, m_s) grid of 361x100x14 with no z axis. The two
+  share no grid, no axes and no variables. The script is reporting-only and
+  writes nothing; the README entry and the script's stale docstring now say
+  so.
 - Regression reference values in `tests/test_flash.py` recomputed.
 
 ### Changed

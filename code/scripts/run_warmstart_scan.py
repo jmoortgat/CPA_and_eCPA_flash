@@ -1,9 +1,17 @@
 """
-_scan_table_warmstart.py — Add 5th strategy (table warm-start) to extended scan.
+run_warmstart_scan.py — add a 5th strategy (table warm-start) to the extended
+CPA parameter-space scan and report how it compares.
 
-Loads the eCPA solution table (CPA_ELV_all.parquet at ms=0) to extract K-values,
-uses them as initial guesses for CPA.tie_line_two_comp, and compares to the
-4 cold-start strategies already in scan_results_extended.npz.
+Loads the solution table (results/CPA_ELV_all.parquet at ms=0) to extract
+K-values, uses them as initial guesses for CPA.tie_line_two_comp on the
+(86 T x 18 P x 19 z) salt-free grid, and compares convergence and iteration
+counts against the four cold-start strategies already stored in
+results/scan_results_extended.npz (written by run_parameter_scan.py).
+
+This script is reporting-only: it prints the comparison and writes no file.
+Nothing downstream consumes its output.  In particular it does not produce
+results/scan_v4_table.npz, which is the eCPA *ternary* (T, P, m_s) table on a
+different grid entirely.
 """
 import time
 import sys
@@ -16,7 +24,7 @@ import CPA
 # Load existing scan results
 # ═══════════════════════════════════════════════════════════════════════════════
 print("Loading existing scan results...")
-d = np.load("scan_results_extended.npz")
+d = np.load("results/scan_results_extended.npz")
 T_grid = d["T_grid"]
 P_grid = d["P_grid"]
 z_grid = d["z_grid"]

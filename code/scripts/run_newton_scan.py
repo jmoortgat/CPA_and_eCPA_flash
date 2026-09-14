@@ -39,8 +39,8 @@ import CPA
 # ─────────────────────────────────────────────────────────────────────────────
 ELV_SRC   = "results/CPA_ELV_all.parquet"
 ELV_EXT   = "CPA_ELV_all_extended.parquet"   # extended table written here
-SCAN_FILE = "scan_results_extended.npz"
-OUT_FILE  = "scan_newton_results.npz"
+SCAN_FILE = "results/scan_results_extended.npz"
+OUT_FILE  = "results/scan_newton_results.npz"
 FIGDIR    = "figures/scan"
 os.makedirs(FIGDIR, exist_ok=True)
 
