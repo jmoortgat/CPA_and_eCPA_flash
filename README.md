@@ -324,9 +324,10 @@ Testing after the companion paper was accepted turned up several defects in
 this code, which are fixed in the releases after 1.0.0. The substantive ones
 were two errors in the derivative chain of the electrolyte permittivity term
 (1.0.1 and 1.0.2) and a successive-substitution loop in the phase-stability
-test that did not in fact iterate (1.0.2); the rest were smaller — an
-argument-order slip in a diagnostic label, a division that could return NaN
-as a success, and two errors in the figure-reproduction instructions.
+test that did not in fact iterate (1.0.2); the rest were smaller — two
+places where a solver could report success without actually having solved
+anything, an argument-order slip in a diagnostic label, and two errors in
+the figure-reproduction instructions.
 
 The conclusions of the companion paper are unaffected. Re-running the full
 experimental validation with the corrected code moves every reported average

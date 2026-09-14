@@ -36,6 +36,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   carried a spurious `-(1 + (delta-1)*...)` grouping instead of the plain
   derivative. The dependent second-derivative lines in
   `code/ecpa/stability.py` were updated to match.
+- **Inner lnφ solvers accepted fsolve stagnation points as roots.** Both
+  `_lnphi_aq_inner` and `_lnphi_c_inner` accepted a result on `ier == 1`
+  alone. That flag only reports that the iterates stopped moving, which can
+  happen far from a root, so a non-solution could be returned silently.
+  Observed for pure water at T = 273.15 K, P = 75 bar: a returned "root"
+  with residual infinity-norm ~5e1 gave a density of 481 kg/m3 against an
+  IAPWS-95 reference of 1004 kg/m3. Both solvers now require the residual
+  itself to be below 1e-6 and otherwise continue to the next starting point.
 - **`_cpa2_label` argument order** (`code/ecpa/scan.py`): `(z, T, P)` was
   passed into a `(T, P_bar, z_co2)` signature. Because the callee swallows
   exceptions, the CPA cross-check silently never fired, so the
