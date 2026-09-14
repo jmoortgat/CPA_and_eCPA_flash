@@ -1,70 +1,72 @@
-# Python cache
+# ── Repository-root allowlist ────────────────────────────────────────────────
+# Everything at the top level is ignored unless it is named below.  This is a
+# safety net: a stray `git add -A` run from the repository root can never pick
+# up a scratch directory, a manuscript, or an unrelated project that happens to
+# sit alongside this one in someone's workspace.  Adding a new top-level entry
+# to the release means adding it here deliberately.
+/*
+!/.gitattributes
+!/.github/
+!/.gitignore
+!/.zenodo.json
+!/CHANGELOG.md
+!/CITATION.cff
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/LICENSE
+!/README.md
+!/REPRODUCING_FIGURES.md
+!/paper.bib
+!/paper.md
+!/pyproject.toml
+!/EXP/
+!/code/
+!/notebooks/
+!/tests/
+
+# The experimental CO2 + H2O database: one curated parquet, not the raw
+# working directory that surrounds it.
+!/CO2/
+/CO2/*
+!/CO2/CO2_WATER_exp.parquet
+
+# ── Ignored anywhere in the tree ─────────────────────────────────────────────
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 .Python
-
-# Jupyter checkpoints
-.ipynb_checkpoints/
-
-# macOS
-.DS_Store
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-
-# Large scan tables (>100MB, exceed GitHub limit)
-code/results/scan_v3_table.npz
-
-# Manuscript, figure and auxiliary material — local only, never published.
-# The glob covers paper/, paper_submit/, paper_ACS/, paper_*.zip, etc.
-paper*/
-paper_ACS.zip
-aux_files/
-figures/
-logs/
-main.run.xml
-*.tex
-*.bbl
-*.blg
-*.aux
-*.synctex.gz
-
-# Root-level dev scripts and outputs
-dev/
-*.npz
-*.png
-*.pdf
-*.log
-*.slurm
-
-# Local working directories that are not part of this release.  They are
-# either regenerable, kept in their own repositories, or not for
-# distribution.  Listed explicitly so they can never be added by accident.
-CO2/
-EXP_raw/
-Multi_Salt/
-EoS_Benchmark/
-GasBrineBench/
-results/
-sync_back_from_unity.sh
-sync_to_unity.sh
-HPC_instructions.md
-CLAUDE.md
-.claude/
-
-# Root-level legacy package copy; the package lives at code/ecpa/
-/ecpa/
-
-# Packaging and build artifacts
-build/
-dist/
 *.egg-info/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Build artifacts
+build/
+dist/
+
+# Editors and OS
+.ipynb_checkpoints/
+.DS_Store
+
+# Generated output (regenerable; not distributed).  `results/` covers both the
+# root-level scratch directory and `code/results/`; the handful of tables that
+# ship with the repository are tracked explicitly and stay tracked.
+figures/
+logs/
+results/
+*.log
+*.slurm
+
+# Intermediate scan tables that exceed sensible repository size.  The tables
+# that *are* distributed (CPA_ELV_all.parquet, scan_v4_table.npz,
+# solution_table.npz) are tracked explicitly.
+code/results/scan_v3_table.npz
+code/results/scan_v2_table.npz
