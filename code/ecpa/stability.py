@@ -64,6 +64,14 @@ from .flash import flash_co2_h2o_salt_kv
 from .scan import _cpu_count
 
 
+# Largest residual infinity-norm accepted from the inner fsolve fallbacks.
+# scipy's ``ier == 1`` only reports that the iterates stopped moving, which can
+# happen at a stagnation point far from a root; both the Newton solver and a
+# healthy fsolve reach ~1e-10 here, so this threshold rejects only genuine
+# non-solutions.
+_AQ_RESNORM_TOL = 1e-6
+
+
 # ── Per-thread call statistics (opt-in instrumentation) ───────────────────────
 # Call reset_call_stats() before a flash/stability call and get_call_stats()
 # after to collect metrics without affecting any other thread.
@@ -391,6 +399,14 @@ def _lnphi_c_inner(x1c: float, T: float, P: float,
         _nfev_c += info["nfev"]
         Zc_t, chi1c_t = float(sol[0]), float(sol[1])
         if ier != 1 or Zc_t <= 0 or not (0 < chi1c_t < 2.0):
+            continue
+        # ier == 1 can also be returned at a stagnation point; require the
+        # residual to be small so a non-solution is never treated as a root.
+        try:
+            if float(np.max(np.abs(
+                    _eval_c_residual(sol, x1c, T, P)))) >= _AQ_RESNORM_TOL:
+                continue
+        except Exception:
             continue
         # Deduplicate: skip if within 1% of an already-found root
         duplicate = any(abs(Zc_t - Zc_p) / max(abs(Zc_p), 1e-10) < 0.01
@@ -1056,8 +1072,14 @@ def _lnphi_aq_inner(x1w: float, ms: float, T: float, P: float,
         _nfev_aq += info["nfev"]
         Zw_s, epsr_s, chi1w_s = float(sol[0]), float(sol[1]), float(sol[2])
         if ier == 1 and Zw_s > 0 and epsr_s > 1 and 0 < chi1w_s < 2.0:
-            best_sol = sol
-            break   # aqueous EOS has one physical root; first success is fine
+            # ier == 1 only means fsolve stopped making progress; it can be
+            # returned at a stagnation point with a large residual.  Insist on
+            # the residual itself, or the caller silently receives a
+            # non-solution (observed: |F| ~ 5e1 accepted as a valid root).
+            resnorm = float(np.max(np.abs(residual(sol))))
+            if resnorm < _AQ_RESNORM_TOL:
+                best_sol = sol
+                break   # aqueous EOS has one physical root; first success is fine
 
     _s.n_fsolve_aq     = getattr(_s, "n_fsolve_aq",     0) + 1
     _s.n_fsolve_aq_nfev = getattr(_s, "n_fsolve_aq_nfev", 0) + _nfev_aq
