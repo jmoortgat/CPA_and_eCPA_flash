@@ -318,6 +318,27 @@ And the underlying eCPA parametrisation:
 
 ---
 
+## Fixes and improvements since publication
+
+Testing after the companion paper was accepted turned up several defects in
+this code, which are fixed in the releases after 1.0.0. The substantive ones
+were two errors in the derivative chain of the electrolyte permittivity term
+(1.0.1 and 1.0.2) and a successive-substitution loop in the phase-stability
+test that did not in fact iterate (1.0.2); the rest were smaller — an
+argument-order slip in a diagnostic label, a division that could return NaN
+as a success, and two errors in the figure-reproduction instructions.
+
+The conclusions of the companion paper are unaffected. Re-running the full
+experimental validation with the corrected code moves every reported average
+absolute relative error by at most 0.02 percentage points, and predicted
+compositions by at most 3.1e-4 relative; the set of converged two-phase
+conditions is unchanged.
+
+`CHANGELOG.md` gives the detail for each version: what the defect was, how
+the fix was verified, and the measured before/after numbers.
+
+---
+
 ## Contributing
 
 Bug reports, questions, and pull requests are welcome — see
