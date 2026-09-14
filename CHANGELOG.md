@@ -86,12 +86,43 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and no script here regenerates it.
 
 ### Verification
+
 The corrected chain derivatives were checked against complex-step
 differentiation of the code's own defining equations for chi1w and chi4w
 (`code/ecpa/elv.py`), which shares no derivative algebra with the kernels.
 The corrected expressions agree with the complex-step reference to 3e-14
 relative; the previous expressions were in error by up to 1.6 (i.e. 160%)
 relative on the chi4w derivatives.
+
+The whole validation and figure pipeline was then run twice — once under
+1.0.1 and once under 1.0.2 — and the artifacts compared point by point.
+Measured effect of the corrections:
+
+| Quantity | 1.0.1 | 1.0.2 |
+|:---|---:|---:|
+| AARE, CO2 molality in brine (N=436) | 6.7163% | 6.7152% |
+| AARE, x_CO2 salt-free basis (N=99) | 6.8614% | 6.8729% |
+| AARE, x_CO2 salt-inclusive (N=36) | 8.5496% | 8.5574% |
+| AARE, x_CO2 in the CO2-rich phase (N=28) | 0.3905% | 0.3905% |
+| AARE, CO2 + H2O binary, all four quantities | 9.6025 / 24.2607 / 9.6028 / 24.3400% | unchanged to 4 decimals |
+| Regime AARE table (Figs. 1, S1, S7) | — | byte-identical |
+| Pure-water density vs IAPWS-95 (N=475) | 0.30% | 0.30% (all 514 points agree to 6e-10) |
+| Simplified-flash AARE, x_CO2 / m_c / beta / ms_aq | 15.602 / 14.484 / 10.086 / 4.359% | 15.643 / 14.518 / 10.087 / 4.374% |
+| Pinned regression x_CO2 at 1, 3, 6 mol/kg | 1.675571e-2, 1.129073e-2, 9.729840e-3 | 1.675865e-2, 1.129390e-2, 9.732861e-3 |
+
+Largest change in any predicted composition: 8.5e-4 relative. Largest change
+in any reported AARE: 0.05 percentage points. The converged two-phase set is
+unchanged (599/708 brine conditions, 631/631 binary conditions); two brine
+conditions move from `flash_failed` to a definite `single_phase` verdict.
+
+Of the figures, 13 of the 15 PDFs are identical once their embedded creation
+timestamps are stripped, and 84 of 115 image files are byte-identical. Four
+differ by more than 0.1% of their pixels: Figs. S8 and S9 (the simplified-flash
+benchmark, 1.8% and 1.4%), one high-temperature panel of Fig. S2 (0.18%), and
+Fig. 4 (0.13%) — the last because one isotherm's two-phase count moves from 263
+to 262 of 300 sampled feed compositions.
+
+Both notebooks execute end to end with no errors under either version.
 
 ### Removed
 - The experimental neural-network warm-start (`ecpa/nn_flash.py`, the
