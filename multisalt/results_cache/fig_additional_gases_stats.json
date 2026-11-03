@@ -1,0 +1,24 @@
+{
+  "h2": {
+    "N_brine": 71,
+    "N_water_fitset": 149,
+    "aare_brine": 9.13,
+    "aare_brine_coelho": 8.64,
+    "aare_water_coelho": 8.97,
+    "aare_water_fitset": 9.3,
+    "provenance": "Coelho 2025 (IJHE 178, 151361) parameterization adopted verbatim; zero fitting; NaCl-only",
+    "ternary_dev_high": "3.3",
+    "ternary_dev_low": "0.23"
+  },
+  "n2": {
+    "N_brine": 33,
+    "N_water": 18,
+    "aare_brine_1m": 3.51,
+    "aare_brine_4m": 3.84,
+    "aare_brine_fitted": 3.46,
+    "aare_brine_transfer": 3.66,
+    "aare_water": 1.09,
+    "provenance": "kij(T) fitted to the 18 salt-free O'Sullivan 1970 points; (Na,Cl) energies = Tc-rescaled CH4 transfer",
+    "s_fit": "1.0084"
+  }
+}

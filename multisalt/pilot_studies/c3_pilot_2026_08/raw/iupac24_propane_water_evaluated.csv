@@ -1,0 +1,26 @@
+# Source: IUPAC Solubility Data Series Vol. 24 (Hayduk ed., Pergamon 1986), Propane in Water,
+#   Critical Evaluation by R. Battino (Nov 1983), Table 1, book p. 1 (PDF p. 22).
+# Smoothed (recommended/tentative) mole-fraction solubility of propane in water at 101.325 kPa
+#   PARTIAL pressure of gas; L = Ostwald coefficient (cm3 gas / cm3 solvent).
+# Smoothing eq. (273-347 K): ln x1 = -102.044 + 144.345/tau + 39.4740 ln(tau), tau = T/100 K;
+#   std dev 0.012 in ln x1 (~2% in x1). Based on refs 1-6 of the evaluation (Kresheck 1965,
+#   Morrison & Billett 1952, Claussen & Polglase 1952, Wetlaufer 1964, Barone 1966, Namiot 1961).
+# Evaluator cautions values below 288 K may be low by 2-6% vs his unpublished measurements.
+# Columns: T_K original; x1e5 = 1e5*x1 as printed; x1 = mole fraction (converted); ostwald_L original.
+T_K,x1e5,x1,ostwald_L
+273.15,7.236,7.236e-05,0.09001
+278.15,5.727,5.7270000000000006e-05,0.07255
+283.15,4.627,4.627e-05,0.05967
+288.15,3.813,3.813e-05,0.05
+293.15,3.2,3.2000000000000005e-05,0.04265
+298.15,2.732,2.7320000000000003e-05,0.03699
+303.15,2.37,2.3700000000000003e-05,0.03258
+308.15,2.088,2.0880000000000003e-05,0.02913
+313.15,1.865,1.8650000000000003e-05,0.0264
+318.15,1.689,1.6890000000000003e-05,0.02424
+323.15,1.549,1.549e-05,0.02253
+328.15,1.438,1.4380000000000001e-05,0.02119
+333.15,1.35,1.3500000000000001e-05,0.02014
+338.15,1.281,1.2810000000000001e-05,0.01935
+343.15,1.227,1.2270000000000001e-05,0.01876
+348.15,1.188,1.188e-05,0.01836

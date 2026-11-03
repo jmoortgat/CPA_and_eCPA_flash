@@ -1,0 +1,204 @@
+# Source: IUPAC SDS Vol. 24, Critical Evaluation by H. L. Clever (Jan 1984) of propane (+butane,
+#   +2-methylpropane) in aqueous electrolyte solutions, book pp. 58-71 (PDF pp. 79-92).
+# PROPANE entries only. NO values are 'recommended'; all are classed tentative (or doubtful, see note).
+# Sechenov (Setschenow) salt-effect parameter definitions (all log BASE 10):
+#   ksmm /kg mol-1 = (1/m2) log10( m1_0,sat / m1,sat )   [gas molality basis, salt molality m2]
+#   ksmx /kg mol-1 = (1/m2) log10( x1_0,sat / x1,sat )   [gas mole-fraction basis]
+#   kscc /dm3 mol-1 = (1/c2) log10( c1_0,sat / c1,sat )  [both on molarity basis]
+#   ksmc = (1/m2) log10( c1_0/c1 ) [H2SO4 table: salt molality, gas molarity]
+#   at gas partial pressure 101.325 kPa. Subscript 1 = propane, 2 = electrolyte, 0 = pure water.
+# conc_value/conc_units: electrolyte concentration; conc_label preserves the source row label
+#   (e.g. '0.10 (authors)' = the original authors' smoothed 0.1-molal value; ranges = actual
+#   molalities varying with T, exact values on the data sheets -> see iupac24_propane_salts_primary.csv).
+# No propane+seawater data exist in Vol. 24 (synthetic sea salt sheet is butane only, Rice et al. 1976).
+salt,cas,T_K,conc_value,conc_units,conc_label,k_value,k_form,primary_ref,note
+HCl,7647-01-0,298.2,0.25,mol/dm3,0.25 (c2),0.164,kscc,Yano 1974,classed doubtful (solubility likely in error)
+HCl,7647-01-0,298.2,0.5,mol/dm3,0.50 (c2),0.123,kscc,Yano 1974,tentative
+HCl,7647-01-0,298.2,1.0,mol/dm3,1 (c2),0.125,kscc,Yano 1974,tentative
+HCl,7647-01-0,298.2,1.0,mol/dm3,1 (c2),0.114,ksmm,Yano 1974,tentative
+HCl,7647-01-0,298.2,1.0,mol/dm3,1 (c2),0.129,ksmx,Yano 1974,tentative
+H2SO4,7664-93-9,298.15,15.5,mol/kg,,0.02,ksmc,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+H2SO4,7664-93-9,298.15,15.5,mol/kg,,0.013,ksmx,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+H2SO4,7664-93-9,298.15,40.8,mol/kg,,0.011,ksmc,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+H2SO4,7664-93-9,298.15,40.8,mol/kg,,0.006,ksmx,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+H2SO4,7664-93-9,298.15,136,mol/kg,,-0.002,ksmc,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+H2SO4,7664-93-9,298.15,136,mol/kg,,-0.005,ksmx,Rudakov & Lutsyk 1979,tentative; very concentrated solutions
+NH4Br,12124-97-9,278.15,,mol/kg,0.1 (authors),0.095,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+NH4Br,12124-97-9,288.15,,mol/kg,0.1 (authors),0.086,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+NH4Br,12124-97-9,298.15,,mol/kg,0.1 (authors),0.076,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+NH4Br,12124-97-9,308.15,,mol/kg,0.1 (authors),0.066,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+NH4Br,12124-97-9,278.15,,mol/kg,0.105-0.107,0.089,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,288.15,,mol/kg,0.105-0.107,0.104,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,298.15,,mol/kg,0.105-0.107,0.089,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,308.15,,mol/kg,0.105-0.107,0.072,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,278.15,,mol/kg,0.210-0.224 (printed 0.210-9.224),0.071,ksmm,Wen & Hung 1970,book prints '0.210-9.224'; 9.224 is a misprint for 0.224 (data-sheet molalities 0.210-0.224)
+NH4Br,12124-97-9,288.15,,mol/kg,0.210-0.224 (printed 0.210-9.224),0.087,ksmm,Wen & Hung 1970,book prints '0.210-9.224'; 9.224 is a misprint for 0.224 (data-sheet molalities 0.210-0.224)
+NH4Br,12124-97-9,298.15,,mol/kg,0.210-0.224 (printed 0.210-9.224),0.067,ksmm,Wen & Hung 1970,book prints '0.210-9.224'; 9.224 is a misprint for 0.224 (data-sheet molalities 0.210-0.224)
+NH4Br,12124-97-9,308.15,,mol/kg,0.210-0.224 (printed 0.210-9.224),0.053,ksmm,Wen & Hung 1970,book prints '0.210-9.224'; 9.224 is a misprint for 0.224 (data-sheet molalities 0.210-0.224)
+NH4Br,12124-97-9,278.15,,mol/kg,0.407-0.428,0.093,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,288.15,,mol/kg,0.407-0.428,0.088,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,298.15,,mol/kg,0.407-0.428,0.084,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,308.15,,mol/kg,0.407-0.428,0.053,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,278.15,,mol/kg,0.631-0.707,0.089,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,288.15,,mol/kg,0.631-0.707,0.088,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,298.15,,mol/kg,0.631-0.707,0.075,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,308.15,,mol/kg,0.631-0.707,0.063,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,278.15,,mol/kg,0.850-0.942,0.144,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,288.15,,mol/kg,0.850-0.942,0.083,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,298.15,,mol/kg,0.850-0.942,0.078,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,308.15,,mol/kg,0.850-0.942,0.063,ksmm,Wen & Hung 1970,
+NH4Br,12124-97-9,278.15,,mol/kg,Av.,0.097,ksmm,Wen & Hung 1970,average of the five concentration rows
+NH4Br,12124-97-9,288.15,,mol/kg,Av.,0.09,ksmm,Wen & Hung 1970,average of the five concentration rows
+NH4Br,12124-97-9,298.15,,mol/kg,Av.,0.079,ksmm,Wen & Hung 1970,average of the five concentration rows
+NH4Br,12124-97-9,308.15,,mol/kg,Av.,0.059,ksmm,Wen & Hung 1970,average of the five concentration rows
+Guanidine hydrochloride,50-01-1,278.2,4.87,mol/dm3,4.87,0.019,kscc,Wetlaufer 1964,tentative; NOTE data sheet (book p.81) lists T = 278.15/298.15/318.15 K - the 293.2 K here is probably an evaluator typo for 298.2 K
+Guanidine hydrochloride,50-01-1,293.2,4.87,mol/dm3,4.87,-0.004,kscc,Wetlaufer 1964,tentative; NOTE data sheet (book p.81) lists T = 278.15/298.15/318.15 K - the 293.2 K here is probably an evaluator typo for 298.2 K
+Guanidine hydrochloride,50-01-1,318.2,4.87,mol/dm3,4.87,-0.013,kscc,Wetlaufer 1964,tentative; NOTE data sheet (book p.81) lists T = 278.15/298.15/318.15 K - the 293.2 K here is probably an evaluator typo for 298.2 K
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,278.15,,mol/kg,0.10 (authors),-0.029,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,288.15,,mol/kg,0.10 (authors),-0.039,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,298.15,,mol/kg,0.10 (authors),-0.059,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,308.15,,mol/kg,0.10 (authors),-0.091,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,278.15,,mol/kg,0.165,-0.033,ksmm,Wen & Hung 1970,
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,288.15,,mol/kg,0.165,-0.033,ksmm,Wen & Hung 1970,
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,308.15,,mol/kg,0.165,-0.083,ksmm,Wen & Hung 1970,
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,298.15,,mol/kg,0.325-0.328,-0.051,ksmm,Wen & Hung 1970,
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,308.15,,mol/kg,0.325-0.328,-0.084,ksmm,Wen & Hung 1970,
+(CH3)4NBr (tetramethylammonium bromide),64-20-0,298.15,,mol/kg,0.885,-0.051,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,278.15,,mol/kg,0.10 (authors),-0.096,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,288.15,,mol/kg,0.10 (authors),-0.125,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,298.15,,mol/kg,0.10 (authors),-0.158,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,308.15,,mol/kg,0.10 (authors),-0.207,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,278.15,,mol/kg,0.154-0.171,-0.111,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,288.15,,mol/kg,0.154-0.171,-0.13,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,298.15,,mol/kg,0.154-0.171,-0.115,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,308.15,,mol/kg,0.154-0.171,-0.203,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,278.15,,mol/kg,0.425,-0.098,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,288.15,,mol/kg,0.425,-0.128,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,298.15,,mol/kg,0.425,-0.132,ksmm,Wen & Hung 1970,
+(C2H5)4NBr (tetraethylammonium bromide),71-91-0,308.15,,mol/kg,0.425,-0.179,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.10 (authors),-0.08,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.10 (authors),-0.13,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,0.10 (authors),-0.187,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,308.15,,mol/kg,0.10 (authors),-0.273,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.102-0.110,-0.085,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.102-0.110,-0.126,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,0.102-0.110,-0.188,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,308.15,,mol/kg,0.102-0.110,-0.279,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.210,-0.092,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.210,-0.124,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.267-0.271,-0.085,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.267-0.271,-0.129,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,0.267-0.271,-0.16,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,308.15,,mol/kg,0.267-0.271,-0.237,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.410-0.420,-0.071,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.410-0.420,-0.125,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,0.410-0.420,-0.151,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.436,-0.07,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.457-0.465,-0.116,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,308.15,,mol/kg,0.457-0.465,-0.237,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.492,-0.053,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.609-0.784,-0.033,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,0.609-0.784,-0.094,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,0.609-0.784,-0.152,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,308.15,,mol/kg,0.609-0.784,-0.208,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,278.15,,mol/kg,0.963,-0.023,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,288.15,,mol/kg,1.050-1.070,-0.073,ksmm,Wen & Hung 1970,
+(C3H7)4NBr (tetrapropylammonium bromide),1941-30-6,298.15,,mol/kg,1.050-1.070,-0.126,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,278.15,,mol/kg,0.10 (authors),-0.066,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,288.15,,mol/kg,0.10 (authors),-0.146,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,298.15,,mol/kg,0.10 (authors),-0.248,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,308.15,,mol/kg,0.10 (authors),-0.386,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,278.15,,mol/kg,0.165-0.193,-0.082,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,288.15,,mol/kg,0.165-0.193,-0.15,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,308.15,,mol/kg,0.165-0.193,-0.36,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,278.15,,mol/kg,0.300-0.310,-0.064,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,288.15,,mol/kg,0.300-0.310,-0.139,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,298.15,,mol/kg,0.300-0.310,-0.203,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,308.15,,mol/kg,0.300-0.310,-0.336,ksmm,Wen & Hung 1970,
+(C4H9)4NBr (tetrabutylammonium bromide),1643-19-2,298.15,,mol/kg,0.624,-0.203,ksmm,Wen & Hung 1970,
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,278.15,,mol/kg,0.10 (authors),0.0,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,288.15,,mol/kg,0.10 (authors),-0.025,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,298.15,,mol/kg,0.10 (authors),-0.061,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,308.15,,mol/kg,0.10 (authors),-0.113,ksmm,Wen & Hung 1970,authors' smoothed value for 0.1 m
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,278.15,,mol/kg,0.153-0.160,-0.014,ksmm,Wen & Hung 1970,
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,288.15,,mol/kg,0.153-0.160,-0.023,ksmm,Wen & Hung 1970,
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,298.15,,mol/kg,0.153-0.160,-0.028,ksmm,Wen & Hung 1970,
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,308.15,,mol/kg,0.153-0.160,-0.101,ksmm,Wen & Hung 1970,
+(C2H4OH)4NBr (tetraethanolammonium bromide),4328-04-5,298.15,,mol/kg,0.508,-0.042,ksmm,Wen & Hung 1970,
+LiCl,7447-41-8,285.75,1.0,mol/kg,1.0,0.175,ksmm,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,285.75,1.0,mol/kg,1.0,0.19,ksmx,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,303.15,1.0,mol/kg,1.0,0.152,ksmm,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,303.15,1.0,mol/kg,1.0,0.167,ksmx,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,322.55,1.0,mol/kg,1.0,0.138,ksmm,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,322.55,1.0,mol/kg,1.0,0.153,ksmx,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,344.85,1.0,mol/kg,1.0,0.138,ksmm,Morrison & Billett 1952,tentative
+LiCl,7447-41-8,344.85,1.0,mol/kg,1.0,0.153,ksmx,Morrison & Billett 1952,tentative
+NaCl,7647-14-5,273.2,0.522,mol/kg,,0.233,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,273.2,1.048,mol/kg,,0.22,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,273.2,2.213,mol/kg,,0.192,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,273.2,3.347,mol/kg,,0.199,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,273.2,5.315,mol/kg,,0.186,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,278.2,0.522,mol/kg,,0.176,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,278.2,1.048,mol/kg,,0.176,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,278.2,2.213,mol/kg,,0.174,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,278.2,3.347,mol/kg,,0.19,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,278.2,5.315,mol/kg,,0.192,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,283.2,0.522,mol/kg,,0.121,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,283.2,1.048,mol/kg,,0.161,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,283.2,2.213,mol/kg,,0.162,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,283.2,3.347,mol/kg,,0.171,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,283.2,5.315,mol/kg,,0.182,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,288.2,0.522,mol/kg,,0.11,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,288.2,1.048,mol/kg,,0.145,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,288.2,2.213,mol/kg,,0.168,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,288.2,3.347,mol/kg,,0.166,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,288.2,5.315,mol/kg,,0.175,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,293.2,0.522,mol/kg,,0.184,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,293.2,1.048,mol/kg,,0.179,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,293.2,2.213,mol/kg,,0.143,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,293.2,3.347,mol/kg,,0.161,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,293.2,5.315,mol/kg,,0.171,ksmm,Umano & Nakano 1958 (ref 3; evaluator-derived from 101 kPa data),tentative; evaluator prefers Morrison & Billett set for self-consistency
+NaCl,7647-14-5,285.75,1.0,mol/kg,1.00,0.216,ksmm,Morrison & Billett 1952 (ref 1),tentative; preferred set (self-consistent over 60 K)
+NaCl,7647-14-5,303.15,1.0,mol/kg,1.00,0.194,ksmm,Morrison & Billett 1952 (ref 1),tentative; preferred set (self-consistent over 60 K)
+NaCl,7647-14-5,322.55,1.0,mol/kg,1.00,0.178,ksmm,Morrison & Billett 1952 (ref 1),tentative; preferred set (self-consistent over 60 K)
+NaCl,7647-14-5,344.85,1.0,mol/kg,1.00,0.165,ksmm,Morrison & Billett 1952 (ref 1),tentative; preferred set (self-consistent over 60 K)
+NaCl,7647-14-5,298.15,0.25,mol/dm3,,0.116,ksmm,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,0.25,mol/dm3,,0.125,kscc,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,0.75,mol/dm3,,0.234,ksmm,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,0.75,mol/dm3,,0.246,kscc,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,1.0,mol/dm3,,0.233,ksmm,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,1.0,mol/dm3,,0.248,kscc,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,1.5,mol/dm3,,0.229,ksmm,Yano 1974 (ref 8),tentative
+NaCl,7647-14-5,298.15,1.5,mol/dm3,,0.244,kscc,Yano 1974 (ref 8),tentative
+NaBr,7647-15-6,298.2,0.5,mol/dm3,,0.218,kscc,Yano 1974,"tentative, use with caution (larger than expected for 1-1 electrolyte)"
+NaBr,7647-15-6,298.2,1.0,mol/dm3,,0.218,kscc,Yano 1974,"tentative, use with caution (larger than expected for 1-1 electrolyte)"
+Na2CO3,497-19-8,298.2,0.5,mol/dm3,,0.721,kscc,Yano 1974,tentative
+Na2CO3,497-19-8,298.2,1.0,mol/dm3,,0.68,kscc,Yano 1974,tentative
+KCl,7447-40-7,298.2,0.25,mol/dm3,,0.112,kscc,Yano 1974,doubtful; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,0.25,mol/dm3,,0.099,ksmm,Yano 1974,doubtful; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,0.5,mol/dm3,,0.203,kscc,Yano 1974,tentative; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,0.5,mol/dm3,,0.187,ksmm,Yano 1974,tentative; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,1.0,mol/dm3,,0.207,kscc,Yano 1974,tentative; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,1.0,mol/dm3,,0.187,ksmm,Yano 1974,tentative; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,1.5,mol/dm3,,0.222,kscc,Yano 1974,tentative; ksmx = ksmm + 0.015
+KCl,7447-40-7,298.2,1.5,mol/dm3,,0.199,ksmm,Yano 1974,tentative; ksmx = ksmm + 0.015
+KBr,7758-02-3,298.2,0.5,mol/dm3,,0.226,kscc,Yano 1974,"tentative, use with caution"
+KBr,7758-02-3,298.2,0.5,mol/dm3,,0.205,ksmm,Yano 1974,"tentative, use with caution"
+KI,7681-11-0,285.75,1.0,mol/kg,1.0,0.121,ksmm,Morrison & Billett 1952,tentative; ksmx = ksmm + 0.015
+KI,7681-11-0,303.15,1.0,mol/kg,1.0,0.103,ksmm,Morrison & Billett 1952,tentative; ksmx = ksmm + 0.015
+KI,7681-11-0,322.55,1.0,mol/kg,1.0,0.085,ksmm,Morrison & Billett 1952,tentative; ksmx = ksmm + 0.015
+KI,7681-11-0,344.85,1.0,mol/kg,1.0,0.067,ksmm,Morrison & Billett 1952,tentative; ksmx = ksmm + 0.015
+Urea,57-13-6,278.15,0.1,mol/kg,0.10 (authors),0.005,ksmm,Wen & Hung 1970,authors' value for 0.1 m
+Urea,57-13-6,278.15,0.495,mol/kg,0.495,0.006,ksmm,Wen & Hung 1970 (evaluator-calculated),
+Urea,57-13-6,278.2,6.96,mol/dm3,6.96,-0.006,ksmm,Wetlaufer 1964,value in parentheses in source (converted basis)
+Urea,57-13-6,278.2,6.96,mol/dm3,6.96,0.014,kscc,Wetlaufer 1964,
+Urea,57-13-6,288.15,0.1,mol/kg,0.10 (authors),-0.009,ksmm,Wen & Hung 1970,authors' value for 0.1 m
+Urea,57-13-6,288.15,0.495,mol/kg,0.495,-0.002,ksmm,Wen & Hung 1970 (evaluator-calculated),
+Urea,57-13-6,293.2,6.96,mol/dm3,6.96,-0.017,ksmm,Wetlaufer 1964,value in parentheses in source; NOTE data sheet lists 298.15 K (293.2 possibly evaluator typo)
+Urea,57-13-6,293.2,6.96,mol/dm3,6.96,-0.001,kscc,Wetlaufer 1964,see T note above
+Urea,57-13-6,298.15,0.1,mol/kg,0.10 (authors),-0.02,ksmm,Wen & Hung 1970,authors' value for 0.1 m
+Urea,57-13-6,298.15,0.495,mol/kg,0.495,-0.009,ksmm,Wen & Hung 1970 (evaluator-calculated),
+Urea,57-13-6,308.15,0.1,mol/kg,0.10 (authors),-0.03,ksmm,Wen & Hung 1970,authors' value for 0.1 m
+Urea,57-13-6,308.15,0.495,mol/kg,0.495,-0.029,ksmm,Wen & Hung 1970 (evaluator-calculated),
+Urea,57-13-6,318.2,6.96,mol/dm3,6.96 (10.1 m),-0.023,ksmm,Wetlaufer 1964,value in parentheses in source
+Urea,57-13-6,318.2,6.96,mol/dm3,6.96 (10.1 m),-0.01,kscc,Wetlaufer 1964,

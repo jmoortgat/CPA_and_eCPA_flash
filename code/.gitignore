@@ -6,6 +6,7 @@
 /*
 !/.gitignore
 !/environment.yml
+!/README.md
 !/CPA.py
 !/benchmark_flash.py
 !/co2brine_simulator.py

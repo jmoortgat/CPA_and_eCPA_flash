@@ -1,0 +1,32 @@
+# Source: R. Kobayashi, 'Vapor-Liquid Equilibria in Binary Hydrocarbon-Water Systems',
+#   PhD dissertation, University of Michigan, 1951 (scan 0003521.pdf).
+#   Published companion: Kobayashi & Katz, Ind. Eng. Chem. 1953, 45, 440.
+# Original units: T in degF, P in psia. Compositions are MOLE FRACTIONS as printed
+#   (source headers read 'Mol Fraction ...'; no scaling factor, no mole-ratio basis).
+# Conversions: T_K = (T_F - 32)/1.8 + 273.15 ; P_bar = P_psia * 0.0689476.
+# Values transcribed visually from 300-dpi renders of the scan; OCR not trusted.
+# Table I, dissertation p.14 (PDF p.30): 'Experimental Data in the 3-Phase Region:
+#   Concentration of Water in the Vapor Phase'.
+# yH2O = mole fraction water in the vapor phase along the 3-phase (V-Lc3-Laq) locus.
+T_K,P_bar,yH2O,T_orig_F,P_orig_psia
+290.37,7.846,0.002322,63.0,113.8
+290.98,7.901,0.002370,64.1,114.6
+301.54,10.466,0.003582,83.1,151.8
+303.71,11.011,0.003708,87.0,159.7
+312.32,13.445,0.004855,102.5,195.0
+317.37,15.168,0.00552,111.6,220.0
+317.48,15.168,0.00549,111.8,220.0
+326.32,18.616,0.00696,127.7,270.0
+326.59,18.685,0.00696,128.2,271.0
+335.43,22.615,0.00854,144.1,328.0
+335.43,22.615,0.00863,144.1,328.0
+349.82,30.130,0.01097,170.0,437.0
+354.82,33.646,0.01175,179.0,488.0
+354.93,33.577,0.01177,179.2,487.0
+359.59,36.473,0.01263,187.6,529.0
+360.15,36.887,0.01278,188.6,535.0
+361.09,37.232,0.01282,190.3,540.0
+362.48,38.680,0.01282,192.8,561.0
+362.59,38.749,0.01270,193.0,562.0
+367.37,42.265,0.01212,201.6,613.0
+367.43,42.196,0.01208,201.7,612.0

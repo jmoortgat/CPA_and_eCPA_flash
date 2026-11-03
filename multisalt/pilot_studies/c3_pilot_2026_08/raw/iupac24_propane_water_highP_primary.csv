@@ -1,0 +1,111 @@
+# Source: IUPAC SDS Vol. 24, 'Propane in Water (High Pressure)' compiled sheets, book pp. 40-46
+#   (PDF pp. 61-67). Original experimental data. Total pressure in psia as printed (Wehe & McKetta
+#   sheet lists gas PARTIAL pressure in its psia column); p1_kPa = propane partial pressure
+#   calculated by the volume compiler from the authors' water vapor pressures; p1_bar converted here.
+# x1e5 = 1e5 * mole fraction propane in liquid water. Values in parentheses are vapor pressures /
+#   extrapolations by the compiler (kept, flagged in note).
+# Evaluation (book p.39): Azarnoosh & McKetta data most extensive, classed tentative; no
+#   recommended values for this system.
+source,year,book_page,T_F,T_K,p_total_psia,p1_kPa,p1_bar,x1e5,note
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,(14.952),101.325,1.0132,(5.58),extrapolated by compiler to 101.325 kPa partial pressure
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,14.7,99.56,0.9956,5.89,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,20.2,137.5,1.375,7.7,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,49.8,341.5,3.415,19.05,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,62.7,430.4,4.304,22.44,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,84.3,579.3,5.793,24.96,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,60,288.7,100.5,691.0,6.91,25.98,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,(15.645),101.325,1.0132,(1.62),extrapolated by compiler to 101.325 kPa partial pressure
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,21.7,143.0,1.43,2.34,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,33.7,225.7,2.257,3.88,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,52.5,355.3,3.553,6.23,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,70.5,479.4,4.794,7.7,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,84.2,573.8,5.738,10.26,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,96.7,660.0,6.6,10.5,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,114.7,784.1,7.841,12.44,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,116.7,797.9,7.979,12.56,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,120.2,822.0,8.22,13.62,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,122.0,834.4,8.344,14.04,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,131.7,901.2,9.012,14.3,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,131.7,901.2,9.012,14.76,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,139.7,956.4,9.564,15.03,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,140.2,959.8,9.598,15.41,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,142.7,977.1,9.771,15.67,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,151.7,1039.1,10.391,16.87,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,100,310.9,160.2,1097.7,10.977,16.91,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,(19.44),101.325,1.0132,(0.99),extrapolated by compiler to 101.325 kPa partial pressure
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,30.7,178.9,1.789,1.75,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,39.2,237.5,2.375,2.25,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,40.2,246.5,2.465,2.5,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,55.2,347.8,3.478,3.48,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,60.2,383.3,3.833,4.02,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,80.7,523.6,5.236,5.2,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,107.7,709.7,7.097,7.42,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,122.7,813.1,8.131,8.12,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,144.7,964.7,9.647,9.05,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,167.7,1123,11.23,10.65,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,186.7,1254,12.54,12.1,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,200.7,1351,13.51,12.96,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,232.7,1571,15.71,14.17,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,242.2,1637,16.37,15.06,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,244.0,1649,16.49,15.0,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,244.7,1654,16.54,15.07,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,270.7,1833,18.33,16.08,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,283.7,1923,19.23,17.3,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,305.7,2074,20.74,18.45,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,344.7,2343,23.43,20.0,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,370.4,2520,25.2,21.04,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,160,344.3,385.2,2622,26.22,21.5,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,(31.89),101.325,1.0132,(0.78),extrapolated by compiler to 101.325 kPa partial pressure
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,37.2,137.9,1.379,1.2,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,75.2,399.9,3.999,4.004,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,131.7,789.3,7.893,7.61,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,131.7,789.3,7.893,7.55,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,181.2,1130,11.3,11.0,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,195.7,1230,12.3,11.69,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,217.2,1379,13.79,13.1,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,258.7,1665,16.65,15.12,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,273.7,1768,17.68,16.8,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,290.7,1885,18.85,16.02,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,305.7,1989,19.89,17.75,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,310.7,2023,20.23,17.66,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,314.0,2046,20.46,18.0,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,355.7,2333,23.33,20.38,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,408.7,2699,26.99,21.95,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,425.7,2816,28.16,23.85,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,447.2,3309,33.09,24.06,SUSPECT: printed p1=3309 kPa inconsistent with p_total (447.2 psia = 3083 kPa); expected ~2965 kPa; partial-pressure column appears shifted down one row in the book
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,497.2,3409,34.09,26.5,SUSPECT: printed p1=3409 kPa; 497.2 psia - vp gives ~3310 kPa; see previous note
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,220,377.6,511.7,,,27.0,no partial pressure printed for this row (511.7 psia - vp ~ 3410 kPa)
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,(63.90),101.325,1.0132,(1.53),extrapolated by compiler to 101.325 kPa partial pressure
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,75.3,179.9,1.799,2.72,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,125.4,525.2,5.252,6.04,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,315.6,1836,18.36,19.65,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,390.2,2350,23.5,23.6,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,431.0,2632,26.32,27.24,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,487.3,3020,30.2,29.2,
+"Azarnoosh & McKetta, Pet. Ref. 37(11), 275 (1958)",1958,40-42,280,410.9,498.7,3098,30.98,31.3,
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,74.6,514.3,5.143,5.49,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,112.2,773.6,7.736,8.06,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,120.3,829.4,8.294,8.2,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,128.8,888.0,8.88,8.69,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,136.7,942.5,9.425,9.69,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,148.9,1027,10.27,10.1,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,165.0,1138,11.38,11.1,p/psia column is gas PARTIAL pressure for this sheet
+"Wehe & McKetta, Anal. Chem. 33, 291 (1961)",1961,45,160,344.3,180.9,1247,12.47,12.3,p/psia column is gas PARTIAL pressure for this sheet
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,100,310.9,72,490,4.9,8.63,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,100,310.9,117,800,8.0,15.52,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,133,329.3,188,1280,12.8,14.99,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,170,349.8,181,1207,12.07,11.46,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,170,349.8,307,2075,20.75,17.63,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,190,360.9,131,839,8.39,7.96,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,190,360.9,224,1480,14.8,13.3,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,190,360.9,359,2411,24.11,19.6,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,205.7,369.7,230,1497,14.97,12.61,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,205.7,369.7,400,2669,26.69,21.62,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,205.7,369.7,478,3207,32.07,24.49,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,230,383.2,222,1387,13.87,13.01,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,230,383.2,504,3332,33.32,26.33,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,260,399.8,170,928,9.28,10.01,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,260,399.8,332,2045,20.45,19.64,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,260,399.8,511,3279,32.79,28.92,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,300,422.0,265,1365,13.65,16.66,excludes points with a second (propane-rich) liquid phase
+"Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953)",1953,46,300,422.0,471,2785,27.85,30.31,excludes points with a second (propane-rich) liquid phase

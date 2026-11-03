@@ -23,6 +23,8 @@
 !/code/
 !/notebooks/
 !/tests/
+!/multisalt/
+!/docs/
 
 # The experimental CO2 + H2O database: one curated parquet, not the raw
 # working directory that surrounds it.
@@ -70,3 +72,8 @@ results/
 # solution_table.npz) are tracked explicitly.
 code/results/scan_v3_table.npz
 code/results/scan_v2_table.npz
+
+# multisalt/ (Papers II and III): its SLURM scripts and the sweep-figure
+# module are source, not output.
+!/multisalt/**/*.slurm
+!/multisalt/sweep/figures/

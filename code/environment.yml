@@ -9,6 +9,8 @@ dependencies:
   - pandas
   - pyarrow          # parquet read/write
   - matplotlib
+  - coolprop         # reference fluid properties used by multisalt/
+  - pytest
   - jupyterlab
   - ipykernel
   - pip

@@ -1,0 +1,185 @@
+{
+  "N_total": 485,
+  "aare_overall": 8.16,
+  "per_iso": [
+    {
+      "N": 35,
+      "T_K": 298,
+      "aare": 7.81,
+      "salt": "CaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 303,
+      "aare": 24.4,
+      "salt": "CaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 323,
+      "aare": 2.97,
+      "salt": "CaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 343,
+      "aare": 5.82,
+      "salt": "CaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 375,
+      "aare": 5.56,
+      "salt": "CaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 398,
+      "aare": 6.21,
+      "salt": "CaCl"
+    },
+    {
+      "N": 12,
+      "T_K": 298,
+      "aare": 38.06,
+      "salt": "KCl"
+    },
+    {
+      "N": 30,
+      "T_K": 313,
+      "aare": 6.2,
+      "salt": "KCl"
+    },
+    {
+      "N": 28,
+      "T_K": 353,
+      "aare": 3.39,
+      "salt": "KCl"
+    },
+    {
+      "N": 28,
+      "T_K": 373,
+      "aare": 3.27,
+      "salt": "KCl"
+    },
+    {
+      "N": 9,
+      "T_K": 298,
+      "aare": 1.55,
+      "salt": "MgCl"
+    },
+    {
+      "N": 9,
+      "T_K": 298,
+      "aare": 1.72,
+      "salt": "MgSO"
+    },
+    {
+      "N": 36,
+      "T_K": 298,
+      "aare": 8.93,
+      "salt": "NaCl"
+    },
+    {
+      "N": 22,
+      "T_K": 303,
+      "aare": 19.53,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 318,
+      "aare": 7.68,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 333,
+      "aare": 8.42,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 348,
+      "aare": 8.73,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 373,
+      "aare": 8.59,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 398,
+      "aare": 8.12,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 423,
+      "aare": 7.56,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 448,
+      "aare": 6.86,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 473,
+      "aare": 6.2,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 498,
+      "aare": 5.76,
+      "salt": "NaCl"
+    },
+    {
+      "N": 24,
+      "T_K": 523,
+      "aare": 6.82,
+      "salt": "NaCl"
+    },
+    {
+      "N": 6,
+      "T_K": 298,
+      "aare": 1.86,
+      "salt": "NaSO"
+    }
+  ],
+  "per_salt": {
+    "CaCl": {
+      "N": 65,
+      "aare": 8.35
+    },
+    "KCl": {
+      "N": 98,
+      "aare": 8.46
+    },
+    "MgCl": {
+      "N": 9,
+      "aare": 1.55
+    },
+    "MgSO": {
+      "N": 9,
+      "aare": 1.72
+    },
+    "NaCl": {
+      "N": 298,
+      "aare": 8.54
+    },
+    "NaSO": {
+      "N": 6,
+      "aare": 1.86
+    }
+  },
+  "small_salt_range_high": 8.46,
+  "small_salt_range_low": 1.55,
+  "susak_nacl_high_T_aare": null
+}

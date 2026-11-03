@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: >-
   If you use this software, please cite both the software itself and the
   companion journal article below.
-title: "eCPA Flash: phase stability and flash calculations for CO2 + H2O + NaCl"
+title: "eCPA Flash: phase stability and flash calculations for CO2 + H2O + NaCl, and ms-eCPA for gases in multisalt brines"
 type: software
 authors:
   - family-names: Moortgat
@@ -18,8 +18,8 @@ authors:
 repository-code: "https://github.com/jmoortgat/CPA_and_eCPA_flash"
 doi: 10.5281/zenodo.22212018
 license: MIT
-version: 1.0.2
-date-released: 2026-09-13
+version: 1.1.0
+date-released: 2026-11-03
 preferred-citation:
   type: article
   title: >-
@@ -34,5 +34,43 @@ preferred-citation:
       given-names: Abbas
   journal: "Industrial & Engineering Chemistry Research"
   year: 2026
+  volume: 65
+  issue: 37
+  start: 20081
+  end: 20103
   doi: 10.1021/acs.iecr.6c02626
-  notes: "In press"
+references:
+  - type: article
+    title: >-
+      Phase Equilibria of CO2 and CH4 in Multisalt Brines: Parametrization and
+      Validation of an Ion-Specific Electrolyte Cubic-Plus-Association Equation
+      of State
+    authors:
+    - family-names: Moortgat
+      given-names: Joachim
+    - family-names: Coelho
+      given-names: Felipe Mourão
+    - family-names: Firoozabadi
+      given-names: Abbas
+    journal: "Energy & Fuels"
+    year: 2026
+    volume: 40
+    issue: 42
+    start: 23472
+    end: 23484
+    doi: 10.1021/acs.energyfuels.6c04568
+  - type: article
+    title: >-
+      Phase Equilibria of CO2, CH4, N2, H2, C2H6, C3H8, and Mixtures in
+      Multisalt Brines: Robust Stability and Flash Computations with an
+      Ion-Specific Electrolyte Cubic-Plus-Association Equation of State
+    authors:
+    - family-names: Moortgat
+      given-names: Joachim
+    - family-names: Coelho
+      given-names: Felipe Mourão
+    - family-names: Firoozabadi
+      given-names: Abbas
+    journal: "Energy & Fuels"
+    year: 2026
+    doi: 10.1021/acs.energyfuels.6c04569

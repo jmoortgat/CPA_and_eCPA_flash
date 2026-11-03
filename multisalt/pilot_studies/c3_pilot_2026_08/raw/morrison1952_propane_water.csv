@@ -1,0 +1,17 @@
+# Source: Morrison & Billett, J. Chem. Soc. 1952, 3819-3822, Table 2 (p. 3821), propane column.
+# Solubility s0 of propane in cc(N.T.P.) per 1000 g water at a TOTAL gas pressure of 1 atm
+#   (gas + water vapor = 1 atm). Original temperatures in Celsius; T_K added (T_C + 273.15).
+# Same data compiled (with x, Ostwald, Bunsen conversions) in IUPAC SDS Vol. 24 p. 7.
+T_C,T_K,s0_ccNTP_per_kg_water
+12.3,285.45,50.7
+15.5,288.65,45.39
+21.5,294.65,37.07
+22.8,295.95,35.65
+25.5,298.65,32.58
+26.0,299.15,32.21
+31.5,304.65,28.25
+40.3,313.45,22.86
+49.0,322.15,19.5
+59.0,332.15,16.94
+64.5,337.65,16.03
+74.1,347.25,14.55

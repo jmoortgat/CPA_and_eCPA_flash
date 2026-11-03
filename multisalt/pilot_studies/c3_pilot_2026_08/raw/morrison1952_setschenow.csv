@@ -1,0 +1,20 @@
+# Source: Morrison & Billett, J. Chem. Soc. 1952, 3819-3822, Table 3 (p. 3822), propane columns.
+# Salting-out constant k = (log10 s0/s)/c, with s = gas solubility (cc NTP per 1000 g water, total
+#   pressure 1 atm) and c = salt concentration in g-equiv per 1000 g water (= molality for these
+#   1-1 salts); measured at c = 1 g-equiv/kg, small corrections applied for deviations from 1.
+# log BASE 10, MOLALITY basis, gas-solubility (not mole-fraction) ratio. dk ~ 0.010 (IUPAC est.).
+# Paper tabulates 1/T; nominal temperatures 12.6, 30.0, 49.4, 71.7 C (T_K per IUPAC compilation).
+# Propane salts in this paper: NaCl, LiCl, KI only (KCl, HCl, BaCl2, LaCl3 columns are n-butane).
+salt,cas,inv_T_per_K,T_C,T_K,k_log10_molality
+NaCl,7647-14-5,0.0035,12.6,285.75,0.216
+NaCl,7647-14-5,0.0033,30.0,303.15,0.194
+NaCl,7647-14-5,0.0031,49.4,322.55,0.178
+NaCl,7647-14-5,0.0029,71.7,344.85,0.165
+LiCl,7447-41-8,0.0035,12.6,285.75,0.175
+LiCl,7447-41-8,0.0033,30.0,303.15,0.152
+LiCl,7447-41-8,0.0031,49.4,322.55,0.138
+LiCl,7447-41-8,0.0029,71.7,344.85,0.138
+KI,7681-11-0,0.0035,12.6,285.75,0.121
+KI,7681-11-0,0.0033,30.0,303.15,0.103
+KI,7681-11-0,0.0031,49.4,322.55,0.085
+KI,7681-11-0,0.0029,71.7,344.85,0.067

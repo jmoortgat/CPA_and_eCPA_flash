@@ -1,0 +1,94 @@
+# Source: IUPAC Solubility Data Series Vol. 24 (Hayduk ed., Pergamon 1986), 'Propane in Water'
+#   compiled data sheets, book pp. 3-15 (PDF pp. 24-36). Each row keeps the ORIGINAL units in
+#   s_orig/s_orig_units; x1e5 = 1e5 * mole fraction of propane at 101.325 kPa PARTIAL pressure of
+#   gas unless the note/units say total pressure (Morrison & Billett, McAuliffe, Umano & Nakano,
+#   Lebeau). ostwald_L = cm3 gas/cm3 solvent; bunsen_alpha = cm3(STP)/cm3/atm.
+# p1_bar: partial (or total, where so marked) pressure converted to bar; original pressure columns kept.
+# Umano & Nakano rows: p_total and p1(partial) in atm as printed; x1e5 here = 1e5*(mol propane/mol water)
+#   = 1e5*x1 in the salt-free limit. MISSING = value not given in source.
+# All values visually verified against the scanned pages; misprints flagged in note column.
+source,year,book_page,T_C,T_K,p_total_orig,p_total_units,p1_orig,p1_units,p1_bar,s_orig,s_orig_units,x1e5,ostwald_L,bunsen_alpha,note
+"Wen & Hung, J. Phys. Chem. 74, 170 (1970)",1970,3,5,278.15,,,101.325,kPa,1.01325,69.57 +/- 0.11,cm3(STP)/kg water,5.709,0.0709,0.0695,"x,L,alpha calculated by compiler"
+"Wen & Hung, J. Phys. Chem. 74, 170 (1970)",1970,3,15,288.15,,,101.325,kPa,1.01325,45.75 +/- 0.06,cm3(STP)/kg water,3.645,0.0482,0.0455,"x,L,alpha calculated by compiler"
+"Wen & Hung, J. Phys. Chem. 74, 170 (1970)",1970,3,25,298.15,,,101.325,kPa,1.01325,32.31 +/- 0.08,cm3(STP)/kg water,2.64,0.0352,0.032,"x,L,alpha calculated by compiler"
+"Wen & Hung, J. Phys. Chem. 74, 170 (1970)",1970,3,35,308.15,,,101.325,kPa,1.01325,23.91 +/- 0.07,cm3(STP)/kg water,1.95,0.0268,0.0208,"x,L,alpha calculated by compiler"
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,1,274.15,,,101.325,kPa,1.01325,,,7.215,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,1,274.15,,,101.325,kPa,1.01325,,,7.242,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,4,277.15,,,101.325,kPa,1.01325,,,6.254,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,4,277.15,,,101.325,kPa,1.01325,,,6.216,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,10,283.15,,,101.325,kPa,1.01325,,,4.729,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,10,283.15,,,101.325,kPa,1.01325,,,4.726,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,15,288.15,,,101.325,kPa,1.01325,,,3.861,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,15,288.15,,,101.325,kPa,1.01325,,,3.86,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,20,293.15,,,101.325,kPa,1.01325,,,3.234,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,20,293.15,,,101.325,kPa,1.01325,,,3.219,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,25,298.15,,,101.325,kPa,1.01325,,,2.748,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,25,298.15,,,101.325,kPa,1.01325,,,2.732,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,30,303.15,,,101.325,kPa,1.01325,,,2.362,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,30,303.15,,,101.325,kPa,1.01325,,,2.362,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,35,308.15,,,101.325,kPa,1.01325,,,2.086,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,35,308.15,,,101.325,kPa,1.01325,,,2.073,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,40,313.15,,,101.325,kPa,1.01325,,,1.886,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,45,318.15,,,101.325,kPa,1.01325,,,1.676,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,45,318.15,,,101.325,kPa,1.01325,,,1.668,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,50,323.15,,,101.325,kPa,1.01325,,,1.526,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,50,323.15,,,101.325,kPa,1.01325,,,1.533,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,55,328.15,,,101.325,kPa,1.01325,,,1.424,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,55,328.15,,,101.325,kPa,1.01325,,,1.409,,,replicate experimental value; last figure not significant
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,,277.15,,,101.325,kPa,1.01325,3.46,1e-3 mol/dm3 (molarity); molality 3.46 e-3 mol/kg,6.24,,,smoothed value from original paper (x1e5 +/- 0.02)
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,,298.15,,,101.325,kPa,1.01325,1.52,1e-3 mol/dm3 (molarity); molality 1.53 e-3 mol/kg,2.74,,,smoothed value from original paper (x1e5 +/- 0.02)
+"Kresheck, Schneider & Scheraga, J. Phys. Chem. 69, 3132 (1965)",1965,4,,323.15,,,101.325,kPa,1.01325,0.84,1e-3 mol/dm3 (molarity); molality 0.85 e-3 mol/kg,1.53,,,smoothed value from original paper (x1e5 +/- 0.02)
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,0,273.2,0.1035,atm,0.09747,atm,0.0987614775,,,0.441,,,"book prints p1=0.99747 on water sheet (p.5), a misprint; NaCl sheet (p.101) prints 0.09747 for the same point"
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,0,273.2,0.3009,atm,0.2948,atm,0.2987061,,,1.5795,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,0,273.2,0.4982,atm,0.4922,atm,0.49872165,,,3.1777,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,0,273.2,0.6956,atm,0.6896,atm,0.6987372,,,4.6873,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,0,273.2,0.9982,atm,0.9922,atm,1.00534665,,,6.7939,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,5,278.2,0.1048,atm,0.09601,atm,0.0972821325,,,0.4755,,,NaCl sheet (p.101) prints p1=0.09621 for this point; water sheet prints 0.09601
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,5,278.2,0.3022,atm,0.2936,atm,0.29749020000000004,,,1.5059,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,5,278.2,0.5008,atm,0.4922,atm,0.49872165,,,2.5663,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,5,278.2,0.6969,atm,0.6883,atm,0.697419975,,,3.5123,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,5,278.2,1.0008,atm,0.9922,atm,1.00534665,,,5.2597,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,10,283.2,0.109,atm,0.0969,atm,0.098183925,,,0.3078,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,10,283.2,0.3064,atm,0.2943,atm,0.298199475,,,1.1979,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,10,283.2,0.5038,atm,0.4916,atm,0.4981137,,,2.0493,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,10,283.2,0.7011,atm,0.688,atm,0.697116,,,3.0487,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,10,283.2,1.0037,atm,0.9916,atm,1.0047387,,,4.2204,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,15,288.2,0.106,atm,0.08914,atm,0.090321105,,,0.2686,,,NaCl sheet (p.102) prints p_total=0.1061 for this point
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,15,288.2,0.3033,atm,0.2865,atm,0.29029612499999996,,,0.9077,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,15,288.2,0.5007,atm,0.4839,atm,0.490311675,,,1.6691,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,15,288.2,0.6974,atm,0.6805,atm,0.689516625,,,2.3853,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,15,288.2,1.0,atm,0.9832,atm,0.9962274,,,3.4902,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,20,293.2,0.1039,atm,0.08087,atm,0.0819415275,,,0.1309,,,x value 0.1309 appears low vs trend of other isotherms; as printed in both water and NaCl sheets
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,20,293.2,0.3013,atm,0.2782,atm,0.28188615,,,0.8018,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,20,293.2,0.4981,atm,0.4751,atm,0.481395075,,,1.3908,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,20,293.2,0.6955,atm,0.6724,atm,0.6813093,,,1.9943,,,
+"Umano & Nakano, Kogyo Kagaku Zasshi 61, 536 (1958)",1958,5,20,293.2,0.9981,atm,0.975,atm,0.98791875,,,3.0749,,,
+"Barone, Crescenzi, Pispisa & Quadrifoglio, J. Macromol. Chem. 1, 761 (1966)",1966,6,,298.15,,,101.325,kPa,1.01325,1.5,mmol/dm3 water,2.71,0.0361,0.0329,
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,12.3,285.45,1.0,atm (total),,,1.01325,50.7,cm3(STP)/1000 g water at 1 atm TOTAL pressure,4.15,0.0529,0.0505,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,15.5,288.65,1.0,atm (total),,,1.01325,45.39,cm3(STP)/1000 g water at 1 atm TOTAL pressure,3.72,0.0479,0.0452,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,21.5,294.65,1.0,atm (total),,,1.01325,37.07,cm3(STP)/1000 g water at 1 atm TOTAL pressure,3.03,0.0399,0.0368,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,22.8,295.95,1.0,atm (total),,,1.01325,35.65,cm3(STP)/1000 g water at 1 atm TOTAL pressure,2.91,0.0385,0.0354,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,25.5,298.65,1.0,atm (total),,,1.01325,32.58,cm3(STP)/1000 g water at 1 atm TOTAL pressure,2.66,0.0355,0.0323,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,26.0,299.15,1.0,atm (total),,,1.01325,32.21,cm3(STP)/1000 g water at 1 atm TOTAL pressure,2.63,0.0352,0.0319,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,31.5,304.65,1.0,atm (total),,,1.01325,28.25,cm3(STP)/1000 g water at 1 atm TOTAL pressure,2.31,0.0314,0.0279,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,40.3,313.45,1.0,atm (total),,,1.01325,22.86,cm3(STP)/1000 g water at 1 atm TOTAL pressure,1.863,0.026,0.0225,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,49.0,322.15,1.0,atm (total),,,1.01325,19.5,cm3(STP)/1000 g water at 1 atm TOTAL pressure,1.587,0.0227,0.0191,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,59.0,332.15,1.0,atm (total),,,1.01325,16.94,cm3(STP)/1000 g water at 1 atm TOTAL pressure,1.377,0.0203,0.0165,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,64.5,337.65,1.0,atm (total),,,1.01325,16.03,cm3(STP)/1000 g water at 1 atm TOTAL pressure,1.301,0.0194,0.0155,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Morrison & Billett, J. Chem. Soc. 1952, 3819",1952,7,74.1,347.25,1.0,atm (total),,,1.01325,14.55,cm3(STP)/1000 g water at 1 atm TOTAL pressure,1.181,0.018,0.014,authors' smoothing eq: log10 s = -99.629 + 5445/(T/K) + 33.50 log10(T/K)
+"Claussen & Polglase, J. Am. Chem. Soc. 74, 4817 (1952)",1952,8,19.8,292.95,,,101.325,kPa,1.01325,"0.0395,0.0395,0.0397,0.0392,0.0394,0.0393 (avg 0.03943)",Bunsen coeff replicates cm3(STP)/cm3/atm,3.25,0.0425,0.03943,"original data are the Bunsen coefficients; x,L from average"
+"Claussen & Polglase, J. Am. Chem. Soc. 74, 4817 (1952)",1952,8,29.8,302.95,,,101.325,kPa,1.01325,"0.0288,0.0289 (avg 0.02885)",Bunsen coeff replicates cm3(STP)/cm3/atm,2.38,0.0322,0.02885,"original data are the Bunsen coefficients; x,L from average"
+"Yano, Suetaka, Umehara & Horiuchi, Kagaku Kogaku 38, 320 (1974)",1974,9,25,298.15,,,101.325,kPa,1.01325,1.44,mmol/dm3,2.6,0.0347,0.0316,
+"Wetlaufer, Malik, Stoller & Coffin, J. Am. Chem. Soc. 86, 508 (1964)",1964,10,,278.15,,,101.325,kPa,1.01325,3.14,mmol/dm3,5.66,0.0702,0.0689,results expected too low by 1-1.5% (gas retained during extraction)
+"Wetlaufer, Malik, Stoller & Coffin, J. Am. Chem. Soc. 86, 508 (1964)",1964,10,,298.15,,,101.325,kPa,1.01325,1.47,mmol/dm3,2.66,0.0354,0.0322,results expected too low by 1-1.5% (gas retained during extraction)
+"Wetlaufer, Malik, Stoller & Coffin, J. Am. Chem. Soc. 86, 508 (1964)",1964,10,,318.15,,,101.325,kPa,1.01325,0.95,mmol/dm3,1.73,0.0208,0.0244,results expected too low by 1-1.5% (gas retained during extraction)
+"McAuliffe, J. Phys. Chem. 70, 1267 (1966); Nature 200, 1092 (1963)",1966,11,25,298.15,1.0,atm (total),,,1.01325,62.4,g gas / 1e6 g water at 1 atm total pressure,2.6,0.0346,0.0316,"x,L,alpha by compiler correcting for water vapor pressure"
+"Wishnia, J. Phys. Chem. 67, 2079 (1963)",1963,12,,288.15,,,101.325,kPa,1.01325,2.3,mmol/kg water,4.14,,,values read from graph by compiler; no numerical data in paper
+"Wishnia, J. Phys. Chem. 67, 2079 (1963)",1963,12,,293.15,,,101.325,kPa,1.01325,1.89,mmol/kg water,3.4,,,values read from graph by compiler; no numerical data in paper
+"Wishnia, J. Phys. Chem. 67, 2079 (1963)",1963,12,,298.15,,,101.325,kPa,1.01325,1.62,mmol/kg water,2.92,,,values read from graph by compiler; no numerical data in paper
+"Wishnia, J. Phys. Chem. 67, 2079 (1963)",1963,12,,303.15,,,101.325,kPa,1.01325,1.39,mmol/kg water,2.5,,,values read from graph by compiler; no numerical data in paper
+"Wishnia, J. Phys. Chem. 67, 2079 (1963)",1963,12,,308.15,,,101.325,kPa,1.01325,1.18,mmol/kg water,2.13,,,values read from graph by compiler; no numerical data in paper
+"Namiot, Zh. Strukt. Khim. 2, 408 (1961)",1961,13,0,273.15,,,101.325,kPa,1.01325,13800,Henry constant K/atm = (p1/atm)/x1,7.25,,,x1 at 1 atm computed by compiler; possibly literature values
+"Namiot, Zh. Strukt. Khim. 2, 408 (1961)",1961,13,10,283.15,,,101.325,kPa,1.01325,21400,Henry constant K/atm = (p1/atm)/x1,4.67,,,x1 at 1 atm computed by compiler; possibly literature values
+"Rudakov & Lutsyk, Zh. Fiz. Khim. 53, 1298 (1979)",1979,14,25,298.15,,,101.325,kPa,1.01325,29,partition coefficient k/cm3 cm-3 (= 1/Ostwald),2.58,0.0345,0.0314,"GC method, delta k/k = 0.10; L, alpha, x by compilers assuming Henry's law"
+"Lebeau, Compt. Rend. 140, 1454 (1905)",1905,15,17.8,291.0,753,mmHg (probably total),,,1.0039174342105264,6.5,volume propane / 100 volumes solvent,,,,pressure basis unclear (probably total); historical value

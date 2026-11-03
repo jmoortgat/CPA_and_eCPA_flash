@@ -1,0 +1,23 @@
+# Source: IUPAC SDS Vol. 24, book p. 47 (PDF p. 68): Kobayashi & Katz, Ind. Eng. Chem. 45, 440 (1953).
+# Propane solubility in liquid water AT THE PRESSURE WHERE THE PROPANE-RICH LIQUID PHASE JUST FORMS,
+#   i.e. along the three-phase (Lw-Lhc-V) boundary. T 278.9-369.5 K.
+# P_total_psi and p1_MPa (propane partial pressure) as printed; p1_bar converted here.
+# x_C3H8 = mole fraction propane in aqueous phase (as printed). Estimated errors: dT +/-0.15 K,
+#   dP +/-0.01 MPa (<=1 MPa) / +/-0.05 MPa (>1 MPa), dx +/-1e-6 (compilers).
+T_F,T_K,P_total_psi,p1_MPa,p1_bar,x_C3H8
+42.3,278.87,82.2,0.566,5.66,0.000366
+53.9,285.32,101,0.695,6.95,0.0002913
+78.1,298.76,142,0.976,9.76,0.0002208
+79.1,299.31,143,0.979,9.79,0.0002208
+100.2,311.04,191,1.31,13.1,0.0002045
+100.6,311.26,191,1.31,13.1,0.0002001
+132.9,329.21,284,1.941,19.41,0.0002046
+137.7,331.87,300,2.05,20.5,0.0002003
+154.2,341.04,366,2.495,24.95,0.0002063
+160.3,344.42,391,2.663,26.63,0.0002107
+172.2,351.04,446,3.032,30.32,0.0002298
+179.7,355.21,482,3.272,32.72,0.000236
+189.6,360.71,538,3.645,36.45,0.0002495
+191.1,361.54,543,3.678,36.78,0.0002489
+201.7,367.43,608,4.109,41.09,0.0002638
+205.4,369.48,632,4.269,42.69,0.0002726

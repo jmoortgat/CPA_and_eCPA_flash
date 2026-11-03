@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+
+# LaTeX build files, if a generated table is compiled here.
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.bcf
+*.run.xml
+texput.log
+
+# Generated results / large artifacts (regenerable)
+results/
+results_cache/
+*.npz
+*.parquet
+
+# Generated figures and editor backups, wherever they land.
+*.bak
+pilot_studies/**/*.png
+
+# DO track the curated experimental inputs and the test baselines. Both are
+# small, both are INPUTS rather than output, and neither can be regenerated
+# from anything in this repository.
+#
+# results_cache/ holds the model results behind each figure (about 1 MB).
+# The files named below are tracked so that the executable papers plot without
+# a cold run; nothing else in results_cache/ is. They are output: regenerate
+# them with `make figures-force` after any change to the model or the data.
+!data/**/*.parquet
+!tests/baselines/*.parquet
+!/results_cache/
+/results_cache/*
+!/results_cache/fig_*_data.parquet
+!/results_cache/fig_*_stats.json
+!/results_cache/*_per_author.parquet
+!/results_cache/build_paper_tables_stats.json
+!/results_cache/exp_source.json
+!/results_cache/mixed_brine_ch4_prediction.json
+!/results_cache/ternary_stats.json
+!/results_cache/sweep/
+/results_cache/sweep/*
+!/results_cache/sweep/merged.parquet
+!/results_cache/sweep/summary.json
+!/results_cache/sweep/threshold_sensitivity.json
+!/results_cache/sweep/threshold_rerun.csv
+
+# Locally generated parameter files and reference vectors are
+# outside this repository and never committed here.
+fortran/params/*.local.par
+
+# compiled pilot builds
+pilot_studies/**/build_ecpa/
+*.o
+*.mod
+*.dylib
+
+# Generated tables and number macros (scripts/build_paper_*.py)
+/paper_tables/
+/figures/

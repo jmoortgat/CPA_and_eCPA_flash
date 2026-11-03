@@ -3,6 +3,60 @@
 All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] — 2026-11-03
+
+### Added
+- **`multisalt/`: ms-eCPA, the code of Papers II and III of this series**
+  (Energy & Fuels 2026, 40, 23472–23484, doi:10.1021/acs.energyfuels.6c04568;
+  Energy & Fuels 2026, doi:10.1021/acs.energyfuels.6c04569). The ion-specific
+  electrolyte CPA for CO2, CH4, N2, H2, C2H6 and C3H8 in water and in brines of
+  Na+, K+, Ca2+, Mg2+, Cl- and SO4 2-; a tangent-plane-distance stability test
+  with two- and three-phase flash; a compiled Fortran implementation of the same
+  kernel; and the scripts that produce the figures and tables of both papers.
+  See `multisalt/README.md`.
+- `multisalt/PUBLISHED_VS_RELEASED.md`: the two CH4 tables of the Paper II
+  Supporting Information were computed with an earlier version of the code
+  and are not reproduced by the released code; the file lists every row that
+  differs (CH4 in water: 7.6 % AAD instead of the published 11.1 %). It also
+  records the Paper III differences: the CH4 entries of Table 3, and the
+  bound on the CO2–H2O three-phase pressure stated in the text.
+- `multisalt/data/guess_tables/CH4.parquet` (20 MB) and `CO2.parquet` (15 MB):
+  CH4–H2O and CO2–H2O start values for the binary solver. The CO2 table holds
+  the same values as `code/results/CPA_ELV_all.parquet` of Paper I, so that
+  the two packages share no files.
+- **Executable papers** `notebooks/ms_ecpa_parametrization_paper.ipynb` (Paper II)
+  and `notebooks/ms_ecpa_flash_paper.ipynb` (Paper III): the full text of each
+  article and its Supporting Information, with code cells that regenerate every
+  figure and table; tables the released code does not reproduce are shown
+  beside the published values.
+- `multisalt/results_cache/`: the model results behind the figures of Papers
+  II and III (about 1 MB), and in `results_cache/sweep/` the results of the
+  151,632-state flash grid of Paper III (19 MB), so that the figures and tables
+  can be drawn without recomputing them.
+- `multisalt/reproduce/ternary_stats.py` (Paper III, Tables S9 and S10) and
+  `multisalt/reproduce/threshold_sensitivity.py` (Table S15).
+- `multisalt/reproduce/published/`: the published Paper II SI tables S5–S8 as
+  CSV, for comparison with the regenerated ones.
+- `docs/papers.md` (the three papers, their code and notebooks, and the
+  published values the released code does not reproduce) and `docs/models.md`
+  (the two models compared).
+- `code/README.md`: the README of the Paper I package, which is also its PyPI
+  description.
+
+### Changed
+- Version 1.1.0 throughout (`pyproject.toml`, `ecpa.__version__`,
+  `CITATION.cff`, `.zenodo.json`). The `ecpa` package itself is unchanged.
+- `README.md` is now the start page of the repository, for all three papers.
+  Its Paper I content moved to `code/README.md`, which `pyproject.toml` now
+  names as the package description.
+- `code/environment.yml` adds CoolProp (used by `multisalt/`) and pytest.
+- Pilot scripts of Paper III (`vlle_locus.py`, `vpsat.py`, `fig_ywater.py`) draw from
+  their shipped results by default; `--recompute` recomputes them.
+- `multisalt/sweep/figures/make_sweep_figures.py`: Tables S11 and S12 average the
+  SSI count over all converged states, as published; the aqueous-density figure
+  at z_CO2 = 0.25 (Figure S12) is drawn again.
+- Paper I reference completed with volume and pages (65, 20081–20103).
+
 ## [1.0.2] — 2026-09-13
 
 ### Fixed

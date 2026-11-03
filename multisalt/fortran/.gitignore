@@ -1,0 +1,9 @@
+build/
+build-*/
+bin/
+golden/gen_golden.log
+__pycache__/
+# build/verify artefacts
+*.buildlog
+variants.txt
+slurm_*.out

@@ -1,0 +1,31 @@
+{
+  "N_attempted": 1931,
+  "N_dropped": 0,
+  "N_teymouri": 173,
+  "N_total": 1931,
+  "aare_overall": 6.55,
+  "best_salt": "NaSO",
+  "best_salt_aare": 4.26,
+  "per_salt": {
+    "CaCl": {
+      "N": 290,
+      "aare": 11.01
+    },
+    "KCl": {
+      "N": 268,
+      "aare": 7.17
+    },
+    "MgCl": {
+      "N": 199,
+      "aare": 7.08
+    },
+    "NaCl": {
+      "N": 1014,
+      "aare": 5.37
+    },
+    "NaSO": {
+      "N": 160,
+      "aare": 4.26
+    }
+  }
+}

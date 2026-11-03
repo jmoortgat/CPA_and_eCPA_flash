@@ -1,0 +1,20 @@
+# Source: IUPAC SDS Vol. 24 compiled sheets of Morrison & Billett, J. Chem. Soc. 1952, 3819:
+#   propane + NaCl (book p.99), + LiCl (p.97), + KI (p.118); PDF pp. 120, 118, 139.
+# These sheets report ONLY salt-effect parameters (the salt-solution solubilities were not
+#   published): k from two measurements, water and 1.0 molal salt solution, at 1 atm total pressure.
+# k_S = (1/m2) log10(S0/S) with S = propane solubility in cm3(STP)/kg water [authors' form, c in
+#   g-equiv/kg = molality for 1-1 salts]; k_x = (1/m2) log10(x0/x) mole-fraction form added by the
+#   IUPAC compiler. log BASE 10, molality basis, m2 = 1.0 mol/kg. Estimated error dk = 0.010.
+salt,cas,book_page,T_C,T_K,inv_T_K,k_S_molality_log10,k_x_molefrac_log10,note
+NaCl,7647-14-5,99,12.6,285.75,0.0035,0.216,0.231,x-based value at 303.15 (0.224) breaks the ksmx=ksmm+0.015 pattern of all other rows/sheets; possible misprint for 0.209
+NaCl,7647-14-5,99,30.0,303.15,0.0033,0.194,0.224,x-based value at 303.15 (0.224) breaks the ksmx=ksmm+0.015 pattern of all other rows/sheets; possible misprint for 0.209
+NaCl,7647-14-5,99,49.4,322.55,0.0031,0.178,0.193,x-based value at 303.15 (0.224) breaks the ksmx=ksmm+0.015 pattern of all other rows/sheets; possible misprint for 0.209
+NaCl,7647-14-5,99,71.7,344.85,0.0029,0.165,0.18,x-based value at 303.15 (0.224) breaks the ksmx=ksmm+0.015 pattern of all other rows/sheets; possible misprint for 0.209
+LiCl,7447-41-8,97,12.6,285.75,0.0035,0.175,0.19,
+LiCl,7447-41-8,97,30.0,303.15,0.0033,0.152,0.167,
+LiCl,7447-41-8,97,49.4,322.55,0.0031,0.138,0.153,
+LiCl,7447-41-8,97,71.7,344.85,0.0029,0.138,0.153,
+KI,7681-11-0,118,12.6,285.75,0.0035,0.121,0.136,
+KI,7681-11-0,118,30.0,303.15,0.0033,0.103,0.118,
+KI,7681-11-0,118,49.4,322.55,0.0031,0.085,0.1,
+KI,7681-11-0,118,71.7,344.85,0.0029,0.067,0.082,

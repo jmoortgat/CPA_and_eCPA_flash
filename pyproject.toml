@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ecpa-flash"
-version = "1.0.2"
+version = "1.1.0"
 description = "Phase stability and flash calculations for CO2 + H2O + NaCl with the electrolyte Cubic-Plus-Association (eCPA) equation of state"
-readme = "README.md"
+readme = "code/README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [

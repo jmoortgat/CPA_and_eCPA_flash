@@ -1,0 +1,76 @@
+{
+  "P_Pa": 100000.0,
+  "T_K": 298.15,
+  "basis": "total-mole water activity of the published formulation; target = Pitzer & Mayorga 1973 constants",
+  "cacl2_printed_row": {
+    "dev_pct_m0p5": "-27.0",
+    "dev_pct_m1": "-37.0",
+    "dev_pct_m2": "-52.1",
+    "n_rad_fit": 13,
+    "n_rad_fit_total": 13,
+    "n_rad_full": 28,
+    "n_rad_full_total": 28,
+    "rad_fit": 35.41,
+    "rad_full": 51.62
+  },
+  "n_pts_per_curve": 25,
+  "per_salt": {
+    "CaCl": {
+      "m_fit": 2.0,
+      "m_max": 5.0,
+      "n_nonconverged": 0,
+      "n_rad_fit": 13,
+      "n_rad_fit_total": 13,
+      "n_rad_full": 28,
+      "n_rad_full_total": 28,
+      "rad_fit": 1.39,
+      "rad_full": 5.75
+    },
+    "KCl": {
+      "m_fit": 4.5,
+      "m_max": 4.5,
+      "n_nonconverged": 0,
+      "n_rad_fit": 28,
+      "n_rad_fit_total": 28,
+      "n_rad_full": 28,
+      "n_rad_full_total": 28,
+      "rad_fit": 2.01,
+      "rad_full": 2.01
+    },
+    "MgCl": {
+      "m_fit": 2.0,
+      "m_max": 4.5,
+      "n_nonconverged": 0,
+      "n_rad_fit": 14,
+      "n_rad_fit_total": 14,
+      "n_rad_full": 28,
+      "n_rad_full_total": 28,
+      "rad_fit": 0.85,
+      "rad_full": 0.96
+    },
+    "NaCl": {
+      "m_fit": 6.0,
+      "m_max": 6.0,
+      "n_nonconverged": 0,
+      "n_rad_fit": 28,
+      "n_rad_fit_total": 28,
+      "n_rad_full": 28,
+      "n_rad_full_total": 28,
+      "rad_fit": 0.6,
+      "rad_full": 0.6
+    },
+    "NaSO": {
+      "m_fit": 2.0,
+      "m_max": 2.0,
+      "n_nonconverged": 0,
+      "n_rad_fit": 27,
+      "n_rad_fit_total": 27,
+      "n_rad_full": 27,
+      "n_rad_full_total": 27,
+      "rad_fit": 8.57,
+      "rad_full": 8.57
+    }
+  },
+  "phi_dh_nacl": "0.9882",
+  "phi_dh_pitzer": "0.9884"
+}

@@ -1,0 +1,30 @@
+# Source: R. Kobayashi, 'Vapor-Liquid Equilibria in Binary Hydrocarbon-Water Systems',
+#   PhD dissertation, University of Michigan, 1951 (scan 0003521.pdf).
+#   Published companion: Kobayashi & Katz, Ind. Eng. Chem. 1953, 45, 440.
+# Original units: T in degF, P in psia. Compositions are MOLE FRACTIONS as printed
+#   (source headers read 'Mol Fraction ...'; no scaling factor, no mole-ratio basis).
+# Conversions: T_K = (T_F - 32)/1.8 + 273.15 ; P_bar = P_psia * 0.0689476.
+# Values transcribed visually from 300-dpi renders of the scan; OCR not trusted.
+# Table IV, dissertation p.17 (PDF p.33): 'Smoothed Data in the 3-Phase Region
+#   for all Three Phases'. This is the smoothed three-phase locus (P-T) with the
+#   compositions of all three coexisting phases.
+# yH2O_vapor = M.F. water in vapor; xH2O_liqC3 = M.F. water in propane-rich liquid;
+# xC3_water = M.F. propane in water-rich liquid.
+# First row (42.3 F, 82.2 psia) is the quadruple point by extrapolation (Table III);
+#   last row (205.7 F, 637 psia) is the 3-phase critical point (vapor = C3-rich liquid).
+# Some final digits are typed as subscripts in the source (.000105, .000187, .000344,
+#   .000615, .001095) indicating a less-certain final digit; typed inline here.
+T_K,P_bar,yH2O_vapor,xH2O_liqC3,xC3_water,T_orig_F,P_orig_psia,note
+278.87,5.667,0.00140,0.000105,0.000366,42.3,82.2,
+288.71,7.481,0.00218,0.000187,0.000264,60.0,108.5,
+299.82,10.066,0.00335,0.000344,0.000219,80.0,146.0,
+310.93,13.203,0.00465,0.000615,0.000203,100.0,191.5,
+322.04,16.961,0.00625,0.001095,0.000199,120.0,246.0,
+333.15,21.443,0.00813,0.00184,0.000202,140.0,311.0,
+344.26,26.821,0.01002,0.00291,0.000212,160.0,389.0,
+349.82,29.785,0.01097,0.00358,0.000223,170.0,432.0,
+355.37,33.302,0.01191,0.00446,0.000236,180.0,483.0,
+360.93,37.094,0.01280,0.00558,0.000250,190.0,538.0,
+363.71,39.162,0.01278,0.00632,0.000256,195.0,568.0,
+366.48,41.506,0.01237,0.00723,0.000264,200.0,602.0,
+369.65,43.920,0.00998,0.00998,0.000272,205.7,637.0,3-phase critical

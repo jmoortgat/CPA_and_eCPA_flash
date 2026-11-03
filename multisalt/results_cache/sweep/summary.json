@@ -1,0 +1,21 @@
+{
+  "n_chunks_found": 8,
+  "n_chunks_expected": 8,
+  "chunks_missing": [],
+  "n_rows": 151632,
+  "n_rows_expected": 151632,
+  "n_converged": 151632,
+  "n_failed": 0,
+  "pct_converged": 100.0,
+  "wall_ms_p50": 185.97885593771935,
+  "wall_ms_p95": 10685.376939014499,
+  "wall_ms_p99": 41826.00660366006,
+  "wall_ms_max": 210073.20725917816,
+  "n_iter_basis": "converged & phases == 2",
+  "n_iter_n_rows": 81787,
+  "n_iter_ssi_p50": 6.0,
+  "n_iter_ssi_p95": 9.0,
+  "n_iter_ssi_max": 76,
+  "n_iter_inner_aq_p95": 0.0,
+  "n_iter_inner_gas_p95": 0.0
+}

@@ -1,0 +1,330 @@
+{
+  "pilot": "c2_pilot_2026_08",
+  "data": {
+    "water_csv": "multisalt/pilot_studies/c2_pilot_2026_08/c2_water_data.csv",
+    "ks_csv": "multisalt/pilot_studies/c2_pilot_2026_08/c2_setschenow_data.csv",
+    "binary": "Culberson-McKetta 1950 lo+hi (via IUPAC SDS Vol 9) + Mohammadi 2004 (T>=283 K); 116 pts, 283.1-444.26 K, 3.7-685 bar",
+    "setschenow": "IUPAC SDS Vol 9 evaluation (Clever): NaCl smoothed + 4 labs 283-348 K; KCl Ben-Naim-Yaacobi 283-303 K"
+  },
+  "c2_constants": {
+    "Tc_K": 305.32,
+    "Pc_Pa": 4872000.0,
+    "omega": 0.0995,
+    "M_kg_mol": 0.030069,
+    "pol2_Cm2_J": 4.9736e-40,
+    "pol2_note": "handbook alpha(C2H6) = 4.47 A^3"
+  },
+  "transfer": {
+    "Tc_rescale": 1.602225020990764,
+    "rule": "A_C2,i = 1.60222*A_CH4,i (all six ions), B unchanged; s_all scales all six pairs"
+  },
+  "fitB": {
+    "best": {
+      "start": [
+        -4.0935,
+        5.6634,
+        -1.7845
+      ],
+      "x": [
+        -2.7331373687726077,
+        3.759973905823945,
+        -1.145022496353247
+      ],
+      "cost": 4.61092,
+      "status": 3,
+      "message": "xtol termination (from fitB.log; start 2 killed after 2h wall in a slow flash region - single-start result adopted)",
+      "nfev": 15,
+      "optimality": NaN,
+      "rms_rel_resid_pct": 28.8,
+      "wall_s": 549.1
+    },
+    "runs": [
+      {
+        "start": [
+          -4.0935,
+          5.6634,
+          -1.7845
+        ],
+        "x": [
+          -2.7331373687726077,
+          3.759973905823945,
+          -1.145022496353247
+        ],
+        "cost": 4.61092,
+        "status": 3,
+        "message": "xtol termination (from fitB.log; start 2 killed after 2h wall in a slow flash region - single-start result adopted)",
+        "nfev": 15,
+        "optimality": NaN,
+        "rms_rel_resid_pct": 28.8,
+        "wall_s": 549.1
+      }
+    ],
+    "n_points": 111,
+    "bounds": [
+      [
+        -60.0,
+        -60.0,
+        -60.0
+      ],
+      [
+        60.0,
+        60.0,
+        60.0
+      ]
+    ],
+    "diff_step": 0.001,
+    "note": "second (perturbed) start killed as non-converging within 2h; production CH4 seed converged cleanly"
+  },
+  "B": {
+    "kij": [
+      -2.7331373687726077,
+      3.759973905823945,
+      -1.145022496353247
+    ],
+    "aare": {
+      "CM1950lo": {
+        "aare_pct": 36.53255540218351,
+        "bias_pct": -24.201313181735976,
+        "n_converged": 29,
+        "n_points": 29
+      },
+      "CM1950hi": {
+        "aare_pct": 3.5512725256888116,
+        "bias_pct": 0.8025540973377311,
+        "n_converged": 45,
+        "n_points": 45
+      },
+      "Mohammadi2004": {
+        "aare_pct": 9.572493927691035,
+        "bias_pct": -6.982849770962818,
+        "n_converged": 37,
+        "n_points": 37
+      },
+      "all": {
+        "aare_pct": 14.17507788868366,
+        "bias_pct": -8.325122427169093,
+        "n_converged": 111,
+        "n_points": 111
+      }
+    }
+  },
+  "ks0": {
+    "NaCl": [
+      {
+        "T_K": 283.15,
+        "ks": 0.26422840143967935
+      },
+      {
+        "T_K": 298.15,
+        "ks": 0.26181705216849177
+      },
+      {
+        "T_K": 313.15,
+        "ks": 0.26003855814502613
+      },
+      {
+        "T_K": 328.15,
+        "ks": 0.25856176566049754
+      },
+      {
+        "T_K": 348.15,
+        "ks": 0.2567637930898327
+      }
+    ],
+    "KCl": [
+      {
+        "T_K": 283.15,
+        "ks": 0.12417667947904817
+      },
+      {
+        "T_K": 293.15,
+        "ks": 0.11418337793240224
+      },
+      {
+        "T_K": 303.15,
+        "ks": 0.10578837480453235
+      }
+    ],
+    "NaCl_mean_dev_pct": 63.28636349191355
+  },
+  "fitS": {
+    "best": {
+      "start": [
+        1.0
+      ],
+      "x": [
+        0.72231918451723
+      ],
+      "cost": 0.024882899170477684,
+      "status": 4,
+      "message": "Both `ftol` and `xtol` termination conditions are satisfied.",
+      "nfev": 7,
+      "optimality": 1.584209759839053e-07,
+      "rms_rel_resid_pct": 9.97655234446804,
+      "wall_s": 47.2
+    },
+    "runs": [
+      {
+        "start": [
+          1.0
+        ],
+        "x": [
+          0.72231918451723
+        ],
+        "cost": 0.024882899170477684,
+        "status": 4,
+        "message": "Both `ftol` and `xtol` termination conditions are satisfied.",
+        "nfev": 7,
+        "optimality": 1.584209759839053e-07,
+        "rms_rel_resid_pct": 9.97655234446804,
+        "wall_s": 47.2
+      },
+      {
+        "start": [
+          1.4
+        ],
+        "x": [
+          0.7223191752306307
+        ],
+        "cost": 0.024882899170483766,
+        "status": 3,
+        "message": "`xtol` termination condition is satisfied.",
+        "nfev": 7,
+        "optimality": 2.591146664107499e-08,
+        "rms_rel_resid_pct": 9.97655234446926,
+        "wall_s": 40.2
+      }
+    ],
+    "targets": [
+      [
+        283.15,
+        0.19
+      ],
+      [
+        298.15,
+        0.173
+      ],
+      [
+        313.15,
+        0.16
+      ],
+      [
+        328.15,
+        0.148
+      ],
+      [
+        348.15,
+        0.136
+      ]
+    ],
+    "parameterization": "single factor s scaling ALL SIX transferred gas-ion (A, B) pairs jointly (KCl stays a same-s prediction); s=1 = pure transfer"
+  },
+  "S": {
+    "s_all": 0.72231918451723,
+    "NaCl": [
+      {
+        "T_K": 283.15,
+        "ks": 0.16144789138426754
+      },
+      {
+        "T_K": 288.15,
+        "ks": 0.1606518256467614
+      },
+      {
+        "T_K": 293.15,
+        "ks": 0.15993476447365743
+      },
+      {
+        "T_K": 298.15,
+        "ks": 0.1592798319144738
+      },
+      {
+        "T_K": 303.15,
+        "ks": 0.1586734911684623
+      },
+      {
+        "T_K": 308.15,
+        "ks": 0.15810476074030816
+      },
+      {
+        "T_K": 313.15,
+        "ks": 0.15756464743530155
+      },
+      {
+        "T_K": 318.15,
+        "ks": 0.15704573098013483
+      },
+      {
+        "T_K": 323.15,
+        "ks": 0.15654185598281928
+      },
+      {
+        "T_K": 328.15,
+        "ks": 0.15604790080210024
+      },
+      {
+        "T_K": 333.15,
+        "ks": 0.15555960218718062
+      },
+      {
+        "T_K": 338.15,
+        "ks": 0.15507342084407894
+      },
+      {
+        "T_K": 343.15,
+        "ks": 0.15458643739820438
+      },
+      {
+        "T_K": 348.15,
+        "ks": 0.15409627120791156
+      }
+    ],
+    "KCl": [
+      {
+        "T_K": 283.15,
+        "ks": 0.05421474962433261
+      },
+      {
+        "T_K": 288.15,
+        "ks": 0.04917914963100474
+      },
+      {
+        "T_K": 293.15,
+        "ks": 0.04455157512623864
+      },
+      {
+        "T_K": 298.15,
+        "ks": 0.04030109450488771
+      },
+      {
+        "T_K": 303.15,
+        "ks": 0.03640076926095712
+      }
+    ],
+    "NaCl_mean_dev_pct": -0.5300591397949798,
+    "NaCl_aad_pct": 7.687864722757946,
+    "KCl_mean_dev_pct": -73.25743299328846,
+    "KCl_aad_pct": 73.25743299328846
+  },
+  "pol2_sensitivity": {
+    "T_K": 348.15,
+    "ks_pol_c2": 0.15409627120791156,
+    "ks_pol_ch4": 0.1747062627746699,
+    "rel_shift_pct": 13.374750346133112
+  },
+  "guards": {
+    "ch4_nacl": {
+      "in_process_bit_identical": true,
+      "vs_pre_pilot_refs_bit_identical": true
+    },
+    "co2_nacl": {
+      "in_process_bit_identical": true,
+      "vs_pre_pilot_refs_bit_identical": true
+    }
+  },
+  "ks_method": {
+    "P_total_bar": 20.0,
+    "m_salt": 1.0,
+    "basis": "molar (concentration), log10; Henry-normalized volume solubility S_hat = c_gas/f_C2H6 with c_gas and c_salt from the MODEL brine density"
+  }
+}

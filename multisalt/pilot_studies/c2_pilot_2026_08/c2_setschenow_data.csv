@@ -1,0 +1,61 @@
+# Setschenow (salting-out) constants for C2H6 in salt solutions, molar
+# (concentration) basis: k_sca = log10(S0/S)/c_salt with c in mol/dm3.
+# Source: IUPAC Solubility Data Series Vol 9 (Ethane, ed. Hayduk 1982),
+# critical evaluation by H.L. Clever, pp. 31-33 (Pergamon Press, Oxford,
+# 1982).
+# NaCl "smoothed" column = evaluator's recommended values, generated from
+# log10 k_sca = -1.5034 + 221.37/(T/K) (Mishnina weighted 1, others 2).
+# Per-lab NaCl rows retained for the figure. All values classed tentative.
+# Czerski 273.15 K value flagged "doubtful" by the evaluator (excluded here).
+# KCl rows: Ben-Naim & Yaacobi 1974 (1.0 mol/dm3 KCl), same basis.
+# Rows below 283.15 K are outside the Part-1 calibration window; kept for
+# completeness, filtered out by the pilot.
+salt,lab,T_K,ks_dm3_mol
+NaCl,smoothed,273.15,0.203
+NaCl,smoothed,283.15,0.190
+NaCl,smoothed,285.75,0.187
+NaCl,smoothed,288.15,0.184
+NaCl,smoothed,293.15,0.179
+NaCl,smoothed,298.15,0.173
+NaCl,smoothed,303.15,0.169
+NaCl,smoothed,308.15,0.164
+NaCl,smoothed,313.15,0.160
+NaCl,smoothed,318.15,0.156
+NaCl,smoothed,322.55,0.152
+NaCl,smoothed,323.15,0.152
+NaCl,smoothed,328.15,0.148
+NaCl,smoothed,333.15,0.145
+NaCl,smoothed,338.15,0.142
+NaCl,smoothed,343.15,0.139
+NaCl,smoothed,344.85,0.138
+NaCl,smoothed,348.15,0.136
+NaCl,EuckenHertzberg,273.15,0.205
+NaCl,EuckenHertzberg,293.15,0.178
+NaCl,EuckenHertzberg,344.85,0.152
+NaCl,MorrisonBillett,285.75,0.195
+NaCl,MorrisonBillett,303.15,0.174
+NaCl,MorrisonBillett,322.55,0.158
+NaCl,Mishnina,283.15,0.188
+NaCl,Mishnina,288.15,0.181
+NaCl,Mishnina,293.15,0.174
+NaCl,Mishnina,298.15,0.168
+NaCl,Mishnina,303.15,0.162
+NaCl,Mishnina,308.15,0.157
+NaCl,Mishnina,313.15,0.153
+NaCl,Mishnina,318.15,0.148
+NaCl,Mishnina,323.15,0.145
+NaCl,Mishnina,328.15,0.142
+NaCl,Mishnina,333.15,0.140
+NaCl,Mishnina,338.15,0.138
+NaCl,Mishnina,343.15,0.136
+NaCl,Mishnina,348.15,0.133
+NaCl,BenNaimYaacobi,283.15,0.194
+NaCl,BenNaimYaacobi,288.15,0.185
+NaCl,BenNaimYaacobi,293.15,0.177
+NaCl,BenNaimYaacobi,298.15,0.172
+NaCl,BenNaimYaacobi,303.15,0.168
+KCl,BenNaimYaacobi,283.15,0.184
+KCl,BenNaimYaacobi,288.15,0.174
+KCl,BenNaimYaacobi,293.15,0.165
+KCl,BenNaimYaacobi,298.15,0.159
+KCl,BenNaimYaacobi,303.15,0.154

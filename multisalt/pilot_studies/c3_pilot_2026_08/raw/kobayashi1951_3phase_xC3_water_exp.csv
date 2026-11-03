@@ -1,0 +1,29 @@
+# Source: R. Kobayashi, 'Vapor-Liquid Equilibria in Binary Hydrocarbon-Water Systems',
+#   PhD dissertation, University of Michigan, 1951 (scan 0003521.pdf).
+#   Published companion: Kobayashi & Katz, Ind. Eng. Chem. 1953, 45, 440.
+# Original units: T in degF, P in psia. Compositions are MOLE FRACTIONS as printed
+#   (source headers read 'Mol Fraction ...'; no scaling factor, no mole-ratio basis).
+# Conversions: T_K = (T_F - 32)/1.8 + 273.15 ; P_bar = P_psia * 0.0689476.
+# Values transcribed visually from 300-dpi renders of the scan; OCR not trusted.
+# Table III, dissertation p.16 (PDF p.32): 'Experimental Data in the 3-Phase Region:
+#   Concentration of Propane in the Water-Rich Liquid Phase'.
+# xC3 = mole fraction propane in the water-rich liquid along the 3-phase locus.
+# xC3 column reproduces the PRINTED value verbatim; see note column for the one
+#   suspected misprint (do not use that row unfiltered).
+T_K,P_bar,xC3,T_orig_F,P_orig_psia,note
+278.87,5.667,0.000366,42.3,82.2,quadruple point by extrapolation (starred in source)
+285.32,6.964,0.0002913,53.9,101.0,
+298.76,9.791,0.0002208,78.1,142.0,
+299.32,9.860,0.0002208,79.1,143.0,
+311.04,13.169,0.00002045,100.2,191.0,SUSPECTED TYPO: printed with extra zero; trend and Table IV imply .0002045
+311.26,13.169,0.0002001,100.6,191.0,
+329.21,19.581,0.0002046,132.9,284.0,
+331.87,20.684,0.0002003,137.7,300.0,
+341.04,25.235,0.0002063,154.2,366.0,
+344.43,26.959,0.0002107,160.3,391.0,
+351.04,30.751,0.0002298,172.2,446.0,
+355.21,33.233,0.0002360,179.7,482.0,
+360.71,37.094,0.0002495,189.6,538.0,
+361.54,37.439,0.0002489,191.1,543.0,
+367.43,41.920,0.0002638,201.7,608.0,
+369.48,43.575,0.0002726,205.4,632.0,
