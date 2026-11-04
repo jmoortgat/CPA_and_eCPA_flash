@@ -25,6 +25,8 @@
 !/tests/
 !/multisalt/
 !/docs/
+!/site/
+/site/_build/
 
 # The experimental CO2 + H2O database: one curated parquet, not the raw
 # working directory that surrounds it.

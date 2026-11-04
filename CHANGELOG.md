@@ -42,6 +42,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (the two models compared).
 - `code/README.md`: the README of the Paper I package, which is also its PyPI
   description.
+- Documentation website (https://jmoortgat.github.io/CPA_and_eCPA_flash/), rendered
+  with Quarto from `README.md` and `docs/*.md` by `site/build_site.py` and deployed
+  by `.github/workflows/site.yml` whenever those files change on `main`.
 
 ### Changed
 - Version 1.1.0 throughout (`pyproject.toml`, `ecpa.__version__`,

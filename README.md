@@ -2,6 +2,7 @@
 
 ### Phase equilibria of gases in water and brines with electrolyte Cubic-Plus-Association equations of state
 
+[![Documentation website](https://img.shields.io/badge/documentation-website-0A7D5C.svg?style=flat-square)](https://jmoortgat.github.io/CPA_and_eCPA_flash/)
 [![PyPI](https://img.shields.io/pypi/v/ecpa-flash.svg?style=flat-square&color=3775A9&logo=pypi&logoColor=white&label=PyPI%20ecpa-flash)](https://pypi.org/project/ecpa-flash/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-BA0C2F.svg?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
