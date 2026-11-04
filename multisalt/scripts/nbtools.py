@@ -135,13 +135,35 @@ def latex_table(path, ncol: int):
 
 
 def show_table(df, hide_group: bool = False) -> None:
-    """Display a DataFrame as a compact table (group rows as section headers)."""
+    """Display a DataFrame as a compact table (group rows as section headers).
+
+    A column named by a tuple (heading, subheading) is shown under a two-row
+    header in which consecutive columns with the same heading share one cell.
+    """
     from IPython.display import HTML, display
     td = 'style="padding:2px 8px;text-align:left;border:none"'
+    th = 'style="padding:2px 8px;text-align:left;border:none;border-bottom:1px solid"'
+    thc = th.replace("text-align:left", "text-align:center")
     cols = [c for c in df.columns if c != "group"]
     out = ['<table style="border-collapse:collapse;border-top:2px solid;border-bottom:2px solid;'
-           'font-size:90%;width:auto">', "<tr>" + "".join(
-               f'<th {td.replace("border:none", "border-bottom:1px solid")}>{c}</th>' for c in cols) + "</tr>"]
+           'font-size:90%;width:auto">']
+    if any(isinstance(c, tuple) for c in cols):
+        top, i = [], 0
+        while i < len(cols):
+            c = cols[i]
+            if not isinstance(c, tuple):
+                top.append(f'<th rowspan="2" {th}>{c}</th>')
+                i += 1
+                continue
+            n = 1
+            while i + n < len(cols) and isinstance(cols[i + n], tuple) and cols[i + n][0] == c[0]:
+                n += 1
+            top.append(f'<th colspan="{n}" {thc}>{c[0]}</th>')
+            i += n
+        out.append("<tr>" + "".join(top) + "</tr>")
+        out.append("<tr>" + "".join(f"<th {th}>{c[1]}</th>" for c in cols if isinstance(c, tuple)) + "</tr>")
+    else:
+        out.append("<tr>" + "".join(f"<th {th}>{c}</th>" for c in cols) + "</tr>")
     last = None
     for _, r in df.iterrows():
         g = r.get("group", "")
@@ -158,11 +180,12 @@ def show_table(df, hide_group: bool = False) -> None:
 def side_by_side(published, released, on, cols):
     """One table from the published and the released version of a table.
 
-    Rows are matched on the columns ``on``. A cell reads ``published → released``
-    where the two differ and holds the single value where they agree; ``–``
-    marks a row that is absent from one version. Published rows come first,
-    in their published order, followed by rows found only in the released
-    version.
+    Rows are matched on the columns ``on``. A cell holds the single value
+    where the two versions agree; where they differ it holds the released value
+    followed by the published one in parentheses, e.g. ``0.17–6 (published:
+    1–6)``. Rows found in only one version are marked as such. Published rows
+    come first, in their published order, followed by rows found only in the
+    released version.
     """
     import pandas as pd
     p = published.set_index(on)
@@ -174,6 +197,13 @@ def side_by_side(published, released, on, cols):
         for c in cols:
             a = p[c].get(k, "–") if k in p.index else "–"
             b = r[c].get(k, "–") if k in r.index else "–"
-            row[c] = a if a == b else f"{a} → {b}"
+            if a == b:
+                row[c] = a
+            elif k not in p.index:
+                row[c] = f"{b} (not in the published table)"
+            elif k not in r.index:
+                row[c] = f"– (published: {a})"
+            else:
+                row[c] = f"{b} (published: {a})"
         rows.append(row)
     return pd.DataFrame(rows)
