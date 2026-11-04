@@ -15,6 +15,8 @@ unstable).  The reference vector ``d_i`` is built from the **gas-phase EoS
 evaluated at the partitioning-component feed composition** ``z``.  This
 choice does not favour either gas; it generalises the reference of Paper I
 (the CO₂-rich EoS at the feed composition), which assumed a single gas.
+A water-rich feed found stable is tested again against the brine at the feed
+composition (``BRINE_REFERENCE_FOR_WATER_RICH``).
 See ``michelsen_tpd`` for the trial schedule.
 
 Jex 2024 acceleration is applied to the ``lnW`` step using the same
@@ -132,6 +134,11 @@ class StabilityResult:
         0.0 for components absent from the feed.
     z : tuple of float, length 3
         Feed mole fractions (H2O, CH4, CO2) on the partitioning basis.
+    reference : str
+        Reference of the trial that gave ``tpd_min``: "gas", or "brine" (the
+        brine at the feed composition, from the second test of a water-rich
+        feed, or the fallback when the gas side has no root), or "pure
+        brine".  ``d_ref`` is always the reference of the first test.
     """
     stable: bool
     tpd_min: float
@@ -140,6 +147,7 @@ class StabilityResult:
     message: str
     d_ref: tuple                # reference d-vector (3,) = ln(z) + lnφ_ref
     z: tuple                    # the partition-basis feed used
+    reference: str = "gas"
 
 
 @dataclass
@@ -281,6 +289,58 @@ def _safe_log(x, floor=1e-300):
 #: changes reported classifications near the phase boundary and the comparison
 #: has to stay runnable.
 AQ_TRIAL_ON_FLASH_BASIS = True
+
+
+#: Use a brine reference for water-rich feeds.
+#:
+#: The gas-side reference ``d_i = ln z_i + lnphi_gas_i(z)`` has no ions, and
+#: neither have the gas trials, so for a brine feed the TPD of a gas trial
+#: does not depend on salinity.  A brine with more dissolved CO2 than its
+#: saturation value but less than the salt-free saturation value is then
+#: reported single-phase.  The aqueous trials do depend on salinity, but they
+#: converge to within ``trivial_w_atol`` of the feed and are not counted.
+#:
+#: A feed with ``z_H2O >= WATER_RICH_Z_H2O`` that this first test reports
+#: stable is therefore tested a second time.  The reference of the second test
+#: is the brine at the feed composition, on the basis of the aqueous trials,
+#: ``d_i = ln(s z_i) + lnphi_aq_i(s z)``, and only the gas trials are run.  The
+#: second test is made only when the aqueous EoS has a root at the feed and
+#: this brine has the lower Gibbs energy of the two states, ``sum_i z_i d_i``;
+#: this excludes a water-rich feed that is a vapour.  With the brine
+#: reference, the TPD of the gas trials changes sign at the CO2 saturation of
+#: the brine.
+#:
+#: The brine reference does not replace the gas reference.  At low T and high
+#: P (for example 275 K and 500 bar) the gas trials do not converge, and the
+#: split is found only by the aqueous trials against the gas reference.  The
+#: second test can therefore add a split, but cannot remove one.
+#:
+#: Set False to recover the original test.
+BRINE_REFERENCE_FOR_WATER_RICH = True
+
+#: Smallest feed water mole fraction (partitioning basis) for which the brine
+#: reference is considered.  The gas solubility in brine is below 0.1 in mole
+#: fraction over the range of the model, so a feed with more gas than this is
+#: well above saturation and the gas trials detect the split.
+WATER_RICH_Z_H2O = 0.9
+
+
+def _brine_reference(z_ref, mi, T, P_Pa):
+    """Reference vector of the brine at the feed composition.
+
+    Returns ``(d, None)``, or ``(None, exc)`` when the aqueous EoS has no
+    root at the feed.  The composition basis is that of the aqueous trials
+    (``_evaluate_lnphi``), so that a trial at ``w = z`` gives ``tpd = 0``.
+    """
+    z_ref = np.asarray(z_ref, dtype=float)
+    s = _aq_closure_scale(z_ref, mi) if AQ_TRIAL_ON_FLASH_BASIS else 1.0
+    try:
+        lp = lnphi_aq(tuple(s * z_ref), mi, T, P_Pa)
+    except Exception as exc:
+        return None, exc
+    if not all(np.isfinite(c) for c in lp):
+        return None, RuntimeError("non-finite aqueous lnphi at the feed")
+    return np.array([_safe_log(s * z_ref[i]) + float(lp[i]) for i in range(3)]), None
 
 
 def _aq_closure_scale(w_full, mi):
@@ -688,6 +748,13 @@ def michelsen_tpd(
     used at the feed composition, and then at pure brine.  Absent components
     (``z_i = 0``) are excluded from the reference and from the trials.
 
+    A water-rich feed (``z_H2O >= WATER_RICH_Z_H2O``) found stable is tested
+    again with the gas trials against the brine at the feed composition,
+    ``d_i = ln(s z_i) + lnφ_aq_i(s z)`` with ``s`` the ion closure, when this
+    brine has the lower Gibbs energy.  Without this second test a brine with
+    more CO₂ than its saturation value but less than the salt-free value is
+    reported stable (see ``BRINE_REFERENCE_FOR_WATER_RICH``).
+
     Parameters
     ----------
     z : array_like, shape (3,)
@@ -778,6 +845,7 @@ def michelsen_tpd(
         except Exception as exc:
             last_exc = exc
             continue
+    ref_side = "gas"
     if lnphi_ref is None:
         # Aqueous-side reference fallback (when gas-side has no valid root,
         # e.g. water-rich feeds at T/P where water is liquid).
@@ -793,6 +861,7 @@ def michelsen_tpd(
         x_aq_ref = (x1w_ref, float(z_ref[1]) * sc_ref, float(z_ref[2]) * sc_ref)
         try:
             lnphi_ref = lnphi_aq(x_aq_ref, mi, T, P_Pa)
+            ref_side = "brine"
             fallback_msg = f" [WARN: gas-side ref failed ({last_exc}); used aq ref]"
         except Exception as exc2:
             # Step 2: pure-brine reference (no dissolved gas) — always has a
@@ -800,6 +869,7 @@ def michelsen_tpd(
             x1w_brine = 1.0 / (1.0 + _Mw * m_tot_ref) if m_tot_ref > 0 else 1.0
             try:
                 lnphi_ref = lnphi_aq((x1w_brine, 0.0, 0.0), mi, T, P_Pa)
+                ref_side = "pure brine"
                 fallback_msg = (f" [WARN: gas-side ref failed ({last_exc}); "
                                 f"aq ref failed ({exc2}); used pure-brine ref]")
             except Exception as exc3:
@@ -824,9 +894,12 @@ def michelsen_tpd(
     n_informative = 0        # trials that converged somewhere OTHER than z
     z_present = np.where(present, z, 0.0)
 
-    def _run_panel(specs):
-        """Evaluate a panel of trials, updating the running best."""
+    def _run_panel(specs, d=None):
+        """Evaluate a panel of trials against ``d`` (default ``d_ref``),
+        updating the running best."""
         nonlocal tpd_min, best_idx, n_informative
+        if d is None:
+            d = d_ref
         for label, side, w0 in specs:
             i_t = len(results)
             # W0 = w0 (normalised) ⇒ initial sum_W = 1.
@@ -834,7 +907,7 @@ def michelsen_tpd(
             # Floor present entries to avoid log(0) on first iteration.
             W0 = np.where(present, np.clip(W0, 1e-12, None), 0.0)
             res = tpd_ssi(
-                d_ref, W0, T, P, mi, side,
+                d, W0, T, P, mi, side,
                 present=present,
                 accelerated=accelerated, tol=tol, maxiter=maxiter,
                 early_tpd=early_tpd, label=label,
@@ -876,6 +949,25 @@ def michelsen_tpd(
             escalated = True
             _run_panel(wide)
 
+    # Water-rich feed reported stable: test it again against the brine at the
+    # feed composition, with the gas trials only (see the note at
+    # BRINE_REFERENCE_FOR_WATER_RICH).  This can add a split the panel above
+    # missed; it cannot remove one it found.
+    if (BRINE_REFERENCE_FOR_WATER_RICH and ref_side == "gas"
+            and z_ref[0] >= WATER_RICH_Z_H2O
+            and (best_idx < 0 or tpd_min > -float(tpd_threshold))):
+        d_brine, _ = _brine_reference(z_ref, mi, T, P_Pa)
+        if d_brine is not None:
+            d_brine = np.where(present, d_brine, 0.0)
+            if np.sum(z_ref * d_brine) < np.sum(z_ref * d_ref):
+                gas_specs = [(f"{lab} vs brine", side, w0)
+                             for lab, side, w0 in trial_specs if side == "gas"]
+                best_before = best_idx
+                _run_panel(gas_specs, d_brine)
+                if best_idx != best_before:
+                    ref_side = "brine"
+                    fallback_msg += " [brine reference]"
+
     if best_idx < 0:
         stable = True
         if n_informative == 0:
@@ -904,6 +996,7 @@ def michelsen_tpd(
         message=msg,
         d_ref=tuple(float(x) for x in d_ref),
         z=tuple(float(x) for x in z),
+        reference=ref_side,
     )
 
 

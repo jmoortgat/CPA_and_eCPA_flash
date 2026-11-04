@@ -16,10 +16,20 @@ module ecpa_stability
 
   integer, parameter :: SIDE_AQ = 1, SIDE_GAS = 2
   integer, parameter :: MAXTRIALS = 8
+  integer, parameter :: MAXTRIALS2 = 2 * MAXTRIALS   ! trials incl. the brine-reference test
 
   ! Evaluate aqueous stability trials on the flash's composition basis.
   ! See the note at the call site. Mirrors ms_ecpa/stability.py.
   logical, parameter :: AQ_TRIAL_ON_FLASH_BASIS = .true.
+
+  ! A water-rich feed (z_H2O >= WATER_RICH_Z_H2O) found stable is tested
+  ! again with the gas trials against the brine at the feed composition,
+  ! when that brine has the lower Gibbs energy. See the note at
+  ! BRINE_REFERENCE_FOR_WATER_RICH in ms_ecpa/stability.py, which this mirrors.
+  logical, parameter :: BRINE_REFERENCE_FOR_WATER_RICH = .true.
+  real(wp), parameter :: WATER_RICH_Z_H2O = 0.9_wp
+  ! stabres_t%ref_side values
+  integer, parameter :: REF_GAS = 0, REF_BRINE = 1
 
   type :: tpdres_t
      real(wp) :: tpd = 0.0_wp
@@ -35,10 +45,11 @@ module ecpa_stability
      logical :: stable = .true.
      real(wp) :: tpd_min = 0.0_wp
      integer :: ntrials = 0
-     type(tpdres_t) :: trials(MAXTRIALS)
+     type(tpdres_t) :: trials(MAXTRIALS2)
      integer :: best_idx = 0            ! 0 = none (Python -1)
      real(wp) :: d_ref(3) = 0.0_wp
      integer :: ierr = 0                ! 0 ok; 1 reference lnphi failed everywhere
+     integer :: ref_side = REF_GAS      ! reference of the trial that gave tpd_min
   end type stabres_t
 
   type :: stabflash_t
@@ -60,6 +71,40 @@ contains
     real(wp) :: y
     y = log(max(x, 1.0e-300_wp))
   end function safe_log
+
+  ! ------------------------------------------------------------------
+  ! Reference vector of the brine at the feed composition, on the basis
+  ! of the aqueous trials (mirrors _brine_reference). ok = .false. when
+  ! the aqueous EoS has no root at the feed.
+  ! ------------------------------------------------------------------
+  subroutine brine_reference(par, z_ref, mi, T, P_Pa, d, ok)
+    type(par_t), intent(in) :: par
+    real(wp), intent(in) :: z_ref(3), mi(6), T, P_Pa
+    real(wp), intent(out) :: d(3)
+    logical, intent(out) :: ok
+    real(wp) :: m_tot, x1w, s, x(3), lp(3), v3(3)
+    integer :: nit, i
+
+    d = 0.0_wp
+    s = 1.0_wp
+    if (AQ_TRIAL_ON_FLASH_BASIS) then
+       m_tot = sum(mi)
+       if (m_tot > 0.0_wp .and. z_ref(1) > 0.0_wp) then
+          x1w = z_ref(1) / (1.0_wp + par%Mw * m_tot * z_ref(1))
+          s = 1.0_wp - par%Mw * m_tot * x1w
+       end if
+    end if
+    x = s * z_ref
+    call lnphi_aq(par, x, mi, T, P_Pa, lp, v3, ok, nit)
+    if (.not. ok) return
+    if (.not. all(ieee_is_finite(lp))) then
+       ok = .false.
+       return
+    end if
+    do i = 1, 3
+       d(i) = safe_log(x(i)) + lp(i)
+    end do
+  end subroutine brine_reference
 
   ! ------------------------------------------------------------------
   ! Single Michelsen TPD SSI trial in log space (mirrors tpd_ssi).
@@ -355,6 +400,8 @@ contains
     real(wp) :: Z_hints(7), lnphi_ref(3), v2(2), v3(3)
     real(wp) :: m_tot_ref, x1w_ref, sc_ref, x_aq_ref(3), x1w_brine
     real(wp) :: d_ref(3), w0s(3, MAXTRIALS), W0(3)
+    real(wp) :: d_brine(3)
+    logical :: got_brine, ref_is_gas
     integer :: sides(MAXTRIALS), ntr, i, i_t, nit
     real(wp) :: tpd_min, z_present(3), w_arr(3), maxdiff
     integer :: best_idx
@@ -394,6 +441,7 @@ contains
           end if
        end if
     end do
+    ref_is_gas = got_ref
     if (.not. got_ref) then
        ! Aqueous-side reference fallback
        m_tot_ref = sum(mi)
@@ -473,6 +521,45 @@ contains
               tr%tpd < early_tpd) exit
        end if
     end do
+
+    ! Water-rich feed reported stable: test it again against the brine at
+    ! the feed composition, with the gas trials only. This can add a split
+    ! the trials above missed; it cannot remove one they found.
+    if (BRINE_REFERENCE_FOR_WATER_RICH .and. ref_is_gas .and. &
+        z_ref(1) >= WATER_RICH_Z_H2O .and. &
+        (best_idx <= 0 .or. tpd_min > -tpd_threshold)) then
+       call brine_reference(par, z_ref, mi, T, P_Pa, d_brine, got_brine)
+       if (got_brine) then
+          do i = 1, 3
+             if (.not. present(i)) d_brine(i) = 0.0_wp
+          end do
+          if (sum(z_ref * d_brine) < sum(z_ref * d_ref)) then
+             do i_t = 1, ntr
+                if (sides(i_t) /= SIDE_GAS) cycle
+                if (res%ntrials >= MAXTRIALS2) exit
+                do i = 1, 3
+                   if (present(i)) then
+                      W0(i) = max(w0s(i, i_t), 1.0e-12_wp)
+                   else
+                      W0(i) = 0.0_wp
+                   end if
+                end do
+                call tpd_ssi(par, d_brine, W0, T, Pbar, mi, sides(i_t), present, &
+                             accelerated, tol, maxiter, tr)
+                res%ntrials = res%ntrials + 1
+                res%trials(res%ntrials) = tr
+                maxdiff = maxabs_nan(tr%w_frac - z_present)
+                trivial = (maxdiff < trivial_w_atol)
+                if (tr%converged .and. (.not. trivial) .and. &
+                    ieee_is_finite(tr%tpd) .and. tr%tpd < tpd_min) then
+                   tpd_min = tr%tpd
+                   best_idx = res%ntrials
+                   res%ref_side = REF_BRINE
+                end if
+             end do
+          end if
+       end if
+    end if
 
     if (best_idx <= 0) then
        res%stable = .true.

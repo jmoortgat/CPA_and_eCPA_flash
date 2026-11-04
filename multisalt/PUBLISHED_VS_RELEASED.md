@@ -113,3 +113,28 @@ and S15) agree with the published values. Tables S7 (Born energies) and S14
 (SSI with and without the Newton polish) come from computations that are not
 part of the release; the notebook shows them as published, as it does the
 parameter and tolerance tables (Tables 2, S1 and S6).
+
+## Stability test of water-rich brines (fixed in the release)
+
+The stability test of the published code compares trial phases with the gas-side
+equation of state at the feed composition, which has no ions. For a brine feed
+the gas trials therefore did not depend on salinity. A brine with more dissolved
+CO2 than its saturation value, but less than the salt-free saturation value, was
+reported single-phase. The released code tests such a feed again against the
+brine at the feed composition (`BRINE_REFERENCE_FOR_WATER_RICH` in
+`ms_ecpa/stability.py`); setting it to False recovers the published test.
+
+No published number changes:
+
+* The flash grid of Paper III has z_H2O <= 0.75. The second test applies only
+  for z_H2O >= 0.9.
+* The CO2–brine predictions of both papers use the feed z_CO2 = 0.05 first; it
+  gave a split at every data point with both versions. The ternary figures use
+  z_gas = 0.20 at every point.
+* The CH4 predictions that use the stability test (the CH4–H2O table and the
+  Susak (1980) points above 532 K) are identical with and without the second
+  test (1,063 and 64 data points).
+* Of the 1,920 states in `reproduce/reference_states.json`, one changes: at
+  523.15 K, 500 bar, 1 mol/kg MgSO4 and z_CO2 = 0.05 (saturation 0.0449) the
+  published test gives one phase and the released test a split with a gas
+  fraction of 0.008.

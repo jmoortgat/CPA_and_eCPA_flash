@@ -65,6 +65,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   at z_CO2 = 0.25 (Figure S12) is drawn again.
 - Paper I reference completed with volume and pages (65, 20081–20103).
 
+### Fixed
+- `ms_ecpa.stability.michelsen_tpd` (and the Fortran kernel): a water-rich
+  brine with more dissolved CO2 than its saturation value, but less than the
+  salt-free saturation value, was reported single-phase. The reference of the
+  stability test is the salt-free gas-side equation of state, so the gas trials
+  did not depend on salinity. A feed with z_H2O >= 0.9 that the test reports
+  stable is now tested again with the gas trials against the brine at the feed
+  composition (`BRINE_REFERENCE_FOR_WATER_RICH`, `WATER_RICH_Z_H2O`). Before
+  the fix, at 373 K and 60 bar in 4–6 mol/kg NaCl, feeds up to 1.75 times the
+  CO2 saturation were reported single-phase. The second test can add a split
+  but cannot remove one. No number in Papers II and III changes; see
+  `multisalt/PUBLISHED_VS_RELEASED.md`. `StabilityResult.reference` records
+  which reference gave `tpd_min`.
+
 ## [1.0.2] — 2026-09-13
 
 ### Fixed
