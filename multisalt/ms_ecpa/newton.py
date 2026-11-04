@@ -1,6 +1,6 @@
 """Damped Newton solver with a complex-step Jacobian.
 
-The eCPA residual system (:func:`ms_ecpa.eos.residual_elv`) is smooth and
+The eCPA residual system (``ms_ecpa.eos.residual_elv``) is smooth and
 free of branches on the unknowns, so it can be differentiated by the
 **complex-step** method: perturbing one unknown by ``i*h`` and reading the
 imaginary part of the residual gives ``dF/dx`` to machine precision, with no

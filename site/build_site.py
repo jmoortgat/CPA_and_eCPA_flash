@@ -9,12 +9,16 @@ copies them into site/_build/, with
     any other file of the repository point to that file on GitHub;
   * at the top of each page, a link back to the same file on GitHub (and, for
     a notebook, a link to open it in Colab);
+  * an API reference generated from the docstrings by quartodoc, with the
+    sections listed in site/api.yml;
   * a generated _quarto.yml.
 New files in docs/ or notebooks/ appear on the site and in its navbar without
 further changes.
 
-Usage (from the repository root):
+Usage (from the repository root; needs quartodoc 0.11 and PyYAML):
     python3 site/build_site.py
+    (cd site/_build && PYTHONPATH=$PWD/../../code:$PWD/../../multisalt quartodoc build)
+    python3 site/build_site.py --title-api
     quarto render site/_build          # output in site/_build/_site/
 """
 import json
@@ -36,7 +40,9 @@ NB_TITLES = {                                          # navbar entries; other n
     "ecpa_flash_paper.ipynb": "Paper I: executable paper",
     "ecpa_flash_tutorial.ipynb": "Paper I: tutorial",
     "ms_ecpa_parametrization_paper.ipynb": "Paper II: executable paper",
+    "ms_ecpa_parametrization_tutorial.ipynb": "Paper II: tutorial",
     "ms_ecpa_flash_paper.ipynb": "Paper III: executable paper",
+    "ms_ecpa_flash_tutorial.ipynb": "Paper III: tutorial",
 }
 PAGES = {"README.md": "index.md"}
 for f in sorted((REPO / "docs").glob("*.md"),
@@ -133,6 +139,16 @@ def notebook_page(source: str) -> dict:
     return nb
 
 
+def api_config() -> str:
+    """The quartodoc block of _quarto.yml, from site/api.yml (written as JSON, which is YAML)."""
+    import yaml
+    sections = yaml.safe_load((REPO / "site" / "api.yml").read_text())
+    cfg = {"package": None, "dir": "api", "title": "API reference",
+           "sidebar": "api/_sidebar.yml", "parser": "numpy",
+           "render_interlinks": False, "sections": sections}
+    return "quartodoc: " + json.dumps(cfg, indent=2)
+
+
 def main():
     if OUT.exists():
         shutil.rmtree(OUT)
@@ -152,6 +168,7 @@ def main():
         if (REPO / a).exists():
             shutil.copytree(REPO / a, OUT / a)
     shutil.copy(REPO / "site" / "styles.css", OUT / "styles.css")
+    api = api_config()
     doc_items = "\n".join(f"      - href: {t}\n        text: \"{n}\"" for t, n in docs)
     nb_items = "\n".join(f"          - href: {t}\n            text: \"{n}\"\n            target: _blank" for t, n in nbs)
     (OUT / "_quarto.yml").write_text(f"""project:
@@ -171,12 +188,19 @@ website:
       - text: "Notebooks"
         menu:
 {nb_items}
+      - href: api/index.qmd
+        text: "API reference"
     right:
       - text: "Documentation on GitHub"
         icon: github
         href: {GITHUB}/tree/{BRANCH}/docs
   page-footer:
     center: "Generated from the Markdown files and notebooks of the [repository]({GITHUB}); edit those, not this site."
+
+metadata-files:
+  - api/_sidebar.yml
+
+{api}
 
 format:
   html:
@@ -191,5 +215,20 @@ format:
     print(f"wrote {len(docs)} pages and {len(nbs)} notebooks to {OUT}")
 
 
+def title_api_pages():
+    """Give each page that quartodoc wrote a browser-tab title from its heading."""
+    for f in sorted((OUT / "api").glob("*.qmd")):
+        text = f.read_text()
+        if text.startswith("---"):
+            continue
+        m = re.match(r"# (.+?)\s*(\{[^}]*\})?\s*$", text.splitlines()[0])
+        if m:
+            f.write_text(f"---\npagetitle: {json.dumps(m.group(1))}\n---\n\n" + text)
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--title-api" in sys.argv:          # run after `quartodoc build`
+        title_api_pages()
+    else:
+        main()

@@ -44,7 +44,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   description.
 - Documentation website (https://jmoortgat.github.io/CPA_and_eCPA_flash/), rendered
   with Quarto from `README.md` and `docs/*.md` by `site/build_site.py` and deployed
-  by `.github/workflows/site.yml` whenever those files change on `main`.
+  by `.github/workflows/site.yml` whenever those files change on `main`. The site
+  also shows the notebooks, and an API reference of both packages generated from
+  the docstrings by quartodoc (sections listed in `site/api.yml`).
+- Tutorials `notebooks/ms_ecpa_parametrization_tutorial.ipynb` (Paper II) and
+  `notebooks/ms_ecpa_flash_tutorial.ipynb` (Paper III): the main functions of
+  `ms_ecpa`, with examples and plots.
 
 ### Changed
 - Version 1.1.0 throughout (`pyproject.toml`, `ecpa.__version__`,

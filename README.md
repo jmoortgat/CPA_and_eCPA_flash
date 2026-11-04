@@ -26,6 +26,7 @@ Paper III, in order of publication:
   code does not reproduce.
 - [`docs/models.md`](docs/models.md): the two models compared, and which one
   to use.
+- [API reference](https://jmoortgat.github.io/CPA_and_eCPA_flash/api/) on the documentation website: the public functions of both packages, generated from their docstrings.
 
 ---
 
@@ -88,7 +89,9 @@ Google Colab, where the setup cell clones the repository.
 | [`ecpa_flash_paper.ipynb`](notebooks/ecpa_flash_paper.ipynb) | Paper I with its Supporting Information, executable | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ecpa_flash_paper.ipynb) |
 | [`ecpa_flash_tutorial.ipynb`](notebooks/ecpa_flash_tutorial.ipynb) | Tutorial for the `ecpa` package of Paper I | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ecpa_flash_tutorial.ipynb) |
 | [`ms_ecpa_parametrization_paper.ipynb`](notebooks/ms_ecpa_parametrization_paper.ipynb) | Paper II with its Supporting Information, executable | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ms_ecpa_parametrization_paper.ipynb) |
+| [`ms_ecpa_parametrization_tutorial.ipynb`](notebooks/ms_ecpa_parametrization_tutorial.ipynb) | Tutorial for ms-eCPA: parameters, brine density, osmotic coefficients, gas solubility in single and mixed brines (Paper II) | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ms_ecpa_parametrization_tutorial.ipynb) |
 | [`ms_ecpa_flash_paper.ipynb`](notebooks/ms_ecpa_flash_paper.ipynb) | Paper III with its Supporting Information, executable | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ms_ecpa_flash_paper.ipynb) |
+| [`ms_ecpa_flash_tutorial.ipynb`](notebooks/ms_ecpa_flash_tutorial.ipynb) | Tutorial for ms-eCPA: stability test, two- and three-phase flash, gas mixtures, other gases, Fortran backend (Paper III) | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jmoortgat/CPA_and_eCPA_flash/blob/main/notebooks/ms_ecpa_flash_tutorial.ipynb) |
 
 Each executable paper holds the full text of the article and its Supporting
 Information, with hidden code cells that regenerate every figure and table.
@@ -106,7 +109,7 @@ CPA_and_eCPA_flash/
 ├── docs/
 │   ├── papers.md              # the three papers and their code
 │   └── models.md              # the two models compared
-├── notebooks/                 # executable papers and the Paper I tutorial
+├── notebooks/                 # executable papers and tutorials
 ├── code/                      # Paper I: eCPA for CO2 + H2O + NaCl (package ecpa)
 │   └── README.md
 ├── EXP/, CO2/                 # experimental data of Paper I

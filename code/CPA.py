@@ -1861,9 +1861,9 @@ def stability_test(
     tol: float = 1e-10,
     maxiter: int = 200,
 ) -> dict:
-    """
-    Michelsen tangent-plane distance (TPD) stability test with multiple
-    initial guesses (Jex et al. 2024, Eq. 1 & 7).
+    """Run the Michelsen TPD stability test from several initial guesses.
+
+    The method follows Jex et al. (2024), Eqs. 1 and 7.
 
     For each trial, runs (accelerated) successive substitution on the
     TPD stationary conditions:
@@ -1981,13 +1981,18 @@ def flash_co2_h2o_tpz_robust(
     tol: float = 1e-10,
     maxiter: int = 1000,
 ) -> dict:
-    """
-    Hierarchical TPz flash for CO₂(0) + H₂O(1):
-      1. Run stability_test → if stable, return single-phase
-      2. Use K from lowest TPD as initial guess for tie_line_two_comp
-      3. If flash fails, fall back to Wilson K
+    """Run the stability test and, if needed, the flash for CO₂(0) + H₂O(1).
 
-    Returns same dict as flash_co2_h2o_tpz, with added 'stability' key.
+    The steps are:
+
+    1. Run ``stability_test``; if the feed is stable, return a single-phase
+       result.
+    2. Use the K-values of the trial with the lowest TPD as the initial
+       guess for ``tie_line_two_comp``.
+    3. If that flash fails, start again from Wilson K-values.
+
+    Returns the same dict as ``flash_co2_h2o_tpz``, with an added
+    ``'stability'`` key.
     """
     if kij12 is None:
         kij12 = kij_ecpa(T) if PARAM_SET == "eCPA" else 0.0

@@ -55,6 +55,33 @@ __all__ = ["AqueousTerms", "NEUTRAL", "register", "unregister", "get",
 
 @dataclass(frozen=True)
 class AqueousTerms:
+    """Contributions of an extension to the aqueous model at one state, all at fixed T.
+
+    An extension's ``aqueous_terms`` method returns one of these.  The
+    default values (``NEUTRAL``) leave the model unchanged.  Fields may be
+    complex, because the inner Newton solves differentiate by complex step.
+
+    Attributes
+    ----------
+    density_factor : float or complex
+        Factor ``r``: the permittivity closure (Clausius-Mossotti ``M`` and
+        the dipole term) is evaluated at density ``rho * r`` instead of
+        ``rho``.  Volume derivatives of those terms include ``r``, assuming
+        ``d(V/r)/dV = 1`` at fixed N and ``d(V/r)/dN_k = 0`` for the three
+        partitioning species.
+    dipole_weight : float or complex
+        Factor ``w`` on the water dipole term of the permittivity closure.
+    V_dw_dV : float or complex
+        ``V (dw/dV)`` at fixed mole numbers.
+    N_dw_dNw : float or complex
+        ``N (dw/dN_water)`` at fixed volume.
+    Z : float or complex
+        Contribution added to the compressibility factor of the aqueous
+        phase.
+    lnphi : tuple, length 3
+        Contributions added to (ln phi_H2O, ln phi_CH4, ln phi_CO2) of the
+        aqueous phase.
+    """
     density_factor: object = 1.0
     dipole_weight: object = 1.0
     V_dw_dV: object = 0.0
@@ -76,6 +103,12 @@ def register(ext) -> None:
 
 
 def unregister() -> None:
+    """Remove the registered extension, so the aqueous model has no additions.
+
+    After this call ``get()`` returns None, ``active()`` returns False, and
+    ``aqueous_terms`` returns ``NEUTRAL``.  Calling it when nothing is
+    registered has no effect.
+    """
     global _EXT
     _EXT = None
 
@@ -110,6 +143,25 @@ def aqueous_terms(T, rho, x1w, x2w, x3w, xiw):
 
 
 def extra_aqueous_seeds(Zw_liq):
+    """Return the extra aqueous Newton starting points of the registered extension.
+
+    ``ms_ecpa.lnphi.lnphi_aq`` tries these after all of its own starting
+    points have failed.
+
+    Parameters
+    ----------
+    Zw_liq : float
+        Compressibility factor of liquid water at the current T and P,
+        ``P * 18.015e-6 / (8.314 T)`` with P in Pa; the reference value of
+        the built-in starting points.
+
+    Returns
+    -------
+    tuple
+        Starting points ``(Zw, eps_r, chi1w)``, from the extension's
+        ``extra_aqueous_seeds`` method.  Empty when no extension is
+        registered or it has no such method.
+    """
     if _EXT is None:
         return ()
     f = getattr(_EXT, "extra_aqueous_seeds", None)

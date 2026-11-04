@@ -1,49 +1,35 @@
-"""Route ``stability_flash`` to the compiled kernel, for every caller at once.
+"""Route ``stability_flash`` to the compiled Fortran kernel, for every caller at once.
 
-The Fortran port is about 190x faster than the Python kernel on a whole
-stability_flash call and agrees with it to 1e-13 (fortran/tools/bench.py;
-reproduce/verify_reference.py checks 1,920 states point by point). Until
-now nothing used it except the benchmark: the sweep, the figure scripts and
-the fitting driver each called the Python kernel directly, and each would
-have needed its own switch.
-
-The switch belongs here instead, so that turning it on speeds up everything
-without any caller changing a line. Regenerating every paper figure is the
-case that made this obvious -- ``fig_co2_singlesalt.py`` alone ran for over
-an hour and a half on the Python kernel, because it calls the flash once
-per experimental row and the row count grew when GasBrineBench recovered
-data the old builders never read.
+The Fortran kernel is about 190 times faster than the Python kernel on a whole
+``stability_flash`` call and agrees with it to 1e-13
+(``reproduce/verify_reference.py`` compares 1,920 states point by point).
+Switching it on here speeds up the sweep, the figure scripts and the fitting
+code without any change to the callers.
 
 Enabling it
 -----------
-    MS_ECPA_BACKEND=fortran        env var, or
-    ms_ecpa.backend.use("fortran") in process
+    MS_ECPA_BACKEND=fortran        environment variable, or
+    ms_ecpa.backend.use("fortran") in the running process
 
-``MS_ECPA_PARFILE`` overrides the parameter file (default: the Papers
-II/III production set).
+``MS_ECPA_PARFILE`` overrides the parameter file (default: the Papers II and
+III parameter set).
 
-The one constraint, enforced rather than documented
----------------------------------------------------
-Valid ONLY under ``salinity_convention="as-aqueous"`` -- the library
-default and the convention behind every number in Papers II and III. Under
-``"chain"`` the two implementations disagree (3.8 % on x1w, 9.5 % on eps_r
-at NaCl 6 m) for reasons not yet established. A chain call falls back to
-the Python kernel rather than returning numbers that differ silently from
-the reference, because a silent 9 % is far worse than a slow answer.
+Salinity convention
+-------------------
+The compiled kernel is valid only with ``salinity_convention="as-aqueous"``,
+the library default and the convention used for every number in Papers II and
+III. With ``"chain"`` the two kernels differ (3.8 % on x1w and 9.5 % on eps_r
+at 6 mol/kg NaCl). A call with ``"chain"`` therefore falls back to the Python
+kernel.
 
-...and the same rule for the parameters
----------------------------------------
-The compiled kernel holds its OWN copy of every parameter, read from the
-parfile at ``Engine`` construction: the Mw/Uref_ii/S12A values and
-every other entry alike. Nothing that rebinds
-:mod:`ms_ecpa.parameters` at runtime reaches it -- not the feature flags
-that module exposes, not ``set_ion_ion_du``, not
-``paper1_config.apply_paper1``. Routing such a call to the compiled
-kernel would return the Papers II/III answer, converged and plausible,
-for a model the caller thinks it has changed. So :func:`dispatch` also
-falls back whenever the Python-side parameters no longer match what the
-engine was built from -- the same trade, and the same reason, as the
-chain convention above. ``fitting`` is unaffected: it binds both stores
+Parameters
+----------
+The compiled kernel holds its own copy of every parameter, read from the
+parameter file when the ``Engine`` is constructed. Changes made at run time to
+``ms_ecpa.parameters`` (the feature flags, ``set_ion_ion_du``,
+``paper1_config.apply_paper1``) do not reach it. ``dispatch`` therefore also
+falls back to the Python kernel whenever the Python-side parameters differ
+from those the engine was built from. ``fitting`` binds both parameter stores
 (``blocks.bind_fortran``) and calls its own engine directly.
 """
 from __future__ import annotations
@@ -81,7 +67,7 @@ _ROUTE = {
 
 
 class _DeferToPython(RuntimeError):
-    """Raised so :func:`dispatch` falls back to the reference kernel."""
+    """Raised so ``dispatch`` falls back to the reference kernel."""
 
 
 #: Fortran route code for the dew-point rescue. Kept for diagnostics -- it is
@@ -96,7 +82,19 @@ DEW_RESCUE_ROUTE = 6
 
 
 def mode() -> str:
-    """Which kernel calls are currently routed to."""
+    """Return the name of the kernel that ``stability_flash`` calls are routed to.
+
+    On the first call the value is read from the environment variable
+    ``MS_ECPA_BACKEND`` (default ``"python"``); after that it changes only
+    through ``use``.
+
+    Returns
+    -------
+    str
+        ``"python"`` or ``"fortran"`` (lower case).  The value is the one
+        requested; it does not check that the compiled library can be loaded
+        (see ``available``).
+    """
     global _MODE
     if _MODE is None:
         _MODE = os.environ.get("MS_ECPA_BACKEND", "python").lower()
@@ -104,7 +102,34 @@ def mode() -> str:
 
 
 def use(which: str) -> None:
-    """Select ``"python"`` or ``"fortran"`` for this process."""
+    """Select the Python or Fortran kernel for ``stability_flash`` in this process.
+
+    With ``"fortran"``, calls made through ``dispatch`` go to
+    ``stability_flash_fortran``.  A call falls back to the Python kernel,
+    with a warning the first time for each reason (see ``fallbacks``), when
+    ``salinity_convention`` is not ``"as-aqueous"``, when a keyword argument
+    cannot be passed to the compiled kernel, when ``ms_ecpa.parameters`` was
+    changed after import, when an extension is active, or when the compiled
+    call fails.
+
+    Parameters
+    ----------
+    which : {"python", "fortran"}
+        Kernel to use.
+
+    Raises
+    ------
+    ValueError
+        If ``which`` is not ``"python"`` or ``"fortran"``.
+
+    Notes
+    -----
+    The result of the compiled kernel has the fields of
+    ``StabilityFlashResult`` that callers usually read (``phases``,
+    ``tpd_min``, ``stable``, ``flash_result``, ``message``, timings), but no
+    ``route`` attribute; ``stability`` is None and ``t_stab_ms`` and
+    ``t_flash_ms`` are NaN.
+    """
     global _MODE
     if which not in ("python", "fortran"):
         raise ValueError(f"unknown backend {which!r}")
@@ -112,6 +137,19 @@ def use(which: str) -> None:
 
 
 def available() -> bool:
+    """Return True if the compiled Fortran library can be loaded in this process.
+
+    The check builds the engine (``fortran/tools/ecpa_ctypes.Engine``) with
+    the parameter file named by ``MS_ECPA_PARFILE``, or the Papers II/III
+    parameter file by default.  The engine is kept for later calls.
+
+    Returns
+    -------
+    bool
+        True if the engine was built; False if any error occurred (for
+        example, the library is not compiled or the parameter file is
+        missing).
+    """
     try:
         _engine()
         return True
@@ -135,7 +173,7 @@ def _engine():
 
 
 def _param_snapshot() -> dict:
-    """Every number in :mod:`ms_ecpa.parameters`, as it stands right now.
+    """Every number in ``ms_ecpa.parameters``, as it stands right now.
 
     Taken at import, which is before any caller can have touched the
     module, and compared per dispatched call. Arrays are copied because
@@ -155,7 +193,7 @@ def _param_snapshot() -> dict:
     return snap
 
 
-#: Parameter state the parfile behind :func:`_engine` was generated from
+#: Parameter state the parfile behind ``_engine`` was generated from
 #: (fortran/tools/gen_params.py writes the .par out of this same module).
 _PAR_REF = _param_snapshot()
 
@@ -189,7 +227,7 @@ def fallbacks() -> dict:
     Empty after a run that really did go through the compiled kernel
     throughout -- which is otherwise not observable from the results,
     since the fallback returns the same numbers to 1e-13. Worth printing
-    next to :func:`mode` in anything that reports which kernel it used.
+    next to ``mode`` in anything that reports which kernel it used.
     """
     return dict(_FALLBACKS)
 
@@ -251,7 +289,7 @@ def stability_flash_fortran(T, P, z, mi, *, salinity_convention="as-aqueous",
     """Compiled stability + flash, shaped like the Python result.
 
     Any keyword the compiled path cannot honour (tolerances, iteration caps,
-    solver switches) raises, which makes :func:`dispatch` fall back to the
+    solver switches) raises, which makes ``dispatch`` fall back to the
     Python kernel -- and the Python kernel DOES honour them. Previously these
     were swallowed by a ``**_ignored`` catch-all, so a caller asking for
     ``maxiter=500`` silently got the compiled default and a result that looked

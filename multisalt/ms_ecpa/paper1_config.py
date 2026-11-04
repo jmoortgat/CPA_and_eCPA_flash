@@ -48,8 +48,8 @@ parentheses):
   Peneloux H2O: Paper I's degree-4 polynomial c_H2O(T_R) fitted to
          IAPWS-95 (Table S4).  The library's density routes carry no
          water shift, so this term CANNOT be bound into the parameter
-         arrays; it is exposed here as :func:`peneloux_h2o` and applied
-         by :func:`rho_water_paper1` (the exact published pure-water
+         arrays; it is exposed here as ``peneloux_h2o`` and applied
+         by ``rho_water_paper1`` (the exact published pure-water
          density route of code/scripts/optimize_peneloux_h2o.py /
          benchmark_pure_water_density.py, including their M_H2O =
          18.015 g/mol -- note the EoS mole-fraction algebra in BOTH
@@ -248,7 +248,7 @@ def _route_to_python_kernel() -> str:
     ``_engine``), and no rebinding here reaches it.  So under
     ``MS_ECPA_BACKEND=fortran`` -- the mode README.md and the slurm
     scripts recommend -- the dispatched ``stability_flash`` would go on
-    returning Papers II/III numbers while :func:`is_applied` reads True,
+    returning Papers II/III numbers while ``is_applied`` reads True,
     converged and plausible (0.79 % on x_CO2 at 323.15 K / 200 bar) and
     with nothing on the result naming the parameter set that produced it.
 
@@ -272,7 +272,7 @@ def apply_paper1() -> None:
     """Bind the library parameters to the Paper-I ternary values.
 
     Routes dispatched calls to the Python kernel for the duration (see
-    :func:`_route_to_python_kernel`) -- the compiled kernel carries its
+    ``_route_to_python_kernel``) -- the compiled kernel carries its
     own parameter file and these bindings do not reach it.
 
     Scope (repeated from the module docstring because it is not
@@ -332,7 +332,7 @@ def apply_paper1() -> None:
 def restore_paper1() -> None:
     """Restore the pristine Papers II/III library state (bit-exact).
 
-    Also puts back the backend mode :func:`apply_paper1` stepped down.
+    Also puts back the backend mode ``apply_paper1`` stepped down.
     """
     global _SAVED
     if _SAVED is None:

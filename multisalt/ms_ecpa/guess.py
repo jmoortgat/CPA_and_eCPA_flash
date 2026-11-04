@@ -112,7 +112,7 @@ def build_initial_guess(T, P, YC, guess_dir=None):
     T : float        absolute temperature [K]
     P : float        pressure [bar]
     YC : float       water-free CO2 mole fraction in the gas phase, in [0, 1]
-    guess_dir : path-like, optional
+    guess_dir : str or pathlib.Path, optional
         Directory containing ``CO2.parquet``/``CH4.parquet`` (preferred) or
         the legacy ``CO2/``/``CH4/`` table subfolders.
         Defaults to ``<repo>/../data/guess_tables``.

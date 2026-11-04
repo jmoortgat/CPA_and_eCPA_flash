@@ -1,52 +1,41 @@
-"""Locate -- and if necessary fetch -- the GasBrineBench experimental database.
+"""Locate, and if necessary fetch, the GasBrineBench experimental database.
 
-Every figure, table and fitting number in these papers is scored against
-GasBrineBench. Until now two separate answers to "where is it?" lived in the
-tree: ``fitting/dataset.py`` searched upward through the parent directories
-and found it, while ``scripts/gasbrinebench_source.py`` counted a fixed number
-of directory levels and, in the standard checkout, pointed at nothing. The
-second one failed *quietly*: its ``available()`` returned False and the figure
-scripts fell back to the legacy parquets shipped in ``data/``, so the fitting
-set and the published figures were scored against different measurements
-without anything saying so.
-
-This module is the single answer. Both callers use it, so the two cannot drift
-apart again, and a missing database is acquired rather than silently replaced
-by whatever happens to be lying around.
+Every figure, table and fitted parameter of Papers II and III is computed
+against GasBrineBench. All code in this package that reads the database finds
+it through this module. A missing database is fetched; it is never replaced by
+other data.
 
 Resolution order
 ----------------
-1. ``ECPA_GBB`` -- an explicit path. It wins, and is never auto-fetched or
-   staleness-checked: if you point at a checkout, you mean that checkout.
+1. ``ECPA_GBB``: an explicit path. It takes precedence and is never fetched or
+   checked for updates.
 2. An existing sibling checkout, found by walking up from this file.
 3. The local cache (``ECPA_GBB_CACHE``, else ``~/.cache/ecpa/GasBrineBench``).
-4. Fetch into the cache.
+4. A fetch into the cache.
 
-Freshness
----------
+Updates
+-------
 ``ECPA_GBB_REFRESH`` selects the policy:
 
 ``check`` (default)
     Ask the remote for its current commit (``git ls-remote``, about a second,
-    no download) and re-fetch only when it differs from what is on disk. This
-    is what keeps a testing run off a stale database without paying for a
-    download every time, and it is why the default is not ``never``.
+    no download) and fetch again only when it differs from the copy on disk.
 ``always``
-    Re-fetch every time, no questions.
+    Fetch every time.
 ``never``
-    Use whatever is on disk. Offline runs, and production runs that want the
-    pinned revision and nothing else.
+    Use the copy on disk, for offline runs and for runs that must use the
+    pinned revision only.
 
-A network failure is never fatal: if a check or a fetch fails and a usable
-copy exists, that copy is used and the reason is reported. Only the case
-"no local copy AND cannot fetch" raises.
+A network failure is not fatal: if a check or a fetch fails and a usable copy
+exists, that copy is used and the reason is reported. An error is raised only
+when there is no local copy and the fetch fails.
 
 Reproducibility
 ---------------
-``PINNED_REF`` is the revision a production run should get. Fetches ask for it
-by default; ``ECPA_GBB_REF`` overrides (``main`` to track the tip). Whatever is
-resolved, :func:`describe` reports the path, the revision and how it got there,
-so a figure can record the database it was built from.
+``PINNED_REF`` is the revision used for the papers. Fetches request it by
+default; ``ECPA_GBB_REF`` overrides it (``main`` for the latest revision).
+``describe`` reports the path, the revision and how the copy was obtained, so
+that a figure can record the database it was computed from.
 """
 from __future__ import annotations
 
@@ -67,7 +56,7 @@ REPO_URL = "https://github.com/jmoortgat/GasBrineBench.git"
 #: corrected.
 PINNED_REF = "v1.1.1"
 
-#: The exact commit the reported numbers were produced against. :func:`describe`
+#: The exact commit the reported numbers were produced against. ``describe``
 #: says so when the resolved checkout sits somewhere else, so a figure built on
 #: a different database cannot pass unnoticed.
 PINNED_COMMIT = "b8d1f81b459b378f3b2fdf58078a5ce112137fd8"
@@ -90,6 +79,15 @@ def _run(args, cwd=None, timeout=120):
 
 
 def cache_dir() -> Path:
+    """Return the directory of the local GasBrineBench cache.
+
+    Returns
+    -------
+    pathlib.Path
+        ``ECPA_GBB_CACHE`` (with ``~`` expanded) when that environment
+        variable is set, else ``~/.cache/ecpa/GasBrineBench``.  The directory
+        need not exist.
+    """
     env = os.environ.get("ECPA_GBB_CACHE")
     if env:
         return Path(env).expanduser()
@@ -97,6 +95,18 @@ def cache_dir() -> Path:
 
 
 def is_checkout(path: Path) -> bool:
+    """Return True if ``path`` holds a GasBrineBench checkout.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Directory to test.
+
+    Returns
+    -------
+    bool
+        True when ``path / SENTINEL`` (``data/solubility.csv``) exists.
+    """
     return (path / SENTINEL).exists()
 
 
@@ -116,6 +126,21 @@ def find_local() -> Path | None:
 
 
 def local_rev(root: Path) -> str | None:
+    """Return the commit hash checked out in a local GasBrineBench directory.
+
+    Runs ``git rev-parse HEAD`` in ``root``; no network access.
+
+    Parameters
+    ----------
+    root : pathlib.Path
+        The checkout, for example the result of ``find_local``.
+
+    Returns
+    -------
+    str or None
+        The 40-character commit hash, or None if ``root`` is not a git
+        repository or git reports an error.
+    """
     r = _run(["git", "-C", str(root), "rev-parse", "HEAD"])
     return r.stdout.strip() if r.returncode == 0 else None
 
@@ -139,7 +164,7 @@ def acquire(dest: Path, ref: str | None = None) -> Path:
     """Sparse, shallow clone of the data and loader into ``dest``.
 
     Written to a scratch directory and moved into place, so an interrupted
-    fetch cannot leave a half-populated tree that :func:`is_checkout` would
+    fetch cannot leave a half-populated tree that ``is_checkout`` would
     then accept.
     """
     ref = ref or os.environ.get("ECPA_GBB_REF") or PINNED_REF
@@ -197,6 +222,20 @@ def acquire(dest: Path, ref: str | None = None) -> Path:
 
 
 def refresh_policy() -> str:
+    """Return the GasBrineBench refresh policy set by ``ECPA_GBB_REFRESH``.
+
+    Returns
+    -------
+    str
+        ``"check"`` (the default when the variable is unset or empty),
+        ``"always"`` or ``"never"``.  See the module description for what
+        each one does in ``ensure``.
+
+    Raises
+    ------
+    ValueError
+        If ``ECPA_GBB_REFRESH`` holds any other value.
+    """
     p = (os.environ.get("ECPA_GBB_REFRESH") or "check").strip().lower()
     if p not in ("check", "always", "never"):
         raise ValueError(
@@ -205,7 +244,44 @@ def refresh_policy() -> str:
 
 
 def ensure(refresh: str | None = None) -> Path:
-    """Return a usable checkout, fetching or refreshing as the policy says."""
+    """Return a usable GasBrineBench checkout, fetching or refreshing it if needed.
+
+    The checkout is chosen in this order:
+
+    1. ``ECPA_GBB``, if set.  It is used as it is: never fetched and never
+       checked against the remote.
+    2. A directory named ``GasBrineBench`` in a parent directory of this
+       package.
+    3. The cache (``cache_dir``).
+    4. If none exists, a fetch of ``ECPA_GBB_REF`` (default ``PINNED_REF``)
+       into the cache with ``acquire``.
+
+    Under the ``"check"`` policy the local commit is compared with the
+    remote commit (``git ls-remote``, no download).  Only the cache is
+    re-fetched when they differ; another checkout is left as it is and the
+    difference is reported by ``describe``.  If a check or a fetch fails
+    and a local copy exists, the local copy is used.
+
+    Parameters
+    ----------
+    refresh : {"check", "always", "never"}, optional
+        Refresh policy for this call.  Defaults to ``refresh_policy()``.
+        Any value other than ``"check"`` or ``"always"`` acts as
+        ``"never"``.
+
+    Returns
+    -------
+    pathlib.Path
+        Root directory of the checkout (it contains ``data/``).
+
+    Raises
+    ------
+    RuntimeError
+        If ``ECPA_GBB`` is set but does not hold a checkout, or if there is
+        no local copy and the fetch fails.
+    ValueError
+        If ``refresh`` is None and ``ECPA_GBB_REFRESH`` is invalid.
+    """
     global _RESOLVED, _HOW
     policy = (refresh or refresh_policy())
     ref = os.environ.get("ECPA_GBB_REF") or PINNED_REF
@@ -294,12 +370,33 @@ def describe() -> str:
 
 
 def load(family, *, exclude_tags="__default__", **kw):
-    """``gasbrinebench.load`` against the resolved checkout.
+    """Load GasBrineBench property families from the checkout given by ``ensure``.
 
-    ``exclude_tags`` is passed through untouched when given, because the two
-    consumers legitimately differ: the fitting set keeps every row and applies
-    its own documented rules (``exclude_tags=None``), while the figure scripts
-    take the package default, which drops the 144 ``lle-regime`` propane rows.
+    This calls ``gasbrinebench.load`` from that checkout, with
+    ``where=<checkout>/data``.
+
+    Parameters
+    ----------
+    family : str or sequence of str
+        Property family name(s), or ``"all"``, as accepted by
+        ``gasbrinebench.load``.
+    exclude_tags : sequence of str or None
+        Row tags to drop.  When not given, the default of
+        ``gasbrinebench.load`` applies, which drops the 144 ``lle-regime``
+        propane rows (liquid-liquid data).  Pass None to keep every row.
+    **kw
+        Further keyword arguments for ``gasbrinebench.load`` (for example
+        ``gas="co2"``, or ``derive``).
+
+    Returns
+    -------
+    pandas.DataFrame
+        The selected rows, as returned by ``gasbrinebench.load``.
+
+    Raises
+    ------
+    RuntimeError
+        As for ``ensure``.
     """
     import sys
     root = ensure()

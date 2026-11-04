@@ -1,7 +1,8 @@
 name: Documentation website
 
-# Renders README.md, docs/*.md and notebooks/*.ipynb with Quarto (site/build_site.py)
-# and deploys the result to GitHub Pages whenever those files change on main.
+# Renders README.md, docs/*.md, notebooks/*.ipynb and the API reference (quartodoc,
+# from the docstrings, sections in site/api.yml) with Quarto (site/build_site.py),
+# and deploys the result to GitHub Pages whenever those files or the code change on main.
 on:
   push:
     branches: [main]
@@ -9,6 +10,10 @@ on:
       - 'README.md'
       - 'docs/**'
       - 'notebooks/**'
+      # docstrings feed the API reference
+      - 'code/ecpa/**'
+      - 'code/CPA.py'
+      - 'multisalt/ms_ecpa/**'
       - 'site/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
@@ -33,8 +38,16 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: 1.8.26
+      - name: Install quartodoc
+        # quartodoc 0.11 needs griffe below 2.0
+        run: python3 -m pip install "quartodoc==0.11.1" "griffe<2" pyyaml
       - name: Build the Quarto sources
         run: python3 site/build_site.py
+      - name: Build the API reference from the docstrings
+        working-directory: site/_build
+        run: PYTHONPATH="$GITHUB_WORKSPACE/code:$GITHUB_WORKSPACE/multisalt" quartodoc build
+      - name: Titles of the API pages
+        run: python3 site/build_site.py --title-api
       - name: Render
         run: quarto render site/_build
       - uses: actions/upload-pages-artifact@v3

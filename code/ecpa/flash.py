@@ -145,9 +145,10 @@ def build_continuation_cache(T, P_bar, base_guess, ms_max,
 def solve_elv(T, P_bar, ms_target, cache,
               params=None, xtol=1e-10, maxfev=2000,
               verbose=False):
-    """
-    Solve ELV at ms_target using a warm start from the continuation cache.
-    Tries several x1c multipliers on failure.
+    """Solve ELV at salt molality ms_target from the nearest continuation-cache entry.
+
+    On failure, the solve is repeated with the initial x1c multiplied by
+    several factors.
 
     Returns (sol, ier, resnorm, mesg).
     """

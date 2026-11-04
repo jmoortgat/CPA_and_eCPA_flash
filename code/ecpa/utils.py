@@ -11,12 +11,20 @@ def pct_diff(a: float, b: float) -> float:
 
 
 def print_flash_report(out: dict) -> None:
-    """
-    Print a formatted summary of a flash result dict, including:
-      - phase split (beta, N_aq, N_c)
-      - aqueous-phase composition, density, saturation
-      - CO₂-rich-phase composition, density, saturation
-      - mass balance check
+    """Print a formatted summary of a flash result dictionary.
+
+    The summary contains:
+
+    - the phase split (beta, N_aq, N_c);
+    - the aqueous-phase composition, density and saturation;
+    - the CO₂-rich-phase composition, density and saturation;
+    - a mass-balance check.
+
+    Parameters
+    ----------
+    out : dict
+        Result dictionary of a two-phase flash of this package (for example
+        ``ecpa.flash.flash_co2_h2o_salt_kv``).
     """
     T     = float(out["T"])
     P_bar = float(out["P_bar"])
@@ -107,22 +115,45 @@ def test_tieline_invariance(T, P_bar, z_co2_values, m_tot,
                              guess_table_fn, params,
                              flash_fn=None,
                              verbose=False):
-    """
-    Tie-line invariance test: flash a range of feed compositions at fixed T, P.
+    """Flash several feed compositions at fixed T and P and print the tie lines.
 
-    At fixed T and P the equilibrium phase compositions must be independent
-    of z_co2.  Only beta (phase split) should vary.
+    At fixed T and P the equilibrium phase compositions must not depend on
+    ``z_co2``; only the phase split ``beta`` changes.  The function prints
+    one row per feed so that this can be checked.
 
     Parameters
     ----------
-    flash_fn : callable or None
-        Flash function to use.  Defaults to flash_co2_h2o_salt_kv (K-value SSI).
-    Signature must accept (T, P_bar, z_co2, m_tot, guess_table_fn, params).
+    T : float
+        Temperature [K].
+    P_bar : float
+        Pressure [bar].
+    z_co2_values : sequence of float
+        CO2 feed mole fractions (salt-free basis) to flash.
+    m_tot : float
+        Salt molality [mol/kg water].
+    guess_table_fn : callable or None
+        Initial-guess function passed to the flash (see
+        ``ecpa.guess_table.make_guess_fn``).
+    params : dict
+        Model parameters (see ``ecpa.parameters.make_params``).
+    flash_fn : callable, optional
+        Flash function to use.  It is called with the keyword arguments
+        ``T, P_bar, z_co2, m_tot, guess_table_fn, params``.  Defaults to
+        ``ecpa.flash.flash_co2_h2o_salt_kv`` (K-value successive
+        substitution).
+    verbose : bool
+        Print the exception message of each failed flash.
 
     Returns
     -------
-    list of dicts with keys: z_co2, z_h2o, beta, x1w, x4w, ms_aq,
-                              x1c, x4c, converged, status
+    list of dict
+        One dictionary per feed, with keys ``z_co2``, ``z_h2o``, ``beta``,
+        ``x1w`` (H2O in the aqueous phase), ``x4w`` (CO2 in the aqueous
+        phase), ``ms_aq`` (aqueous salt molality), ``x1c`` (H2O in the
+        CO2-rich phase), ``x4c`` (CO2 in the CO2-rich phase), ``converged``
+        and ``status``.  For a failed flash the numbers are NaN and
+        ``status`` is ``"single_phase_liquid"``, ``"single_phase_gas"`` or
+        ``"failed"``.
     """
     if flash_fn is None:
         from .flash import flash_co2_h2o_salt_kv

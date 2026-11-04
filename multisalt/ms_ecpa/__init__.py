@@ -3,7 +3,7 @@ H2O-CH4-CO2-ions phase equilibria.
 
 Refactored from the original ``eCPA_ELV.py`` (Mourao Coelho & Firoozabadi,
 2025) into an importable, non-interactive package. Physics is preserved
-verbatim; see :mod:`ms_ecpa.eos` and :mod:`ms_ecpa.parameters`.
+verbatim; see ``ms_ecpa.eos`` and ``ms_ecpa.parameters``.
 
 Example
 -------

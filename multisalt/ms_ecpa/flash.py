@@ -1,7 +1,5 @@
 """Multiphase K-value flash for the multi-salt eCPA.
 
-Step 1 of the 6-step port plan adopted 2026-06-24.
-
 Architecture
 ------------
 The flash is a successive-substitution iteration (SSI) on the
@@ -12,19 +10,18 @@ ion mole-fraction sum.
 
 The functions in this module:
 
-* :func:`aqueous_closure` — residual of the multi-salt analog of the
-  prior project's ``_eq_x1w`` scalar equation.  Documents (and a unit
-  test verifies) that it reduces to the NaCl-1:1 form when the ions are
-  (Na⁺, Cl⁻) only.
-* :func:`compute_aqueous_x1w_from_KP` — direct algebraic closure for
+* ``aqueous_closure`` — residual of the multi-salt form of the scalar
+  equation for ``x1w`` used in Paper I (``ecpa.flash``).  It reduces to the
+  NaCl form when the ions are (Na⁺, Cl⁻) only; a unit test checks this.
+* ``compute_aqueous_x1w_from_KP`` — direct algebraic closure for
   ``x1w_aq`` given current ``K`` and partition-basis composition
   ``x_partition_aq``.  No iteration required.
-* :func:`rachford_rice` — scalar SSI inner loop on β (vapor fraction
+* ``rachford_rice`` — scalar SSI inner loop on β (vapor fraction
   on the partitioning-component basis).
-* :func:`flash_kv` — the production multi-gas / multi-salt K-value
+* ``flash_kv`` — the production multi-gas / multi-salt K-value
   flash; see its docstring for the full signature.
 
-The lnφ kernels live in :mod:`ms_ecpa.lnphi`; both phases are
+The lnφ kernels live in ``ms_ecpa.lnphi``; both phases are
 self-consistently solved there.
 """
 from __future__ import annotations
@@ -51,12 +48,23 @@ _PC_BAR = np.array([Pc1, Pc2, Pc3]) / 1e5  # bar
 # ---------------------------------------------------------------------------
 
 def wilson_k(T, P_bar):
-    """Wilson K-values for the three partitioning species at (T, P).
+    """Return the Wilson K-values of H2O, CH4 and CO2 at temperature T and pressure P.
 
-    K_wilson_i = (P_c,i / P) * exp(5.373 * (1 + ω_i) * (1 − T_c,i/T))
+    ``K_i = (P_c,i / P) * exp(5.373 * (1 + ω_i) * (1 − T_c,i / T))``
 
-    Returns a length-3 ndarray (H2O, CH4, CO2).  Used as the default
-    ``K_init`` for :func:`flash_kv`.
+    These are the default ``K_init`` of ``flash_kv``.
+
+    Parameters
+    ----------
+    T : float
+        Temperature [K].
+    P_bar : float
+        Pressure [bar].
+
+    Returns
+    -------
+    ndarray, shape (3,)
+        K-values ``y_i / x_i`` (H2O, CH4, CO2).
     """
     return _PC_BAR / float(P_bar) * np.exp(5.373 * (1 + _OMEGA) * (1 - _TC / T))
 
@@ -106,9 +114,9 @@ def aqueous_closure(x1w, K, y, mi):
 
     Notes
     -----
-    The closure recovers the prior project's NaCl-1:1 ``_eq_x1w`` when
-    ``mi = (m_NaCl, m_NaCl, 0, 0, 0, 0)`` and ``K_CH4`` is unused
-    (single-gas CO2-only case).  See ``tests/test_aqueous_closure.py``
+    The closure reduces to the NaCl equation for ``x1w`` of Paper I
+    (``ecpa.flash``) when ``mi = (m_NaCl, m_NaCl, 0, 0, 0, 0)`` and
+    ``K_CH4`` is unused (CO2 as the only gas).  See ``tests/test_aqueous_closure.py``
     for the algebraic reduction.
     """
     K = np.asarray(K, dtype=float)
@@ -123,9 +131,9 @@ def aqueous_closure(x1w, K, y, mi):
 
 
 def compute_aqueous_x1w_from_KP(K, y, mi):
-    """Closed-form aqueous ``x1w`` under the legacy ``m_aq* = m_input`` convention.
+    """Return aqueous ``x1w`` in closed form, with ``mi`` the aqueous molality.
 
-    Solves :func:`aqueous_closure` for ``x1w`` directly (the equation is
+    Solves ``aqueous_closure`` for ``x1w`` directly (the equation is
     affine in ``x1w``), so no Newton is required:
 
     .. math::
@@ -135,10 +143,27 @@ def compute_aqueous_x1w_from_KP(K, y, mi):
                        {1 + M_w\\,m_{\\text{tot}}}
 
     This routine treats ``mi`` as the equilibrium aqueous-phase molality
-    (no salt-conservation amplification). It is retained for the
-    pre-chain regression baseline; for the rigorous treatment of
-    multi-salt eCPA (Moortgat 2025), see
-    :func:`compute_aqueous_x1w_chain`.
+    (the "as-aqueous" convention; salt conservation is not applied).  For
+    the salt-conservation treatment of Paper I, generalised to several
+    salts, see ``compute_aqueous_x1w_chain``.
+
+    Parameters
+    ----------
+    K : array_like, shape (3,)
+        K-values ``(K_H2O, K_CH4, K_CO2)``; NaN for absent species.
+    y : array_like, shape (3,)
+        Gas-phase mole fractions ``(y_H2O, y_CH4, y_CO2)``.
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+
+    Returns
+    -------
+    x1w : float
+        Aqueous H2O mole fraction (ions included in the total).
+    x_ch4 : float
+        Aqueous CH4 mole fraction ``y_CH4 / K_CH4``.
+    x_co2 : float
+        Aqueous CO2 mole fraction ``y_CO2 / K_CO2``.
     """
     K = np.asarray(K, dtype=float)
     y = np.asarray(y, dtype=float)
@@ -151,9 +176,10 @@ def compute_aqueous_x1w_from_KP(K, y, mi):
 
 
 def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
-    """Aqueous ``x_w`` and per-ion equilibrium molality under the
-    salt-conservation chain (Moortgat 2025iecr, generalised to multi-salt
-    and multi-gas).
+    """Return aqueous x_w and ion molalities with salt conservation applied.
+
+    This is the salt-conservation treatment of Paper I, generalised to
+    several salts and two gases.
 
     Given the partition-basis aqueous water mole fraction ``x_part_w``
     from Rachford-Rice, the partition-basis vapour fraction ``beta``, the
@@ -169,11 +195,11 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
     fraction.**  Molality is per kilogram of water, and the moles of
     water in the aqueous phase are ``(1-beta) * x_part_w`` per mole of
     partitioning feed.  This is exactly the H2O balance
-    ``z_w = (1-beta) * x_w_aq`` of [Moortgat2025iecr], whose
+    ``z_w = (1-beta) * x_w_aq`` of Paper I, whose
     ``x_w_aq`` is likewise salt-free.  Using the ion-inclusive
-    ``x1w_true`` here instead inflates every molality by
-    ``1/(1 - Sigma_x)`` and breaks salt conservation (+3.7 % at 1 molal,
-    +21.8 % at 5 molal): that was the defect fixed in v1.3.
+    ``x1w_true`` here instead increases every molality by a factor
+    ``1/(1 - Sigma_x)`` and violates salt conservation (+3.7 % at 1 molal,
+    +21.8 % at 5 molal).
 
     With ``S = M_w z_w m_tot_feed / (1 - beta)``, the ion mole-fraction
     sum follows from ``Sigma_x = M_w x_w_aq m_tot_aq``:
@@ -185,7 +211,7 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
     :math:`\\Sigma_x` is still independent of ``x_{w,aq}``, so the
     partition-to-true conversion stays affine and no Brent solve is
     needed.  Note ``0 < 1/(1+S) <= 1`` for every physical input, so the
-    closure can no longer report a spuriously "unphysical" state.
+    closure does not produce an unphysical state.
 
     Parameters
     ----------
@@ -196,7 +222,7 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
         Vapour fraction on the partitioning-component basis (0..1).
     z_w : float
         Volatile-basis H2O feed mole fraction (= ``z[0]`` in the
-        partition-component vector used by :func:`flash_kv`).
+        partition-component vector used by ``flash_kv``).
     mi_feed : array_like, shape (6,)
         Prepared-brine ion molalities (Na, Cl, K, Ca, Mg, SO4)
         [mol / kg pre-gas water].
@@ -205,6 +231,7 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
     -------
     x1w_true : float
         True aqueous H2O mole fraction (ions included in the denominator).
+        NaN when ``beta >= 1`` or the inputs give no valid state.
     scale : float
         Conversion factor ``x_aq_i = x_part_i · scale`` for the volatile
         species (= ``1 - Sigma_x``).
@@ -220,9 +247,8 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
     ``scale = 1``, ``x1w_true = x_part_w``, ``mi_aq = 0`` --- recovers
     the binary flash exactly.  Single-NaCl limit
     (``mi_feed = (m_s, m_s, 0, 0, 0, 0)``, ``z_CH4 = 0``):
-    ``m_i,aq* = m_s * z_w / [(1-beta) * x_part_w]`` --- matches Eq.~(9)
-    of [Moortgat2025iecr] per ion, on that paper's own salt-free water
-    mole fraction.
+    ``m_i,aq* = m_s * z_w / [(1-beta) * x_part_w]`` --- matches Eq. (9)
+    of Paper I per ion, with that paper's salt-free water mole fraction.
 
     Salt conservation is the invariant to test: the ion moles in the
     aqueous phase, ``m_i_aq * (1-beta) * x_part_w * M_w``, must equal the
@@ -257,16 +283,36 @@ def compute_aqueous_x1w_chain(x_part_w, beta, z_w, mi_feed):
 # ---------------------------------------------------------------------------
 
 def rachford_rice(K, z, *, beta_lo=None, beta_hi=None):
-    """Solve the Rachford-Rice equation for vapor fraction β.
+    """Solve the Rachford-Rice equation for the vapour fraction β.
 
     .. math::
 
         F(\\beta) = \\sum_i \\frac{z_i (K_i - 1)}{1 + \\beta (K_i - 1)} = 0
 
-    Reduced to the present-species subset; absent species (``z_i == 0`` or
-    ``K_i`` non-finite) are dropped.  Returns the root in (0, 1) if one
-    exists; otherwise returns the clamped boundary (β=0 if all K<1, β=1 if
-    all K>1).  Uses Brent's method on a sign-changing bracket.
+    Only present species enter the sum; species with ``z_i == 0`` or a
+    non-finite ``K_i`` are dropped.  The root is found with Brent's method
+    on a bracket where ``F`` changes sign.
+
+    Parameters
+    ----------
+    K : array_like, shape (3,)
+        K-values ``y_i / x_i`` on the partitioning basis (H2O, CH4, CO2).
+    z : array_like, shape (3,)
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2).
+    beta_lo : float, optional
+        Lower end of the bracket.  Defaults to the pole bound
+        ``1 / (1 - max K) + 1e-12``, and is never below 0.
+    beta_hi : float, optional
+        Upper end of the bracket.  Defaults to the pole bound
+        ``1 / (1 - min K) - 1e-12``, and is never above 1.
+
+    Returns
+    -------
+    float
+        Vapour mole fraction β on the partitioning basis.  If no root lies
+        in (0, 1), the nearer bound is returned: 0 when all ``K_i <= 1``
+        (or no species is present), 1 when all ``K_i >= 1``, and otherwise
+        the end of the bracket where ``|F|`` is smaller.
     """
     K = np.asarray(K, dtype=float)
     z = np.asarray(z, dtype=float)
@@ -304,7 +350,79 @@ def rachford_rice(K, z, *, beta_lo=None, beta_hi=None):
 
 @dataclass
 class FlashKVResult:
-    """Result of a converged (or attempted) K-value flash."""
+    """Result of a K-value flash (returned by ``flash_kv`` and ``dew_point_flash``).
+
+    Attributes
+    ----------
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : tuple of float, length 3
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2).
+    mi : tuple of float, length 6
+        Input ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg
+        water]: the feed molality under ``"chain"``, the aqueous molality
+        under ``"as-aqueous"``.
+    converged : bool
+        True when the fugacity residual is below the tolerance.
+    message : str
+        "converged", or the reason the flash stopped.
+    K : tuple of float, length 3
+        K-values (H2O, CH4, CO2); NaN for absent species.  From
+        ``flash_kv`` they are on the partitioning basis, ``y_i / x_part,i``,
+        where ``x_part`` is the aqueous composition without the ions
+        (renormalised to sum to 1).  From ``dew_point_flash`` they are
+        ``y_i / x_aq,i``.  The two agree in the salt-free case.
+    x_aq : tuple of float, length 3
+        Aqueous mole fractions (H2O, CH4, CO2) with the ions included in the
+        total, so they sum to ``1 - sum(x_ion)``.
+    y_gas : tuple of float, length 3
+        Gas-phase mole fractions (H2O, CH4, CO2); sum to 1.
+    beta : float
+        Vapour mole fraction on the partitioning basis (ions excluded).
+    x1w : float
+        Aqueous H2O mole fraction, equal to ``x_aq[0]``.
+    Z_aq : float
+        Compressibility factor ``PV/(nRT)`` of the aqueous phase; NaN if not
+        available.
+    Z_gas : float
+        Compressibility factor of the gas phase; NaN if not available.
+    eps_r : float
+        Relative permittivity of the aqueous phase; NaN if not available.
+    n_iter_ssi : int
+        Number of successive-substitution iterations (0 for
+        ``dew_point_flash``).
+    n_iter_newton : int
+        Number of Newton iterations on ln K after the substitution phase
+        (``dew_point_flash`` reports 1).
+    max_residual : float
+        Final residual.  From ``flash_kv``: ``max|g|`` over present species,
+        with ``g_i`` the change of ``ln K_i`` from one substitution step.
+        From ``dew_point_flash``: the largest relative fugacity difference
+        ``|f_aq - f_gas| / max(f_aq, f_gas)``.
+    fugacities_aq : tuple of float, length 3
+        Fugacities (H2O, CH4, CO2) in the aqueous phase [bar].
+    fugacities_gas : tuple of float, length 3
+        Fugacities (H2O, CH4, CO2) in the gas phase [bar].
+    mi_aq : tuple of float, length 6
+        Equilibrium aqueous ion molalities [mol/kg water].  Equal to ``mi``
+        under ``"as-aqueous"``; computed from salt conservation under
+        ``"chain"``.
+    salinity_convention : str
+        ``"as-aqueous"`` or ``"chain"`` (see ``flash_kv``).
+    chi_H2O_aq : float
+        Fraction of H2O association sites not bonded (Wertheim monomer
+        fraction) in the aqueous phase; NaN if not available.
+    chi_H2O_gas : float
+        Same quantity in the gas phase; NaN if not available.
+    n_iter_aq_inner : int
+        Newton iterations of the final aqueous-phase solve at the returned
+        state (used to compute ``Z_aq``, ``eps_r`` and ``chi_H2O_aq``).
+    n_iter_gas_inner : int
+        Newton iterations of the final gas-phase solve at the returned
+        state.
+    """
     T: float
     P: float
     z: tuple
@@ -352,7 +470,13 @@ def flash_kv(
     gas_Z_init=None,
     verbose=False,
 ):
-    """K-value SSI multiphase flash for the multi-salt eCPA.
+    """Run the two-phase K-value flash of the multi-salt eCPA at given T, P and feed.
+
+    The flash is a successive substitution on ln K of the partitioning
+    species, with the acceleration of Jex et al. (2024) and an optional
+    Newton step on ln K once the residual is small.  Ions stay in the
+    aqueous phase.  The flash does not test stability; use
+    ``ms_ecpa.stability.stability_flash`` for that.
 
     Parameters
     ----------
@@ -361,31 +485,31 @@ def flash_kv(
     P : float
         Pressure [bar].
     z : array_like, shape (3,)
-        Overall mole fractions of the *partitioning* species
-        ``(z_H2O, z_CH4, z_CO2)`` in the water+gas mixture.  Must sum to 1.
-        Set ``z[1] = 0`` for the pure CO2-water system, ``z[2] = 0`` for
-        the pure CH4-water system.
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2),
+        ions excluded; sum to 1.  Set ``z[1] = 0`` for the CO2-water
+        system and ``z[2] = 0`` for the CH4-water system.
     mi : array_like, shape (6,)
-        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4^2-) [mol/kg-water].
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+        See ``salinity_convention`` for how they are read.
     K_init : array_like, optional
         Initial K-vector for ``(H2O, CH4, CO2)``.  Defaults to Wilson.
         Components corresponding to absent species (``z_i = 0``) are
         ignored.
     tol : float
-        Convergence tolerance on ``max |g|`` where ``g = lnφ^aq − lnφ^gas
-        − lnK``.
+        Convergence tolerance on ``max |g|``, where
+        ``g_i = ln s + lnφ_i^aq − lnφ_i^gas − ln K_i`` and ``s`` is the
+        ion-closure factor ``1 - sum(x_ion)``.
     maxiter : int
-        Maximum SSI iterations.
+        Maximum number of substitution iterations.
     accelerated : bool
-        Apply Jex 2024 acceleration to the lnK update (default True).
+        Apply the acceleration of Jex et al. (2024) to the ln K update.
     use_newton : bool
-        Switch to Newton polish on lnK once ``max|g| < newton_tol``
-        (default True).
+        Switch to Newton iterations on ln K once ``max|g| < newton_tol``.
     newton_tol : float
-        SSI residual threshold to hand off to Newton polish.
+        Residual below which the Newton iterations start.
     max_newton : int
-        Maximum Newton polish iterations.
-    salinity_convention : {"as-aqueous", "chain"}, default "as-aqueous"
+        Maximum number of Newton iterations.
+    salinity_convention : {"as-aqueous", "chain"}
         Interpretation of the input ``mi`` and the aqueous closure.
         ``"as-aqueous"`` (default) treats ``mi`` as the equilibrium
         aqueous-phase molality directly (no salt-conservation
@@ -393,9 +517,9 @@ def flash_kv(
         CH4-brine experimental papers back-calculate solubility (using
         the prepared-brine water fraction throughout), so it is the
         like-for-like convention for validation against published data
-        sets. ``"chain"`` is the thermodynamically rigorous treatment
-        of [Moortgat2025iecr], generalised here per ion to multi-salt
-        + multi-gas: it treats ``mi`` as the prepared-brine FEED
+        sets. ``"chain"`` is the salt-conservation treatment
+        of Paper I, generalised here per ion to several salts and two
+        gases: it treats ``mi`` as the prepared-brine FEED
         molality and applies ``m_aq* = m_feed · z_w / [(1-β) · x_w_aq]``
         at every SSI step. ``"chain"`` requires the user to commit to
         a gas-to-brine cell-volume convention (encoded implicitly by
@@ -405,18 +529,27 @@ def flash_kv(
     gas_Z_init : float, optional
         Initial compressibility-factor seed for the FIRST gas-side inner
         Newton (subsequent iterations warm-start from the previous
-        converged state as always).  Default ``None`` keeps the historic
-        vapor-root seed ``Z=1.0`` and is bit-exact with prior behavior.
-        Pass a dense estimate (``Z ~ 2 B_mix``) to steer the non-aqueous
+        converged state).  The default ``None`` uses the vapour-root seed
+        ``Z = 1.0``.  Pass a dense estimate (``Z ~ 2 B_mix``) to steer the non-aqueous
         phase onto the liquid-CO2 root below the CO2 critical
         temperature — used by the three-phase driver's metastable-vapor
-        re-flash (:func:`ms_ecpa.flash3.stability_flash3`).
+        re-flash (``ms_ecpa.flash3.stability_flash3``).
     verbose : bool
-        Print iteration trace.
+        Print one line per iteration.
 
     Returns
     -------
     FlashKVResult
+        Phase compositions, vapour fraction, K-values, fugacities and
+        convergence information.  Check ``converged``: a failed flash is
+        returned with ``converged=False`` and the reason in ``message``,
+        not raised.
+
+    Raises
+    ------
+    ValueError
+        If ``z`` does not have 3 entries summing to 1, or ``mi`` does not
+        have 6 entries.
     """
     z = np.asarray(z, dtype=float)
     mi = np.asarray(mi, dtype=float)
@@ -1072,32 +1205,54 @@ def dew_point_flash(
     salinity_convention="as-aqueous",
     beta_tol=1e-8,
 ):
-    """An iteration scheme, not different physics.
+    """Solve the two-phase flash near the water dew point from a TPD trial.
 
-    THE EQUATIONS ARE THE SAME AS EVERYWHERE ELSE. Same equation of state,
-    same fugacity equality for all three components, same mixture model,
-    same convergence tolerance. What differs is only how the solution is
-    reached, because near the water saturation line the standard K-space
-    successive substitution approaches its trivial fixed point (K = 1) and
-    converges slowly or not at all. Pairing iteration schemes by region --
-    successive substitution, Newton, bracketing as a fallback -- is ordinary
-    practice; the alternative is one globally robust but slow routine
-    everywhere.
+    The equations are the same as in ``flash_kv``: the same equation of
+    state, fugacity equality for all three components, and the same mixture
+    model.  Only the iteration scheme differs.  Near the water saturation
+    line the K-value successive substitution approaches its trivial fixed
+    point (K = 1) and converges slowly or not at all.  Here the aqueous
+    composition is iterated on the component fugacity equalities, and the
+    phase fraction :math:`\\beta` follows from the water balance through a
+    bracketed scalar solve, which cannot move onto the trivial solution in
+    one step.  This is not an approximation or a reduced model.
 
-    So this is NOT a limiting case, an approximation, or a reduced model, and
-    it should not be described as one. It is a better-conditioned
-    parameterisation of the same problem: the aqueous composition is iterated
-    on the component fugacity equalities (below), while the phase fraction
-    :math:`\\beta` follows from the water balance through a bracketed scalar
-    solve, which cannot collapse onto the trivial attractor in a single step
-    the way an unconstrained K-space step can.
+    ``stability_flash`` calls this function (route 6) when every K-value
+    flash failed, ``tpd_min < -1e-3``, and the best trial is aqueous.
 
-    ``x_aq_fixed`` is the Michelsen TPD trial composition. It is the STARTING
-    POINT for that iteration, and the reason the iteration stays off the
-    trivial solution -- the stability test found it as a composition distinct
-    from the feed. It is not held fixed; every component of ``x_aq`` is
-    solved.
+    Parameters
+    ----------
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : array_like, shape (3,)
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2);
+        sum to 1.
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+    x_aq_fixed : array_like, shape (3,)
+        Starting aqueous composition on the partitioning basis (H2O, CH4,
+        CO2), normally the composition ``w`` of the aqueous TPD trial.  It
+        is converted to the ion-inclusive basis and then solved for; it is
+        not held fixed.  Because the stability test found it as a
+        composition distinct from the feed, the iteration starts away from
+        the trivial solution.
+    salinity_convention : {"as-aqueous", "chain"}
+        As in ``flash_kv``.  Here it affects only the reported ``mi_aq``.
+    beta_tol : float
+        Tolerance on β in the Brent solve.
 
+    Returns
+    -------
+    FlashKVResult or None
+        A result with ``converged=True``, or None if no β can be bracketed,
+        a fugacity evaluation fails, or the largest relative fugacity
+        difference over present components exceeds ``DEW_FUGACITY_TOL``.
+        ``max_residual`` holds that relative difference.
+
+    Notes
+    -----
     The phase fraction follows from the water fugacity balance
 
     .. math::
@@ -1107,35 +1262,18 @@ def dew_point_flash(
 
     where the gas composition ``y_gas(β)`` is fixed by overall mass
     balance ``z = β y_gas + (1−β) x_aq``.  Brent's method on this
-    single scalar equation returns a physical β in the interior of
-    (0, 1); the trivial K=1 attractor never appears.
+    single scalar equation gives β in the interior of (0, 1), away from
+    the trivial solution K = 1.
 
-    Water fugacity balance fixes beta. The DISSOLVED-GAS fractions are then
-    refined to satisfy their own fugacity balance, and the true residual is
-    reported.
-
-    That refinement is not polish on an already-good answer -- it is the
-    difference between an answer and none. This routine used to impose water
-    balance only, leaving x_aq at whatever composition the TPD trial happened
-    to carry, on the argument that the CH4/CO2 fugacities "close at second
-    order in x_gas_aq (typically 10^-5), well below the sweep's uncertainty
-    budget". That is true of the ABSOLUTE fugacity residual and irrelevant to
-    the quantity callers read: x_CO2 is ITSELF of order 10^-5, so a 10^-5
-    absolute residual is a 100 % relative error on it. The routine was written
-    for the sweep, which asks "did it converge, and what is beta"; it was
-    later used for solubility, which asks for precisely the number it never
-    solved. Against experiment, states routed here came back 96 % wrong
-    (CO2-water) and 99 % wrong (CO2-brine), where the ordinary path on the
-    same families is 8.3 % and 6.5 %.
-
-    It also returned converged=True with max_residual=0.0 hardcoded, so no
-    caller could tell. Both are honest now: the residual is measured across
-    every present component, and a state that will not close returns None
-    instead of a confident wrong number.
-
-    Returns a fully-populated :class:`FlashKVResult` (with
-    ``converged=True``), or None if no valid beta can be bracketed or the
-    composition will not close.
+    The water fugacity balance fixes β.  The dissolved-gas fractions are
+    then updated by damped successive substitution,
+    ``x_i = y_i φ_i^gas / φ_i^aq`` for CH4 and CO2, with water as the
+    balance and β re-solved after each sweep (at most
+    ``DEW_REFINE_ITERS`` sweeps, damping ``DEW_REFINE_DAMP``).  This step
+    is required for the dissolved-gas fractions to be correct: x_CO2 is
+    itself of order 1e-5, so an absolute fugacity residual of 1e-5 is a
+    relative error of order 100 % in x_CO2.  The residual reported is
+    therefore relative, per component.
     """
     from scipy.optimize import brentq
     from .lnphi import (lnphi_aq, lnphi_gas, _aq_residual_3var, _gas_residual,

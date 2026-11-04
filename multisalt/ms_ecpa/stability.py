@@ -1,11 +1,9 @@
 """Michelsen tangent-plane-distance (TPD) phase-stability test for the
 multi-salt eCPA, plus the combined stability + flash driver.
 
-Step 2 of the 6-step port plan adopted 2026-06-24.
-
 Architecture
 ------------
-The TPD primitive :func:`tpd_ssi` runs a single Michelsen successive-substitution
+The TPD primitive ``tpd_ssi`` runs a single Michelsen successive-substitution
 trial in log-space::
 
     ln W_i^{k+1} = d_i - lnφ_trial_i(w^k, ...)
@@ -14,25 +12,25 @@ trial in log-space::
 
 with the standard convention ``tpd = 1 - sum(W_i)`` (so ``tpd < 0`` ⇒
 unstable).  The reference vector ``d_i`` is built from the **gas-phase EoS
-evaluated at the partitioning-component feed composition** ``z`` — a
-multi-gas-agnostic choice that generalizes the prior project's
-"CO₂-rich EoS at the feed composition" reference (which assumed a
-single dominant gas).  See ``michelsen_tpd`` for the trial schedule.
+evaluated at the partitioning-component feed composition** ``z``.  This
+choice does not favour either gas; it generalises the reference of Paper I
+(the CO₂-rich EoS at the feed composition), which assumed a single gas.
+See ``michelsen_tpd`` for the trial schedule.
 
 Jex 2024 acceleration is applied to the ``lnW`` step using the same
 diagonal approximation used in the K-value flash, with a cap
 ``m ∈ [1, 10]``.
 
-Functions
----------
-* :func:`tpd_ssi` — single-trial TPD SSI; returns :class:`TPDResult`.
-* :func:`michelsen_tpd` — drives 8 trials and returns the most-negative
-  ``tpd_min``; returns :class:`StabilityResult`.
-* :func:`make_k_init_from_trial` — builds a K-vector for ``flash_kv`` from
-  the best trial.
-* :func:`stability_flash` — combined driver: TPD → ``flash_kv`` with two
-  K-init attempts and a soft-TPD fallback.  Returns
-  :class:`StabilityFlashResult`.
+The functions of this module are:
+
+* ``tpd_ssi``: one TPD trial; returns ``TPDResult``.
+* ``michelsen_tpd``: runs up to 8 trials and returns the most negative
+  ``tpd_min``; returns ``StabilityResult``.
+* ``make_k_init_from_trial``: builds initial K-values for ``flash_kv``
+  from a trial.
+* ``stability_flash``: the TPD test followed by ``flash_kv`` from a
+  sequence of initial K-values, with single-phase fallbacks.  Returns
+  ``StabilityFlashResult``.
 """
 from __future__ import annotations
 
@@ -53,7 +51,41 @@ from .flash import flash_kv, wilson_k, FlashKVResult
 
 @dataclass
 class TPDResult:
-    """Single-trial Michelsen TPD result."""
+    """Result of one Michelsen TPD trial (returned by ``tpd_ssi``).
+
+    Attributes
+    ----------
+    tpd : float
+        Tangent-plane distance ``1 - sum(W)`` at the last iterate.  A
+        negative value indicates that the feed is unstable.
+    W : tuple of float, length 3
+        Final trial mole numbers (H2O, CH4, CO2), not normalised.
+    w : tuple of float, length 3
+        Final trial mole fractions ``W / sum(W)`` (H2O, CH4, CO2), on the
+        partitioning basis (ions excluded).
+    lnphi_trial : tuple of float, length 3
+        ln of the fugacity coefficients in the trial phase at ``w``.  On the
+        aqueous side this includes the ion-closure term ``ln s``.
+    n_iter : int
+        Number of successive-substitution iterations run.
+    converged : bool
+        True when ``max|g| < tol``.
+    message : str
+        "converged", or the reason the iteration stopped.
+    side : str
+        "aq" or "gas": the fugacity-coefficient kernel used for the trial
+        phase.
+    label : str
+        Trial label used in diagnostic messages.
+    early_terminated : bool
+        Always False in the current code (early termination was removed).
+    max_residual : float
+        Stationarity residual ``max|g|``, with
+        ``g_i = ln W_i + lnphi_i - d_i``, at the last iterate evaluated.
+        Same meaning as ``FlashKVResult.max_residual``.  NaN only when the
+        loop did not run (``maxiter <= 0``).  It distinguishes a trial that
+        missed ``tol`` narrowly from one whose ``tpd`` is not meaningful.
+    """
     tpd: float
     W: tuple             # final mole-number vector (3,)
     w: tuple             # final normalised mole fractions (3,)
@@ -75,7 +107,32 @@ class TPDResult:
 
 @dataclass
 class StabilityResult:
-    """Outcome of an 8-trial Michelsen TPD search."""
+    """Result of the Michelsen TPD trial search (returned by ``michelsen_tpd``).
+
+    Attributes
+    ----------
+    stable : bool
+        True when ``tpd_min > -tpd_threshold``, or when no trial gave a
+        negative TPD.  ``message`` starts with "INCONCLUSIVE" when every
+        trial converged to the feed composition or failed.
+    tpd_min : float
+        Most negative TPD over the converged, non-trivial trials; 0.0 when
+        none was negative.
+    trials : list of TPDResult
+        Every trial run, in order (the standard panel, then the wide panel
+        when it was needed).
+    best_trial_idx : int
+        Index in ``trials`` of the trial that gave ``tpd_min``; -1 when no
+        trial gave a negative TPD.
+    message : str
+        Summary of the search, including warnings when the reference
+        fugacities had to be evaluated on the aqueous side.
+    d_ref : tuple of float, length 3
+        Reference vector ``d_i = ln z_i + lnphi_ref_i(z)`` (H2O, CH4, CO2);
+        0.0 for components absent from the feed.
+    z : tuple of float, length 3
+        Feed mole fractions (H2O, CH4, CO2) on the partitioning basis.
+    """
     stable: bool
     tpd_min: float
     trials: List[TPDResult]
@@ -87,7 +144,73 @@ class StabilityResult:
 
 @dataclass
 class StabilityFlashResult:
-    """Outcome of the combined stability + flash driver."""
+    """Result of the stability test and flash (from ``stability_flash``).
+
+    Attributes
+    ----------
+    phases : int
+        Number of phases reported: 1 or 2.
+    tpd_min : float
+        Most negative TPD found by the stability test (``stability.tpd_min``).
+    stable : bool
+        True when the result is single-phase (``phases == 1``).
+    flash_result : FlashKVResult or None
+        The accepted two-phase flash when ``phases == 2``.  For route 7 it is
+        the converged flash whose phase fraction lies at 0 or 1; for route 9
+        it is the last failed attempt, or None.  None for routes 0 and 8.
+    stability : StabilityResult
+        Full result of ``michelsen_tpd``.
+    attempts : list of str
+        One line per step taken (stability test and each flash attempt).
+    message : str
+        Short summary of the outcome.
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : tuple of float, length 3
+        Feed mole fractions (H2O, CH4, CO2) on the partitioning basis.
+    mi : tuple of float, length 6
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+    route : int
+        Step of the algorithm that produced the result; the codes are
+        listed under Notes.
+    t_stab_ms : float
+        Wall time of the stability test [ms].
+    t_flash_ms : float
+        Total wall time of all flash attempts run, including rejected ones
+        [ms].
+    t_total_ms : float
+        Wall time of the whole call [ms]; ``t_stab_ms + t_flash_ms`` plus a
+        small overhead.
+
+    Notes
+    -----
+    The ``route`` codes are the same as those returned by the Fortran
+    library (``ms_ecpa.backend``):
+
+    * 0: single-phase, ``tpd_min`` above ``tpd_threshold``.
+    * 1: two-phase, flash started from the K-values of the best trial.
+    * 2: two-phase, flash started from Wilson K-values.
+    * 3: two-phase, flash started from water-biased K-values.
+    * 4: two-phase, successive substitution only (no acceleration, no
+      Newton step).
+    * 5: two-phase, flash started from K-values built from the best
+      aqueous and the best gas trial.
+    * 6: two-phase, dew-point flash (``dew_point_flash``).
+    * 7: single-phase, every converged flash gave a phase fraction at 0
+      or 1.
+    * 8: single-phase, every flash failed and ``tpd_min`` is above
+      ``tpd_soft_threshold``; no flash result is attached.
+    * 9: failure; no flash converged and ``tpd_min`` is below
+      ``tpd_soft_threshold`` (``phases`` is 2).
+    * -1: not recorded (results assembled elsewhere, for example by the
+      re-flash in ``ms_ecpa.flash3``).
+
+    Routes 7 and 8 are single-phase results obtained after the TPD test
+    found the feed unstable.  Their ``phases`` and ``stable`` fields are the
+    same as for route 0, so use ``route`` to tell them apart.
+    """
     phases: int                                  # 1 or 2
     tpd_min: float
     stable: bool                                 # True ⇔ single-phase
@@ -221,7 +344,7 @@ def tpd_ssi(
     min_iter_before_early=3,
     label="",
 ):
-    """Run one Michelsen TPD SSI trial in log-space.
+    """Run one Michelsen TPD trial by successive substitution in ln W.
 
     Parameters
     ----------
@@ -229,7 +352,7 @@ def tpd_ssi(
         Reference d-vector ``ln(z_i) + lnφ_ref_i(z)`` for the partitioning
         components (H2O, CH4, CO2).  The "ref" lnφ is the gas-phase EoS
         evaluated at the renormalised partitioning-component feed (see
-        :func:`michelsen_tpd`).  Entries corresponding to absent species
+        ``michelsen_tpd``).  Entries corresponding to absent species
         (``z_i = 0``) may be set to anything — they are masked out via
         ``present``.
     trial_init : array_like, shape (3,)
@@ -240,34 +363,37 @@ def tpd_ssi(
     P : float
         Pressure [bar].
     mi : array_like, shape (6,)
-        Ion molalities (Na, Cl, K, Ca, Mg, SO4) [mol/kg].  Used only for
-        ``side == "aq"`` (gas phase carries no ions).
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+        Used only when ``side == "aq"`` (the gas phase contains no ions).
     side : {"aq", "gas"}
         Selects which lnφ kernel is called.
     present : array_like of bool, shape (3,), optional
         Mask of partitioning components actually present in the feed.
         Defaults to ``np.array([True, True, True])``.
-    accelerated : bool, default True
-        Apply Jex 2024 acceleration to the lnW step.
-    tol : float, default 1e-8
-        Convergence on ``max|g|`` where ``g_i = ln W_i + lnφ_i - d_i``.
-    maxiter : int, default 80
-        Maximum SSI iterations.
-    early_tpd : float, default -0.01
-        Early-termination threshold.  Once ``tpd = 1 - sum(W) < early_tpd``
-        and at least ``min_iter_before_early`` iterations have run, we already
-        know the trivial split is unstable and stop iterating.
-    min_iter_before_early : int, default 3
-        Minimum number of SSI iterations to run before honoring the
-        ``early_tpd`` trigger.  Ensures the trial composition ``w`` has
-        been refined enough to seed downstream K-value initialisation
-        (see :func:`make_k_init_from_trial`).
+    accelerated : bool
+        Apply the acceleration of Jex et al. (2024) to the ln W step.
+    tol : float
+        Convergence tolerance on ``max|g|``, where
+        ``g_i = ln W_i + lnφ_i - d_i``.
+    maxiter : int
+        Maximum number of iterations.
+    early_tpd : float
+        Accepted for compatibility and not used: early termination on
+        ``tpd < early_tpd`` was removed, because near dew points and
+        critical points the iterate can pass through negative TPD values on
+        its way to the trivial solution ``w = z``.
+    min_iter_before_early : int
+        Accepted for compatibility and not used (see ``early_tpd``).
     label : str
-        Human-readable trial label for diagnostics.
+        Trial label used in diagnostic messages.
 
     Returns
     -------
     TPDResult
+        Final trial composition, its TPD, and the convergence information.
+        ``converged`` is False when ``maxiter`` was reached or a
+        fugacity-coefficient evaluation failed; ``message`` gives the
+        reason.
     """
     d_i = np.asarray(d_i, dtype=float)
     W = np.asarray(trial_init, dtype=float).copy()
@@ -368,7 +494,7 @@ def tpd_ssi(
         # at that dive gave a false unstable classification and drove
         # the downstream flash into the β-degenerate trap.  Instead we
         # let SSI run to full residual-norm convergence; the trivial-w
-        # guard in :func:`michelsen_tpd` still rejects the final result
+        # guard in ``michelsen_tpd`` still rejects the final result
         # when it settles on the feed composition, and the trial-search
         # early exit still fires on genuinely converged negative tpd.
 
@@ -538,48 +664,74 @@ def michelsen_tpd(
     early_tpd=-0.5,
     trivial_w_atol=5e-3,
 ):
-    """Michelsen TPD stability test for the multi-salt eCPA.
+    """Run the Michelsen TPD stability test of the multi-salt eCPA at one state.
 
-    Drives :func:`tpd_ssi` over a panel of up to 8 trial compositions
-    (2 CO₂-rich, 2 CH₄-rich, 2 aqueous, 2 Wilson-K) and returns the most
-    negative ``tpd_min``.  Degenerate trials (e.g. CH₄-rich trial when
-    ``z_CH4 = 0``) are skipped automatically.
+    Runs ``tpd_ssi`` for a panel of up to 8 trial compositions (2 CO₂-rich,
+    2 CH₄-rich, 2 aqueous, 2 from Wilson K-values) and returns the most
+    negative TPD.  Trials for a gas absent from the feed (for example the
+    CH₄-rich trials when ``z_CH4 = 0``) are skipped.
 
-    Reference fugacity choice
-    -------------------------
-    The reference d-vector is built from the **gas-phase EoS** evaluated at
-    the partitioning-component feed composition::
+    A trial counts only when it converged and its composition differs from
+    the feed by at least ``trivial_w_atol`` in some component.  If no trial
+    of the standard panel counts, a wider panel that spans the composition
+    range is run.  The search stops early when a trial gives
+    ``tpd < early_tpd``.
+
+    The reference vector is computed with the **gas-phase EoS** at the feed
+    composition::
 
         d_i = ln(z_i) + lnφ_gas_i(z, T, P)
 
-    This is multi-gas-agnostic (doesn't privilege CO₂ or CH₄), generalising
-    the prior project's "CO₂-rich EoS at feed composition" choice (which
-    was only valid for the single-gas CO₂-H₂O system).  Absent components
-    (``z_i = 0``) are excluded from both the reference and the trial
-    iteration; their slots in the trial-composition vectors are forced to 0.
+    This choice does not favour either gas.  It generalises the reference of
+    Paper I (the CO₂-rich EoS at the feed composition), which applies only to
+    the CO₂-H₂O system.  If no gas-phase root is found, the aqueous EoS is
+    used at the feed composition, and then at pure brine.  Absent components
+    (``z_i = 0``) are excluded from the reference and from the trials.
 
     Parameters
     ----------
     z : array_like, shape (3,)
-        Overall mole fractions of (H2O, CH4, CO2) on the partitioning-basis
-        (ions excluded), summing to 1.
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2),
+        ions excluded; sum to 1.
     mi : array_like, shape (6,)
-        Ion molalities (Na, Cl, K, Ca, Mg, SO4) [mol/kg].
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
     T : float
         Temperature [K].
     P : float
         Pressure [bar].
-    tpd_threshold : float, default 1e-3
-        Stability classification threshold.  A mixture is declared
-        ``stable`` when ``tpd_min > -tpd_threshold``.  The combined driver
-        :func:`stability_flash` uses a separate ``tpd_threshold`` for the
-        soft guards (default −0.02).
-    accelerated, tol, maxiter, early_tpd
-        Passed through to :func:`tpd_ssi`.
+    tpd_threshold : float
+        Classification threshold: the feed is reported ``stable`` when
+        ``tpd_min > -tpd_threshold``.  ``stability_flash`` passes
+        ``-tpd_threshold`` of its own (default 0.005) unless the caller
+        sets this value.
+    accelerated : bool
+        Passed to ``tpd_ssi``.
+    tol : float
+        Passed to ``tpd_ssi``.
+    maxiter : int
+        Passed to ``tpd_ssi``.
+    early_tpd : float
+        The search over trials stops as soon as a converged, non-trivial
+        trial gives ``tpd < early_tpd``.
+    trivial_w_atol : float
+        A converged trial whose composition lies within this distance of
+        the feed (in every component) is the trivial solution and is not
+        counted.
 
     Returns
     -------
     StabilityResult
+        ``stable``, ``tpd_min``, all trials, and the index of the trial that
+        gave ``tpd_min``.
+
+    Raises
+    ------
+    ValueError
+        If ``z`` does not have 3 entries summing to 1, or ``mi`` does not
+        have 6 entries.
+    RuntimeError
+        If the reference fugacity coefficients cannot be evaluated on the
+        gas side or on the aqueous side.
     """
     z = np.asarray(z, dtype=float)
     if z.shape != (3,):
@@ -760,37 +912,39 @@ def michelsen_tpd(
 # ---------------------------------------------------------------------------
 
 def make_k_init_from_trial(trial_result: TPDResult, z, T, P):
-    """Build a K-vector for ``flash_kv`` from the best stability trial.
+    """Build initial K-values for ``flash_kv`` from a stability trial.
 
-    Mirrors the prior project's ``_make_elv_guess_from_trial`` pattern.
+    The same approach is used in Paper I
+    (``ecpa.stability._make_elv_guess_from_trial``).
 
-    Logic
-    -----
-    The TPD trial's converged ``w_i`` are the *partitioning-basis* mole
-    fractions in the trial phase (gas-like if side='gas', aqueous-like
-    if side='aq').  We interpret the *other* phase as roughly the feed
-    composition ``z`` (renormalised over present components).
+    The converged trial composition ``w`` is taken as one phase (gas if
+    ``side == "gas"``, aqueous if ``side == "aq"``), and the feed ``z`` as
+    an estimate of the other phase:
 
-    * Gas-like trial (``side == "gas"``): ``w`` ≈ gas-phase composition;
-      take ``K_i = w_i / z_i``.
-    * Aq-like trial (``side == "aq"``): ``w`` ≈ aqueous-phase composition;
-      take ``K_i = z_i / w_i``.
+    * gas trial: ``K_i = w_i / z_i``;
+    * aqueous trial: ``K_i = z_i / w_i``.
 
-    Absent components (``z_i = 0``) ⇒ Wilson K as a placeholder (will be
-    ignored by ``flash_kv`` since the present mask follows ``z``).
-
-    K values are clamped to ``[1e-6, 1e6]`` to avoid pathological seeds.
+    K-values are clipped to ``[1e-6, 1e6]``.  If ``K_H2O > 2``, which
+    happens when an aqueous trial has almost no water, the Wilson value is
+    used for H2O instead.
 
     Parameters
     ----------
     trial_result : TPDResult
+        The trial, normally ``stability.trials[stability.best_trial_idx]``.
     z : array_like, shape (3,)
-    T : float [K]
-    P : float [bar]
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2);
+        sum to 1.
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
 
     Returns
     -------
     ndarray, shape (3,)
+        K-values ``y_i / x_i`` (H2O, CH4, CO2).  NaN for components absent
+        from the feed.
     """
     z = np.asarray(z, dtype=float)
     present = _present_mask(z)
@@ -893,7 +1047,7 @@ def _is_phase_swapped(fr):
 def _swap_phases(fr):
     """Return a copy of ``fr`` with aqueous/gas labels and derived
     quantities exchanged.  Used to relabel results flagged by
-    :func:`_is_phase_swapped`.
+    ``_is_phase_swapped``.
 
     Mole-fraction columns and EoS-side state swap directly; K-values
     invert (K_i = y/x ⇒ swapped K_i = x/y = 1/K_i); β complements to
@@ -936,50 +1090,65 @@ def stability_flash(
     stability_kwargs=None,
     **flash_kwargs,
 ):
-    """Combined Michelsen stability + K-value flash driver.
+    """Run the stability test and, if the feed is unstable, the two-phase flash.
 
-    Algorithm (mirrors the prior project's ``ecpa_stability_flash``,
-    generalised to multi-salt + multi-gas):
+    This is the hierarchical algorithm of Paper I
+    (``ecpa.stability.ecpa_stability_flash``), extended to several salts and
+    two gases.  The steps are:
 
-    1. Run :func:`michelsen_tpd` over 8 trials.
-    2. If ``tpd_min > tpd_threshold`` ⇒ declare single-phase.
-    3. Attempt 1: :func:`flash_kv` with ``K_init`` from the best trial.
-    4. Attempt 2: :func:`flash_kv` with Wilson K_init.
-    5. If both attempts fail AND ``tpd_min > tpd_soft_threshold``
-       (near-critical regime) ⇒ declare single-phase.  Else return
-       ``phases=2, converged=False`` with diagnostic message.
+    1. Run ``michelsen_tpd``.
+    2. If ``tpd_min > tpd_threshold``, return single-phase (route 0).
+    3. Run ``flash_kv`` from a sequence of initial K-values, in this order:
+       from the best trial (route 1), Wilson (route 2), water-biased
+       (route 3), Wilson without acceleration or Newton steps (route 4),
+       and from the best aqueous and gas trials together (route 5).  The
+       first result that converges with a phase fraction strictly between
+       0 and 1, and whose phases are not interchanged, is returned.
+    4. If ``tpd_min < -1e-3`` and the best trial is aqueous, run
+       ``dew_point_flash`` (route 6).
+    5. If a flash converged but its phase fraction is at 0 or 1, return
+       single-phase (route 7).
+    6. If ``tpd_min > tpd_soft_threshold``, return single-phase (route 8).
+    7. Otherwise return a failure (route 9).
 
     Parameters
     ----------
-    T : float           [K]
-    P : float           [bar]
-    z : array_like (3,) — partitioning-basis feed (H2O, CH4, CO2); sums to 1
-    mi : array_like (6,) — ion molalities (Na, Cl, K, Ca, Mg, SO4) [mol/kg]
-    tpd_threshold : float, default -0.005
-        Hard threshold: ``tpd_min > tpd_threshold`` ⇒ single-phase.
-        The value is empirically tuned for the multi-salt system; it
-        is looser (closer to zero) than the -0.02 originally proposed
-        by Jex 2024 because near-critical eCPA cells can produce
-        weakly-negative TPD values that are physically stable.
-    tpd_soft_threshold : float, default -0.1
-        Soft threshold for the near-critical fallback.  When every flash
-        attempt has failed and ``tpd_min`` is still above this value, the
-        feed is reported single-phase (``route=8``, ``flash_result=None``)
-        on the reading that a weakly-negative TPD in the near-critical
-        band is within the model's own resolution.  This is a heuristic,
-        not a second test: no confirmatory re-run is performed, and the
-        TPD verdict it overrides was negative.  Callers that need to
-        separate it from a genuine single-phase classification should
-        test ``route == 8`` rather than the phases/stable pair, which is
-        identical to route 0.
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : array_like, shape (3,)
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2),
+        ions excluded; sum to 1.
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+    tpd_threshold : float
+        Single-phase threshold: ``tpd_min > tpd_threshold`` gives a
+        single-phase result without a flash.  The value was chosen for the
+        multi-salt system.  It is closer to zero than the -0.02 of Jex et
+        al. (2024), because near critical points the eCPA can give slightly
+        negative TPD values for feeds that are stable.
+    tpd_soft_threshold : float
+        Threshold for step 6.  When every flash attempt has failed and
+        ``tpd_min`` is above this value, the feed is reported single-phase
+        (``route == 8``, ``flash_result`` None).  This is a heuristic, not a
+        second test: no further calculation is made, and the TPD test had
+        found the feed unstable.  To separate this case from a single-phase
+        result of the TPD test, check ``route == 8``; ``phases`` and
+        ``stable`` are the same as for route 0.
     stability_kwargs : dict, optional
-        Extra kwargs forwarded to :func:`michelsen_tpd`.
+        Keyword arguments passed to ``michelsen_tpd``.
     **flash_kwargs
-        Extra kwargs forwarded to :func:`flash_kv`.
+        Keyword arguments passed to ``flash_kv`` (for example
+        ``salinity_convention``).
 
     Returns
     -------
     StabilityFlashResult
+        Number of phases, the flash result when two-phase, the stability
+        result, the ``route`` code of the step that produced the answer, and
+        timings.  Phase compositions are in ``flash_result.x_aq`` and
+        ``flash_result.y_gas``.
     """
     stab_kw = dict(stability_kwargs or {})
     # Pass the same hard threshold into the stability classifier so its

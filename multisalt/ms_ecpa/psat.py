@@ -1,56 +1,43 @@
-"""Saturation-pressure solve by water isofugacity, on a VERIFIED bracket.
+"""Saturation pressure from water isofugacity, on a verified bracket.
 
-The brine (and pure-water) saturation pressure is the root in ``P`` of
+The saturation pressure of brine (or pure water) is the root in ``P`` of
 
     f(ln P) = [ln x_w + lnphi_w^aq(T, P)] - lnphi_w^gas(T, P) = 0,
 
-i.e. equal water fugacity in the brine liquid and in pure steam.  Every
-caller of that root -- the vapor-pressure scripts and the
-benchmark's ``psat_brine`` -- used to hand ``scipy.optimize.brentq`` the
-fixed bracket ``[0.50 p0, 1.10 p0]`` around the IAPWS pure-water anchor
-``p0`` and trust whatever came back.  Two things go wrong with that below
-about 300 K.
+that is, equal water fugacity in the brine and in pure steam. A plain
+``scipy.optimize.brentq`` call on the fixed bracket ``[0.50 p0, 1.10 p0]``
+around the IAPWS pure-water value ``p0`` is not reliable below about 300 K,
+for two reasons.
 
-1.  **The root is not always inside the bracket**, and ``brentq`` raises
-    (the callers turned that into a silent NaN).
+1.  The root is not always inside the bracket.
 
-2.  **Worse, the residual is not single-valued on the sampled grid.**  At
-    low ``T`` and low ``P`` the aqueous inner Newton in
-    :func:`ms_ecpa.lnphi.lnphi_aq` occasionally stalls just above its
-    ``1e-10`` tolerance; ``lnphi_aq`` then falls through its seed ladder
-    and returns the **vapour** root of the aqueous mixture instead of the
-    liquid one.  At such a point the two sides of the isofugacity balance
-    are the same phase, so the residual collapses to zero to machine
-    precision -- ``|f| ~ 1e-19 .. 1e-12`` -- with an arbitrary sign.
-    These spurious zeros are sprinkled unpredictably through the bracket
-    (10 of 46 log-spaced samples at 283.15 K, 0 m).  They are what makes
-    the residual appear to "change sign 3-20 times" at the cold end, and
-    when one of them lands on a bracket **edge** ``brentq`` converges onto
-    that edge and reports it as a saturation pressure.  That is how
-    283.15 K, m = 0 came to be published as exactly ``0.5 * p0``.
+2.  At low ``T`` and low ``P`` the aqueous Newton iteration in
+    ``ms_ecpa.lnphi.lnphi_aq`` can stop just above its ``1e-10`` tolerance.
+    ``lnphi_aq`` then uses its next initial guess and can converge to the
+    vapour root of the aqueous mixture instead of the liquid root. At such a
+    point both sides of the isofugacity balance describe the same phase, so
+    ``|f|`` is between 1e-19 and 1e-12 with an arbitrary sign (10 of 46
+    log-spaced samples at 283.15 K and 0 mol/kg). If such a point is a bracket
+    end, ``brentq`` converges to it.
 
-    On the physical liquid branch the same residual is perfectly smooth
-    and monotone with ``|df/d ln P| = O(1)``, and has exactly ONE root --
-    including at 283.15 and 293.15 K.
+On the liquid branch the residual is smooth and monotone, with
+``|df/d ln P|`` of order one, and has exactly one root, including at 283.15
+and 293.15 K.
 
-This module therefore does three things the bare ``brentq`` call did not:
+This module therefore:
 
-* it **verifies** the bracket (endpoints evaluable, opposite signs, and
-  exactly one sign change among the valid interior samples) before
-  trusting it, and only then runs the identical ``brentq`` call -- so
-  every state that was already well posed returns a bit-identical root;
-* it **discards contaminated samples** (``|f| <= _DEGENERATE``) instead of
-  mistaking them for roots, and never lets the refinement land on one;
-* it **fails loudly** -- :class:`PsatBracketError` -- when no single clean
-  root can be established, instead of returning a bracket edge or a NaN
-  that looks like a number.
+* verifies the bracket (ends evaluable, opposite signs, exactly one sign
+  change among the valid interior samples) before calling ``brentq``. Where
+  the default bracket passes, the root is identical to that of the plain
+  ``brentq`` call;
+* discards samples with ``|f| <= _DEGENERATE`` and never accepts one as a
+  root;
+* raises ``PsatBracketError`` when no single root can be established.
 
-Not mirrored in the Fortran port.  ``fortran/src/ecpa_colligative.f90``
-``psat_brine`` is a deliberate byte-faithful mirror of the OLD reference
-(fixed ``lo_fac``/``hi_fac``, bare Brent).  Its golden vectors cover
-T = 323.15-573.15 K only, where the default bracket verifies and this
-module reproduces the old root exactly, so the gate is unaffected; below
-about 300 K the Fortran routine still carries the original defect.
+The Fortran routine ``psat_brine`` (``fortran/src/ecpa_colligative.f90``)
+uses the fixed bracket without these checks. Its reference values cover
+323.15 to 573.15 K, where the default bracket passes and both give the same
+root. Below about 300 K, use this module.
 """
 from __future__ import annotations
 
@@ -186,33 +173,54 @@ def _scan(f, p0_Pa, lo_fac, hi_fac, n):
 def solve_psat_isofugacity(f, p0_Pa, *, lo_fac=DEFAULT_LO_FAC,
                            hi_fac=DEFAULT_HI_FAC, xtol=1e-12, rtol=1e-10,
                            n_verify=25, n_scan=97, context=""):
-    """Saturation pressure [Pa] from the isofugacity residual ``f(ln P)``.
+    """Return the saturation pressure [Pa] as the root of an isofugacity residual.
+
+    The root is first sought with ``brentq`` on the bracket
+    ``[lo_fac p0, hi_fac p0]``, which is used only if both ends can be
+    evaluated, have opposite signs, and ``n_verify`` samples show exactly
+    one sign change.  Otherwise the windows ``[SCAN_LO_FAC, SCAN_HI_FAC]``
+    and then ``[WIDE_LO_FAC, WIDE_HI_FAC]`` (times ``p0``) are scanned and
+    the single sign change found is refined by bisection.  Samples with
+    ``|f| <= 1e-11`` are skipped: at such points the aqueous kernel has
+    returned the vapour root, so the residual is zero for the wrong reason.
+    A root is returned only if it is inside the bracket and ``f`` changes
+    sign across it.
 
     Parameters
     ----------
     f : callable
-        ``f(lnP) -> float``; the water isofugacity residual.
+        ``f(lnP) -> float``, the water isofugacity residual as a function of
+        the natural log of the pressure in Pa:
+        ``[ln x_w + lnphi_w^aq(T, P)] - lnphi_w^gas(T, P)``.
     p0_Pa : float
-        Pure-water saturation pressure at the same temperature (IAPWS or
-        CoolProp); the physical anchor the brackets are scaled from.
-    lo_fac, hi_fac : float
-        The bracket to TRY FIRST, as multiples of ``p0_Pa``.  It is used
-        only if it verifies; the historical defaults reproduce the old
-        root bit-for-bit wherever the old root was meaningful.
-    xtol, rtol : float
-        Passed to ``brentq`` on the verified default bracket, and used as
-        the stopping width for the adaptive refinement.
-    n_verify, n_scan : int
-        Samples used to verify the default bracket and, failing that, to
-        scan the adaptive window.
+        Saturation pressure of pure water at the same temperature (from
+        IAPWS or CoolProp) [Pa].  All brackets are multiples of it.
+    lo_fac : float
+        Lower end of the first bracket, as a multiple of ``p0_Pa``.
+    hi_fac : float
+        Upper end of the first bracket, as a multiple of ``p0_Pa``.
+    xtol : float
+        Absolute tolerance in ln P for ``brentq`` and for the bisection.
+    rtol : float
+        Relative tolerance in ln P for ``brentq`` and for the bisection.
+    n_verify : int
+        Number of samples used to check the first bracket.
+    n_scan : int
+        Number of samples in each scanned window.
     context : str
-        Free text (``"T=283.15 K, m=6"``) folded into error messages.
+        Text included in error messages, for example ``"T=283.15 K, m=6"``.
+
+    Returns
+    -------
+    float
+        Saturation pressure [Pa].
 
     Raises
     ------
     PsatBracketError
-        When no single clean root can be established.  A bracket edge is
-        never returned, and neither is NaN.
+        If no single root with a sign change can be found, if the residual
+        has more than one sign change in a window, or if the refinement
+        cannot narrow the bracket.  A bracket end or NaN is never returned.
     """
     from scipy.optimize import brentq
 

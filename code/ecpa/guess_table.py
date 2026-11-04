@@ -129,9 +129,24 @@ def guess_from_table(T: float, P_bar: float, groups: dict,
 
 
 def make_guess_fn(groups: dict, temps: np.ndarray):
-    """
-    Return a callable  guess_fn(T, P_bar) -> np.ndarray  that closes over the
-    loaded table.  Pass this as `guess_table_fn` to the flash functions.
+    """Return a function ``guess_fn(T, P_bar)`` that interpolates a guess table.
+
+    Pass the result as ``guess_table_fn`` to the flash functions.
+
+    Parameters
+    ----------
+    groups : dict of int to DataFrame
+        Table rows keyed by integer temperature [K], as returned by
+        ``load_cpa_guess_table``.
+    temps : ndarray
+        Sorted temperatures of the table [K].
+
+    Returns
+    -------
+    callable
+        ``guess_fn(T, P_bar) -> ndarray``, which rounds ``T`` [K] to the
+        nearest integer and calls ``guess_from_table`` (bilinear
+        interpolation in T and P; ``P_bar`` in bar).
     """
     def _fn(T: float, P_bar: float) -> np.ndarray:
         return guess_from_table(int(round(T)), P_bar, groups, temps)

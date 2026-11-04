@@ -1,7 +1,7 @@
 """Per-phase log-fugacity-coefficient kernels for the multi-salt eCPA.
 
 These are the *self-consistent* aqueous and gas-phase ``lnφ`` evaluations that
-:func:`ms_ecpa.eos.residual_elv` performs internally.  Extracting them as
+``ms_ecpa.eos.residual_elv`` performs internally.  Extracting them as
 black-box callables lets the K-value SSI flash (Step 1) and the Michelsen TPD
 stability search (Step 2) reuse the verbatim physics of the original code
 without re-running the full coupled equilibrium solver.
@@ -28,7 +28,7 @@ Design choices (per the Phase A spec)
 * ``lnphi_gas`` solves internally for ``(Zh, chi1h)``.  The cubic SRK
   equation in ``Zh`` can have 1 or 3 real roots; the function picks the
   root closest to the hint ``Z_init`` (default 1.0 — the gas-like root).
-* All inner Newton iterations use :func:`ms_ecpa.newton.newton_solve`
+* All inner Newton iterations use ``ms_ecpa.newton.newton_solve``
   (complex-step Jacobian, damped, with backtracking line search).
 
 The exact algebra is copy-faithful to the aqueous-phase block in
@@ -550,31 +550,48 @@ def _aq_lnphi_evaluate_3var(v3, x_aq, mi, T, P):
 
 
 def lnphi_aq(x_aq, mi, T, P, *, v_init=None, tol=1e-10, maxiter=80):
-    """Self-consistent aqueous-phase log-fugacity coefficients.
+    """Return ln of the fugacity coefficients of H2O, CH4 and CO2 in the aqueous phase.
+
+    The aqueous state is found by a Newton solve for the compressibility
+    factor ``Zw``, the relative permittivity ``epsr`` and the H2O monomer
+    fraction ``chi1w``.  If the first solve fails, or gives
+    ``chi1w <= 0`` or a permittivity below ``LIQUID_EPSR_MIN``, a fixed
+    list of other starting points is tried (plus any seeds added through
+    ``ms_ecpa.extensions``).
 
     Parameters
     ----------
-    x_aq : array-like, shape (3,)
-        Mole fractions of (H2O, CH4, CO2) in the aqueous phase.
-    mi : array-like, shape (6,)
-        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4^2-) [mol/kg water].
+    x_aq : array_like, shape (3,)
+        Aqueous mole fractions of (H2O, CH4, CO2), with the ions included
+        in the total (so they sum to ``1 - sum(x_ion)``).
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
     T : float
         Temperature [K].
     P : float
-        Pressure [Pa]  (SI; multiply ``P_bar`` by 1e5).
-    v_init : array-like, optional
-        Initial guess for ``[Zw, epsr, chi1w]``.  Defaults to
-        ``[0.05, 50.0, 0.10]`` (a generic liquid-water seed that converges
-        from cold for every baseline case).
+        Pressure [Pa] (not bar; multiply a pressure in bar by 1e5).
+    v_init : array_like, shape (3,), optional
+        Starting values ``[Zw, epsr, chi1w]``.  The default is
+        ``[P * 18.015e-6 / (8.314 T), 50.0, 0.10]``, i.e. the compressibility
+        factor of liquid water at a molar volume of 18.015 cm3/mol.
     tol : float
-        Newton tolerance on max|residual|.
+        Newton tolerance on ``max|residual|``.
     maxiter : int
-        Newton iteration limit.
+        Maximum number of Newton iterations per starting point.
 
     Returns
     -------
-    (lnphi_h2o, lnphi_ch4, lnphi_co2) : tuple of float
-        Per-species log-fugacity coefficients in the aqueous phase.
+    tuple of float, length 3
+        ``(lnphi_H2O, lnphi_CH4, lnphi_CO2)``, natural logarithms of the
+        fugacity coefficients, defined so that
+        ``f_i = x_aq,i * exp(lnphi_i) * P``.
+
+    Raises
+    ------
+    RuntimeError
+        If no starting point gives a converged, physical root.
+    ValueError
+        If ``parameters.Uref_ii`` is not symmetric.
     """
     x_aq = np.asarray(x_aq, dtype=float)
     mi = np.asarray(mi, dtype=float)
@@ -760,7 +777,7 @@ def _gas_assoc_state(Zh, y_gas, T, P):
     * ``1.9*eta >= 1`` — at or past the pole of the Carnahan-Starling-like
       radial distribution function ``g(eta) = 1/(1 - 1.9 eta)``.
 
-    The algebra is the verbatim gas-phase block of :func:`_gas_residual`.
+    The algebra is the verbatim gas-phase block of ``_gas_residual``.
     It is repeated here rather than factored out of the residual so that
     ``_gas_residual`` itself stays byte-for-byte unchanged — its Newton
     trajectory is what the Fortran port's golden vectors pin.
@@ -807,7 +824,7 @@ def _gas_root_is_physical(v, y_gas, T, P):
     unconstrained 2x2 Newton can settle on the negative one: it satisfies
     the residual to machine precision, so the solver reports success, but
     it is not a physical state and its logarithm is NaN.  This predicate is
-    the gas-side mirror of the ``chi1w > 0`` guard :func:`lnphi_aq` has
+    the gas-side mirror of the ``chi1w > 0`` guard ``lnphi_aq`` has
     carried on the aqueous side since the same failure was found there.
 
     Standard Wertheim theory also bounds a monomer fraction above by 1 —
@@ -815,14 +832,14 @@ def _gas_root_is_physical(v, y_gas, T, P):
     lets the H2O-CO2 solvation strength ``S13(T)`` go negative below about
     290 K, and ``chi > 1`` there is the documented extended domain that the
     production three-phase kernel already accepts
-    (:func:`ms_ecpa.flash3._solve_gas_kernel`).  So the upper bound is
+    (``ms_ecpa.flash3._solve_gas_kernel``).  So the upper bound is
     asserted only where it is actually a theorem.
 
     Scope, and what this predicate deliberately does NOT decide.  It tests
     the association closure, not mechanical stability: it asks whether a
     converged pair is *evaluable* (every chi positive, Zh inside the
     closure domain), not whether the root it sits on is the one the caller
-    wanted.  Branch selection in :func:`lnphi_gas` is by seed --
+    wanted.  Branch selection in ``lnphi_gas`` is by seed --
     ``Z_init=1.0`` for the vapour branch, ``Z_init ~ B_mix`` for a dense
     liquid-CO2 phase -- and that contract is intentional, because the two
     branches are both legitimate answers at the same ``(T, P, y)``.
@@ -1068,7 +1085,7 @@ def _gas_nested_residual(Zh, y_gas, T, P):
     """Scalar EOS residual with ``chi1h`` eliminated on the positive branch.
 
     At fixed ``Zh`` the association closure is one scalar equation whose
-    positive root :func:`_gas_chi_positive_branch` returns in closed form
+    positive root ``_gas_chi_positive_branch`` returns in closed form
     (refined by a substitution that cannot cross zero).  Substituting it
     leaves a single equation in ``Zh`` alone.  Returns NaN where ``Zh`` is
     outside the closure domain.
@@ -1162,34 +1179,49 @@ def _gas_nested_root(y_gas, T, P):
 
 
 def lnphi_gas(y_gas, T, P, *, Z_init=None, chi_init=0.99, tol=1e-10, maxiter=80):
-    """Self-consistent gas-phase log-fugacity coefficients.
+    """Return ln of the fugacity coefficients of H2O, CH4 and CO2 in the gas phase.
+
+    The gas state is found by a Newton solve for the compressibility factor
+    ``Zh`` and the H2O monomer fraction ``chi1h``.  If that solve fails or
+    gives a non-physical root, further starting values of ``Zh`` are tried,
+    and finally a bisection on ``Zh`` alone.
 
     Parameters
     ----------
-    y_gas : array-like, shape (3,)
-        Mole fractions of (H2O, CH4, CO2) in the gas phase.
-    T, P : float
-        Temperature [K], Pressure [Pa].
+    y_gas : array_like, shape (3,)
+        Gas-phase mole fractions of (H2O, CH4, CO2).
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [Pa] (not bar).
     Z_init : float, optional
-        Initial guess for the gas compressibility factor.  Defaults to 1.0
-        (the gas-like root).  In a 3-root regime this picks the gas branch;
-        for a liquid-CO2 (dense) phase, hint with ``Z_init ≈ B_mix``.
-    chi_init : float, optional
-        Initial guess for ``chi1h``.  Defaults to 0.99.
-    tol, maxiter : float, int
-        Newton tolerance / iteration limit.
+        Starting compressibility factor.  The default 1.0 selects the
+        gas-like root.  For a dense (liquid-CO2) phase, start near the
+        reduced co-volume, ``Z_init ≈ B_mix``.
+    chi_init : float
+        Starting value of ``chi1h``.
+    tol : float
+        Newton tolerance on ``max|residual|``.
+    maxiter : int
+        Maximum number of Newton iterations per starting point.
 
     Returns
     -------
-    (lnphi_h2o, lnphi_ch4, lnphi_co2) : tuple of float
-        Per-species log-fugacity coefficients in the gas phase.
+    tuple of float, length 3
+        ``(lnphi_H2O, lnphi_CH4, lnphi_CO2)``, natural logarithms of the
+        fugacity coefficients, defined so that
+        ``f_i = y_i * exp(lnphi_i) * P``.
+
+    Raises
+    ------
+    RuntimeError
+        If no physical root (``chi > 0``) is found.
 
     Notes
     -----
-    The cubic SRK in ``Zh`` admits 1 or 3 real roots; the converged root is
-    the one closest to ``Z_init``.  This kernel does NOT iterate over the
-    aqueous coupling; ions are excluded from the gas phase by construction
-    (``K_ion ≡ 0``).
+    The physical (SRK) term gives one or three real roots in ``Zh``.  The
+    root found is normally the one nearest ``Z_init``.  Ions are not present
+    in the gas phase.
     """
     y_gas = np.asarray(y_gas, dtype=float)
     if Z_init is None:

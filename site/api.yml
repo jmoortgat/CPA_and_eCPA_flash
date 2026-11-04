@@ -1,0 +1,153 @@
+# Contents of the API reference of the documentation website.
+#
+# site/build_site.py turns this list into the quartodoc configuration; quartodoc
+# then writes one page per entry from the docstrings in the code. Entries are
+# full import paths: the Paper I package `ecpa` and module `CPA` live in code/,
+# the Papers II and III package `ms_ecpa` in multisalt/.
+
+- title: "ecpa: stability and flash (Paper I)"
+  desc: "Two-phase flash of CO2 + H2O + NaCl with the eCPA of Coelho et al. (2025), and the Michelsen stability test."
+  contents:
+    - ecpa.stability.ecpa_stability_flash
+    - ecpa.flash.flash_co2_h2o_salt_kv
+    - ecpa.flash.flash_co2_h2o_salt_fast_kv
+    - ecpa.flash.flash_co2_h2o_salt_fast
+    - ecpa.flash_simplified.flash_co2_h2o_simplified
+    - ecpa.flash.get_flash_fn
+    - ecpa.stability.ecpa_stability
+    - ecpa.stability.stability_map
+    - ecpa.stability.stability_ms_scan
+    - ecpa.stability.ecpa_lnphi_aq
+    - ecpa.stability.ecpa_lnphi_c
+    - ecpa.utils.test_tieline_invariance
+    - ecpa.utils.print_flash_report
+- title: "ecpa: initial guesses and warm starts"
+  desc: "Precomputed solution tables and interpolated starting values for the flash."
+  contents:
+    - ecpa.warmstart.ScanTableWarmStart
+    - ecpa.warmstart.WarmStartGuess
+    - ecpa.guess_table.make_guess_fn
+    - ecpa.guess_table.guess_from_table
+    - ecpa.guess_table.load_cpa_guess_table
+    - ecpa.guess_table.get_table_p_range
+    - ecpa.solution_table.load_solution_table
+    - ecpa.solution_table.make_solution_guess_fn
+- title: "ecpa: model and parameters"
+  desc: "The equilibrium residual system and the parameter set."
+  contents:
+    - ecpa.parameters.make_params
+    - ecpa.constants.peneloux_h2o
+    - ecpa.elv.ELV
+    - ecpa.elv.ELV_jac
+    - ecpa.flash.solve_elv
+    - ecpa.flash.build_continuation_cache
+- title: "ecpa: phase envelopes, data and validation"
+  desc: "Phase boundaries, the experimental CO2-H2O and CO2-NaCl data, and the validation of Paper I."
+  contents:
+    - ecpa.envelope.find_envelope_from_scan
+    - ecpa.envelope.build_cpa2_envelope
+    - ecpa.exp_data.load_exp_data
+    - ecpa.exp_data.exp_at_T
+    - ecpa.validate_nacl.load_co2nacl_exp
+    - ecpa.validate_co2h2o.run_validation
+    - ecpa.validate_nacl.run_validation
+    - ecpa.validate_nacl.compute_metrics
+- title: "CPA: salt-free CO2 + H2O (Paper I)"
+  desc: "Module code/CPA.py: the two-component CPA flash used for the salt-free binary."
+  contents:
+    - CPA.flash_co2_h2o_tpz_robust
+    - CPA.flash_co2_h2o_tpz
+    - CPA.flash_co2_h2o_tpz_warmstart
+    - CPA.stability_test
+    - CPA.flash_tpz_two_comp
+    - CPA.tie_line_two_comp
+- title: "ms_ecpa: stability and flash (Papers II and III)"
+  desc: "The Michelsen stability test and the K-value flash of the ion-specific eCPA for H2O, CH4, CO2 and the ions Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-."
+  contents:
+    - ms_ecpa.stability.stability_flash
+    - ms_ecpa.stability.StabilityFlashResult
+    - ms_ecpa.stability.michelsen_tpd
+    - ms_ecpa.stability.StabilityResult
+    - ms_ecpa.stability.TPDResult
+    - ms_ecpa.stability.tpd_ssi
+    - ms_ecpa.stability.make_k_init_from_trial
+    - ms_ecpa.flash.flash_kv
+    - ms_ecpa.flash.FlashKVResult
+    - ms_ecpa.flash.dew_point_flash
+    - ms_ecpa.flash.rachford_rice
+    - ms_ecpa.flash.wilson_k
+    - ms_ecpa.flash.aqueous_closure
+    - ms_ecpa.flash.compute_aqueous_x1w_chain
+    - ms_ecpa.flash.compute_aqueous_x1w_from_KP
+- title: "ms_ecpa: three-phase flash (Paper III)"
+  desc: "Vapor + aqueous + gas-rich liquid."
+  contents:
+    - ms_ecpa.flash3.stability_flash3
+    - ms_ecpa.flash3.StabilityFlash3Result
+    - ms_ecpa.flash3.flash3_kv
+    - ms_ecpa.flash3.Flash3Result
+    - ms_ecpa.flash3.rachford_rice_3p
+- title: "ms_ecpa: fugacity coefficients and equilibrium at a given gas composition"
+  desc: "Per-phase fugacity coefficients, and the equilibrium solve at a fixed water-free gas composition used for the parametrization (Paper II)."
+  contents:
+    - ms_ecpa.lnphi.lnphi_aq
+    - ms_ecpa.lnphi.lnphi_gas
+    - ms_ecpa.eos.solve_elv
+    - ms_ecpa.eos.ELVResult
+    - ms_ecpa.eos.residual_elv
+    - ms_ecpa.eos.gas_fugacities
+    - ms_ecpa.guess.build_initial_guess
+    - ms_ecpa.guess.SinglePhaseError
+- title: "ms_ecpa: saturation pressure and water"
+  contents:
+    - ms_ecpa.psat.solve_psat_isofugacity
+    - ms_ecpa.psat.PsatBracketError
+    - ms_ecpa.water.rho_w_sat
+    - ms_ecpa.roots.liquid_density_bounds
+    - ms_ecpa.roots.is_liquid_root
+- title: "ms_ecpa: parameters"
+  desc: "The parameter set of Paper II, and the configuration that reproduces Paper I."
+  contents:
+    - ms_ecpa.parameters
+    - ms_ecpa.parameters.s13_of_T
+    - ms_ecpa.parameters.set_ion_ion_du
+    - ms_ecpa.paper1_config.paper1_parameters
+    - ms_ecpa.paper1_config.apply_paper1
+    - ms_ecpa.paper1_config.restore_paper1
+    - ms_ecpa.paper1_config.is_applied
+    - ms_ecpa.paper1_config.peneloux_h2o
+    - ms_ecpa.paper1_config.rho_water_paper1
+- title: "ms_ecpa: compiled backend"
+  desc: "Routing of the stability-and-flash calls to the Fortran library (multisalt/fortran/)."
+  contents:
+    - ms_ecpa.backend.use
+    - ms_ecpa.backend.mode
+    - ms_ecpa.backend.available
+    - ms_ecpa.backend.fallbacks
+    - ms_ecpa.backend.stability_flash_fortran
+    - ms_ecpa.backend.dispatch
+- title: "ms_ecpa: GasBrineBench data"
+  desc: "Locating and fetching the pinned version of the experimental database."
+  contents:
+    - ms_ecpa.gbb.ensure
+    - ms_ecpa.gbb.load
+    - ms_ecpa.gbb.describe
+    - ms_ecpa.gbb.find_local
+    - ms_ecpa.gbb.acquire
+    - ms_ecpa.gbb.remote_rev
+    - ms_ecpa.gbb.local_rev
+    - ms_ecpa.gbb.is_checkout
+    - ms_ecpa.gbb.cache_dir
+    - ms_ecpa.gbb.refresh_policy
+- title: "ms_ecpa: extension points and numerics"
+  desc: "Hooks through which a separate package can add terms to the aqueous model, and the Newton solver."
+  contents:
+    - ms_ecpa.extensions.register
+    - ms_ecpa.extensions.unregister
+    - ms_ecpa.extensions.get
+    - ms_ecpa.extensions.active
+    - ms_ecpa.extensions.aqueous_terms
+    - ms_ecpa.extensions.AqueousTerms
+    - ms_ecpa.extensions.extra_aqueous_seeds
+    - ms_ecpa.newton.newton_solve
+    - ms_ecpa.newton.complex_step_jacobian

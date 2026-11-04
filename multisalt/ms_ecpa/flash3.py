@@ -1,8 +1,7 @@
 """Three-phase (vapor + aqueous + CO2-rich liquid) stability and flash.
 
-Additive extension of the two-phase machinery in :mod:`ms_ecpa.flash`
-and :mod:`ms_ecpa.stability` — nothing in those modules is modified,
-and the production two-phase entry points behave exactly as before.
+Builds on the two-phase functions in ``ms_ecpa.flash`` and
+``ms_ecpa.stability`` and does not change them.
 
 Physical setting
 ----------------
@@ -23,7 +22,7 @@ Aqueous phase is the reference.  Two K-vectors on the partition basis
     Kl_i = xl_i / x_part_i       (CO2-rich liquid / aqueous)
 
 Both non-aqueous phases are evaluated with the existing gas kernel
-(:func:`ms_ecpa.lnphi._gas_residual`); the CO2-rich liquid is simply
+(``ms_ecpa.lnphi._gas_residual``); the CO2-rich liquid is simply
 the dense root, selected by seeding the inner Newton with
 ``Z ~ 2 B_mix`` (the same dense seed the two-phase fallback ladders
 already use).
@@ -43,9 +42,9 @@ with the chain convention's vapor fraction generalised to
 
 Entry points
 ------------
-* :func:`rachford_rice_3p`  — two-K-vector Rachford-Rice.
-* :func:`flash3_kv`         — three-phase SSI + Jex + Newton polish.
-* :func:`stability_flash3`  — hierarchical driver: two-phase
+* ``rachford_rice_3p``  — two-K-vector Rachford-Rice.
+* ``flash3_kv``         — three-phase SSI + Jex + Newton polish.
+* ``stability_flash3``  — hierarchical driver: two-phase
   ``stability_flash`` first, then a tangent-plane test of the
   converged two-phase state against dense CO2-rich (and vapor)
   trials, then ``flash3_kv`` if a third phase is called for.
@@ -234,7 +233,7 @@ def _solve_aq_kernel(x_aq, mi_aq, T, P_Pa, v_warm):
 # ---------------------------------------------------------------------------
 
 def rachford_rice_3p(Kg, Kl, z, *, beta_init=None, tol=1e-12, maxiter=60):
-    """Solve the two-phase-fraction Rachford-Rice for three phases.
+    """Solve the three-phase Rachford-Rice equations for two phase fractions.
 
     Minimises the convex Michelsen function
 
@@ -250,26 +249,37 @@ def rachford_rice_3p(Kg, Kl, z, *, beta_init=None, tol=1e-12, maxiter=60):
 
     Parameters
     ----------
-    Kg, Kl : array_like, shape (3,)
-        K-vectors of the vapor and CO2-rich-liquid phases relative to
-        the aqueous phase, on the partition basis.  NaN entries mark
-        absent species.
+    Kg : array_like, shape (3,)
+        K-values of the vapour relative to the aqueous phase,
+        ``y_i / x_part,i``, on the partitioning basis (H2O, CH4, CO2).
+        NaN marks an absent species.
+    Kl : array_like, shape (3,)
+        K-values of the CO2-rich liquid relative to the aqueous phase,
+        ``xl_i / x_part,i``.  NaN marks an absent species.
     z : array_like, shape (3,)
-        Partition-basis feed.  ``z_i == 0`` marks absent species.
-    beta_init : tuple, optional
-        Starting ``(beta_g, beta_l)``.
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2).
+        ``z_i == 0`` marks an absent species.
+    beta_init : tuple of float, optional
+        Starting ``(beta_g, beta_l)``.  By default, half of each two-phase
+        Rachford-Rice solution.
+    tol : float
+        Convergence tolerance on the largest component of the gradient.
+    maxiter : int
+        Maximum number of Newton iterations.
 
     Returns
     -------
-    beta_g, beta_l : float
-        Phase fractions of vapor and CO2-rich liquid (aqueous fraction
-        is ``1 - beta_g - beta_l``).
+    beta_g : float
+        Vapour mole fraction on the partitioning basis.
+    beta_l : float
+        CO2-rich-liquid mole fraction on the partitioning basis.  The
+        aqueous fraction is ``1 - beta_g - beta_l``.
     status : str
-        ``"interior"`` — genuine three-phase solution inside the simplex;
-        ``"no-gas"`` / ``"no-liquid"`` / ``"no-aqueous"`` — the
-        unconstrained minimiser left the simplex through the named
-        face (drop that phase and re-flash two-phase);
-        ``"failed"`` — Newton did not converge.
+        ``"interior"``: a three-phase solution inside the simplex.
+        ``"no-gas"``, ``"no-liquid"`` or ``"no-aqueous"``: the minimiser
+        lies outside the simplex across the face of the named phase, so
+        that phase vanishes and a two-phase flash applies.
+        ``"failed"``: the Newton iteration did not converge.
     """
     Kg = np.asarray(Kg, dtype=float)
     Kl = np.asarray(Kl, dtype=float)
@@ -393,7 +403,80 @@ def rachford_rice_3p(Kg, Kl, z, *, beta_init=None, tol=1e-12, maxiter=60):
 
 @dataclass
 class Flash3Result:
-    """Result of a converged (or attempted) three-phase K-value flash."""
+    """Result of a three-phase K-value flash (returned by ``flash3_kv``).
+
+    Attributes
+    ----------
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : tuple of float, length 3
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2).
+    mi : tuple of float, length 6
+        Input ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg
+        water].
+    converged : bool
+        True when the fugacity residual is below ``tol``.
+    message : str
+        "converged", or the reason the flash stopped.
+    Kg : tuple of float, length 3
+        K-values vapour/aqueous on the partitioning basis
+        (``y_i / x_part,i``); NaN for absent species.
+    Kl : tuple of float, length 3
+        K-values CO2-rich liquid/aqueous on the partitioning basis.
+    x_aq : tuple of float, length 3
+        Aqueous mole fractions (H2O, CH4, CO2), ions included in the total.
+    y_gas : tuple of float, length 3
+        Vapour mole fractions (H2O, CH4, CO2).
+    x_lco2 : tuple of float, length 3
+        CO2-rich-liquid mole fractions (H2O, CH4, CO2).
+    beta_g : float
+        Vapour mole fraction on the partitioning basis.
+    beta_l : float
+        CO2-rich-liquid mole fraction on the partitioning basis.
+    x1w : float
+        Aqueous H2O mole fraction, equal to ``x_aq[0]``.
+    Z_aq : float
+        Compressibility factor of the aqueous phase.
+    Z_gas : float
+        Compressibility factor of the vapour.  After convergence the phase
+        labels are set so that ``Z_gas >= Z_lco2``.
+    Z_lco2 : float
+        Compressibility factor of the CO2-rich liquid.
+    eps_r : float
+        Relative permittivity of the aqueous phase.
+    n_iter_ssi : int
+        Number of successive-substitution iterations.
+    n_iter_newton : int
+        Number of Newton iterations on ln K after the substitution phase.
+    max_residual : float
+        ``max|g|`` over present species and both K-vectors, with ``g`` the
+        change of ``ln K`` from one substitution step; ``inf`` on failure.
+    fugacities_aq : tuple of float, length 3
+        Fugacities (H2O, CH4, CO2) in the aqueous phase [bar].
+    fugacities_gas : tuple of float, length 3
+        Fugacities in the vapour [bar].
+    fugacities_lco2 : tuple of float, length 3
+        Fugacities in the CO2-rich liquid [bar].
+    mi_aq : tuple of float, length 6
+        Equilibrium aqueous ion molalities [mol/kg water]; equal to ``mi``
+        under ``"as-aqueous"``.
+    salinity_convention : str
+        ``"as-aqueous"`` or ``"chain"`` (see ``ms_ecpa.flash.flash_kv``).
+    chi_H2O_aq : float
+        Fraction of H2O association sites not bonded, aqueous phase.
+    chi_H2O_gas : float
+        Same quantity in the vapour.
+    chi_H2O_lco2 : float
+        Same quantity in the CO2-rich liquid.
+    drop_phase : str
+        Empty unless the flash stopped because a phase vanished:
+        ``"no-gas"``, ``"no-liquid"`` or ``"no-aqueous"`` (from
+        ``rachford_rice_3p``), ``"failed"`` (the three-phase Rachford-Rice
+        did not converge), or ``"merged"`` (the vapour and the liquid
+        reached the same state).
+    """
     T: float
     P: float
     z: tuple
@@ -428,7 +511,36 @@ class Flash3Result:
 
 @dataclass
 class StabilityFlash3Result:
-    """Hierarchical three-phase stability + flash outcome."""
+    """Result of the three-phase stability flash (from ``stability_flash3``).
+
+    Attributes
+    ----------
+    phases : int
+        Number of phases reported: 1, 2 or 3.
+    two_phase : StabilityFlashResult
+        Result of the two-phase ``stability_flash`` (stage 1, always run).
+        When the two-phase state was replaced by a re-flash (see
+        ``stability_flash3``), this holds the re-flashed result, with
+        ``route == -1``.
+    flash3 : Flash3Result or None
+        The three-phase flash when ``phases == 3``; otherwise None.
+    tpd3_min : float
+        Most negative TPD of the stage-2 trials against the two-phase
+        equilibrium.  NaN when stage 2 was skipped or no trial converged.
+    message : str
+        Short summary of the outcome.
+    incumbent_gas_root : str
+        ``"vapor"`` or ``"dense"``: the density root of the two-phase
+        non-aqueous phase.  Empty when stage 2 did not reach that step.
+    attempts : list of str
+        One line per step of stages 2 and 3.
+    t_stab3_ms : float
+        Wall time of the stage-2 test [ms].
+    t_flash3_ms : float
+        Wall time of the stage-3 flash, including any re-flash [ms].
+    t_total_ms : float
+        Wall time of the whole call, including stage 1 [ms].
+    """
     phases: int                                # 1, 2 or 3
     two_phase: StabilityFlashResult            # stage-1 result (always run)
     flash3: Optional[Flash3Result]             # populated when phases == 3
@@ -469,19 +581,61 @@ def flash3_kv(
     salinity_convention="as-aqueous",
     verbose=False,
 ):
-    """Three-phase K-value flash: vapor + aqueous + CO2-rich liquid.
+    """Run the three-phase K-value flash (vapour, aqueous, CO2-rich liquid).
 
-    Mirrors :func:`ms_ecpa.flash.flash_kv` (SSI on ln K with Jex
-    acceleration and Newton polish), generalised to two K-vectors.
-    Requires explicit ``Kg_init``/``Kl_init`` — three-phase flashes are
-    always seeded by the stability stage (see :func:`stability_flash3`),
-    never cold-started.
+    The iteration is that of ``ms_ecpa.flash.flash_kv`` (successive
+    substitution on ln K with the acceleration of Jex et al. 2024, then
+    Newton iterations), applied to two K-vectors.  The initial K-values
+    must be given; ``stability_flash3`` computes them from its stability
+    stage.  The vapour is evaluated on the low-density root of the gas
+    equation of state and the CO2-rich liquid on the dense root.
 
-    Parameters mirror ``flash_kv``; ``P`` in bar.  Returns
-    :class:`Flash3Result`.  If the multiphase Rachford-Rice pushes a
-    phase fraction out of the simplex, the flash aborts with
-    ``converged=False`` and ``drop_phase`` set — the driver then falls
-    back to the two-phase answer.
+    Parameters
+    ----------
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    z : array_like, shape (3,)
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2),
+        ions excluded; sum to 1.
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+    Kg_init : array_like, shape (3,)
+        Initial K-values vapour/aqueous on the partitioning basis.
+    Kl_init : array_like, shape (3,)
+        Initial K-values CO2-rich liquid/aqueous on the partitioning basis.
+    tol : float
+        Convergence tolerance on ``max|g|`` over both K-vectors.
+    maxiter : int
+        Maximum number of substitution iterations.
+    accelerated : bool
+        Apply the acceleration of Jex et al. (2024).
+    use_newton : bool
+        Switch to Newton iterations on ln K once ``max|g| < newton_tol``.
+    newton_tol : float
+        Residual below which the Newton iterations start.
+    max_newton : int
+        Maximum number of Newton iterations.
+    salinity_convention : {"as-aqueous", "chain"}
+        As in ``flash_kv``; under ``"chain"`` the sum ``beta_g + beta_l``
+        takes the place of the two-phase vapour fraction.
+    verbose : bool
+        Print one line per iteration.
+
+    Returns
+    -------
+    Flash3Result
+        Compositions and fractions of the three phases.  If the
+        three-phase Rachford-Rice solution leaves the simplex, or the
+        vapour and liquid become identical, the flash stops with
+        ``converged=False`` and ``drop_phase`` set; ``stability_flash3``
+        then uses a two-phase result.
+
+    Raises
+    ------
+    ValueError
+        If ``z`` does not have 3 entries or ``mi`` does not have 6 entries.
     """
     z = np.asarray(z, dtype=float)
     mi = np.asarray(mi, dtype=float)
@@ -774,17 +928,17 @@ def _flash2_dense(T, P, z, mi, K_init, *,
     """Two-phase K-value flash whose non-aqueous phase is held on the
     dense (liquid) density root.
 
-    The production :func:`ms_ecpa.flash.flash_kv` cannot guarantee a
+    The production ``ms_ecpa.flash.flash_kv`` cannot guarantee a
     density root: its ``gas_Z_init`` is only a Newton seed, and the
     kernel's seed-to-root basins are unreliable (a dense seed can
     converge onto the vapor root and reproduce the metastable
     equilibrium).  This clone of the SSI uses
-    :func:`_solve_gas_kernel` with ``dense=True`` — collect-all cold
+    ``_solve_gas_kernel`` with ``dense=True`` — collect-all cold
     start picking the smallest-Z root, warm-start continuity after —
     so the liquid root is structural, not seeded.  Used by
-    :func:`stability_flash3` to replace a metastable vapor--aqueous
+    ``stability_flash3`` to replace a metastable vapor--aqueous
     split above the three-phase pressure.  Returns a fully populated
-    :class:`ms_ecpa.flash.FlashKVResult`.
+    ``ms_ecpa.flash.FlashKVResult``.
     """
     z = np.asarray(z, dtype=float)
     mi = np.asarray(mi, dtype=float)
@@ -933,7 +1087,7 @@ def _tpd_trial_3p(d_i, w_init, T, P_Pa, mi, kind, *,
 
     ``kind`` selects the trial-phase kernel: ``"vapor"`` (gas root),
     ``"dense"`` (liquid-CO2 root), or ``"aq"``.  Log-space SSI with the
-    same Jex acceleration/clipping as :func:`ms_ecpa.stability.tpd_ssi`.
+    same Jex acceleration/clipping as ``ms_ecpa.stability.tpd_ssi``.
     Returns ``(tpd, w, Z_trial, n_iter, converged)`` — ``Z_trial`` is
     the trial kernel's converged compressibility factor (NaN for the
     aqueous kernel), needed by the caller to tell a dense root from a
@@ -991,7 +1145,7 @@ def _condensable_slot(z, present, T):
     """Index (1 or 2) of the condensable gas slot, or None.
 
     A gas can form its own liquid phase below its critical temperature.
-    The Wilson critical constants in :mod:`ms_ecpa.flash` are the
+    The Wilson critical constants in ``ms_ecpa.flash`` are the
     per-slot source of truth (they track slot rebinds, e.g. a pilot
     swapping CH4 -> C2H6/C3H8).  With two condensable gases present,
     the one dominant in the feed wins.
@@ -1046,36 +1200,58 @@ def stability_flash3(
     flash3_kwargs=None,
     **flash_kwargs,
 ):
-    """Hierarchical three-phase stability + flash driver.
+    """Run the two-phase stability flash, then test for and solve a third phase.
 
-    Stage 1 runs the unmodified production two-phase
-    :func:`ms_ecpa.stability.stability_flash`.  Stage 2 tests the
-    converged two-phase equilibrium for instability with respect to a
-    third phase — dense (liquid-CO2) and vapor trials against the
-    tangent plane of the equilibrium state.  Stage 3 promotes to
-    :func:`flash3_kv` seeded from the incumbent K plus the offending
-    trial; any phase-drop or non-convergence falls back to the
-    two-phase answer.
+    The calculation has three stages:
+
+    1. ``ms_ecpa.stability.stability_flash`` (two-phase).
+    2. If stage 1 gave a converged two-phase state and a gas is below its
+       critical temperature, a tangent-plane test of that state against
+       dense (liquid-CO2) and vapour trials.
+    3. If a trial gives ``TPD < tpd3_threshold``, ``flash3_kv`` started
+       from the two-phase K-values and the K-values of that trial.
+
+    If the three-phase flash does not converge, or a phase fraction is at
+    the boundary, the two-phase result is kept.  When the flash reports
+    that the vapour or the liquid vanishes (``drop_phase`` "no-gas",
+    "no-liquid" or "merged"), a two-phase flash is run from the K-values of
+    the new phase; if it converges to a different split, that split
+    replaces the stage-1 result, because the stage-1 non-aqueous phase was
+    metastable.
 
     Parameters
     ----------
-    T, P : float
-        Temperature [K], pressure [bar].
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
     z : array_like, shape (3,)
-        Partition-basis feed ``(z_H2O, z_CH4, z_CO2)``.
+        Feed mole fractions of the partitioning species (H2O, CH4, CO2),
+        ions excluded; sum to 1.
     mi : array_like, shape (6,)
-        Ion molalities ``(Na, Cl, K, Ca, Mg, SO4)``.
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
     tpd3_threshold : float
-        A stage-2 trial with ``TPD < tpd3_threshold`` (and a state
-        distinct from both incumbent phases) triggers the three-phase
-        flash.  Tighter than the two-phase driver's hard threshold
-        because stage-2 trials are evaluated against a *converged*
-        equilibrium (residual ~1e-8), so the tangent-plane reference
-        carries no feed-side noise.
+        A stage-2 trial with ``TPD < tpd3_threshold``, whose state differs
+        from both phases of the two-phase result, starts the three-phase
+        flash.  The value is closer to zero than the two-phase threshold
+        because the stage-2 trials are evaluated against a converged
+        equilibrium (residual about 1e-8), not against the feed.
+    salinity_convention : {"as-aqueous", "chain"}
+        Passed to all flashes (see ``ms_ecpa.flash.flash_kv``).
+    stability_kwargs : dict, optional
+        Keyword arguments passed to ``michelsen_tpd`` through
+        ``stability_flash``.
+    flash3_kwargs : dict, optional
+        Keyword arguments passed to ``flash3_kv``.
+    **flash_kwargs
+        Keyword arguments passed to ``stability_flash`` (and from there to
+        ``flash_kv``).
 
     Returns
     -------
     StabilityFlash3Result
+        Number of phases, the stage-1 result in ``two_phase``, and the
+        three-phase flash in ``flash3`` when ``phases == 3``.
     """
     t0 = time.perf_counter()
     z = np.asarray(z, dtype=float)

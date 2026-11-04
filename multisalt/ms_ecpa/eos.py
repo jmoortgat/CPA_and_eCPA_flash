@@ -1,8 +1,9 @@
 """eCPA equation of state: residuals, fugacities, and equilibrium driver.
 
-The ``residual_elv`` and ``gas_fugacities`` function bodies are preserved
-verbatim from the original ``eCPA_ELV.py`` (only renamed); all model
-parameters are imported from :mod:`ms_ecpa.parameters`.
+``residual_elv`` is the coupled residual system of the eCPA at a fixed
+water-free gas composition, ``gas_fugacities`` evaluates the gas-phase
+fugacities at a solution of that system, and ``solve_elv`` solves it.  All
+model parameters are imported from ``ms_ecpa.parameters``.
 """
 from dataclasses import dataclass, asdict
 
@@ -17,6 +18,59 @@ from .newton import newton_solve
 
 
 def residual_elv(x0, T, P, Yc_fw, mi):
+    """Evaluate the eCPA equilibrium residuals at a fixed water-free gas composition.
+
+    The unknowns describe both phases at once: the aqueous state, the gas
+    state, the association fractions and their derivatives.  The residuals
+    are zero at phase equilibrium.  ``solve_elv`` solves this system; the
+    per-phase kernels in ``ms_ecpa.lnphi`` evaluate the same model one
+    phase at a time.
+
+    Parameters
+    ----------
+    x0 : array_like, shape (10,) or (12,)
+        Unknowns; the layout depends on ``Yc_fw`` (see Notes).
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [Pa] (``solve_elv`` passes ``P_bar * 1e5``).
+    Yc_fw : float
+        Water-free CO2 mole fraction of the gas, ``y_CO2 / (y_CH4 + y_CO2)``,
+        in [0, 1].  The gas composition is ``x3h = Yc_fw (1 - x1h)``,
+        ``x2h = 1 - x1h - x3h``.
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+        The aqueous H2O fraction follows from
+        ``x1w = (1 - x2w - x3w) / (1 + Mw sum(mi))``.
+
+    Returns
+    -------
+    list of float, length 10 or 12
+        Residuals, in this order: ``Zw``, ``chi1w`` and ``Zh``, ``chi1h``
+        closures (relative); H2O fugacity equality (relative); CH4
+        fugacity equality (absolute, in bar; only when ``Yc_fw < 1``); CO2
+        fugacity equality (relative; only when ``Yc_fw > 0``); closures of
+        ``Ndchi1WdNw``, ``Ndchi1WdNh`` (when ``Yc_fw < 1``), ``Ndchi1WdNc``
+        (when ``Yc_fw > 0``) and ``Vdchi1WdV``; the permittivity closure.
+
+    Notes
+    -----
+    Layout of ``x0``:
+
+    * ``Yc_fw == 0`` (CH4 only): ``Zw, x2w, epsr, Zh, x1h, chi1w, chi1h,
+      Ndchi1WdNw, Ndchi1WdNh, Vdchi1WdV``.
+    * ``Yc_fw == 1`` (CO2 only): ``Zw, x3w, epsr, Zh, x1h, chi1w, chi1h,
+      Ndchi1WdNw, Ndchi1WdNc, Vdchi1WdV``.
+    * otherwise: ``Zw, x2w, x3w, epsr, Zh, x1h, chi1w, chi1h, Ndchi1WdNw,
+      Ndchi1WdNh, Ndchi1WdNc, Vdchi1WdV``.
+
+    ``Zw``, ``Zh``: compressibility factors of the aqueous and gas phases.
+    ``x2w``, ``x3w``: aqueous CH4 and CO2 mole fractions.  ``epsr``:
+    relative permittivity of the aqueous phase.  ``x1h``: gas H2O mole
+    fraction.  ``chi1w``, ``chi1h``: H2O monomer fractions in the two
+    phases.  The remaining entries are the derivatives of ``chi1w`` with
+    respect to mole numbers (N d/dN) and volume (V d/dV).
+    """
     if Yc_fw == 0:
         Zw, x2w,  epsr, Zh,  x1h, chi1w, chi1h, Ndchi1WdNw, Ndchi1WdNh,   Vdchi1WdV   = x0
         x3w = 0
@@ -294,6 +348,32 @@ def residual_elv(x0, T, P, Yc_fw, mi):
     
 
 def gas_fugacities(x0, T, P, Yc_fw):
+    """Return the gas-phase fugacities at a solution of ``residual_elv``.
+
+    Only the gas-phase unknowns of ``x0`` (``Zh``, ``x1h``, ``chi1h``) are
+    used.
+
+    Parameters
+    ----------
+    x0 : array_like, shape (10,) or (12,)
+        Solution vector of ``residual_elv``, in the layout set by ``Yc_fw``
+        (see ``residual_elv``).
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [Pa].
+    Yc_fw : float
+        Water-free CO2 mole fraction of the gas, in [0, 1].
+
+    Returns
+    -------
+    f_h2o : float
+        Fugacity of H2O in the gas phase [bar].
+    f_ch4 : float
+        Fugacity of CH4 in the gas phase [bar].
+    f_co2 : float
+        Fugacity of CO2 in the gas phase [bar].
+    """
     if Yc_fw == 0:
         Zw, x2w,  epsr, Zh,  x1h, chi1w, chi1h, Ndchi1WdNw, Ndchi1WdNh,   Vdchi1WdV   = x0
         x3w = 0
@@ -367,7 +447,74 @@ Pf = 1500
 
 @dataclass
 class ELVResult:
-    """Result of a converged (or attempted) eCPA equilibrium calculation."""
+    """Result of an eCPA equilibrium calculation (from ``solve_elv``).
+
+    Attributes
+    ----------
+    T : float
+        Temperature [K].
+    P : float
+        Pressure [bar].
+    YC : float
+        Water-free CO2 mole fraction in the gas phase.
+    mi : tuple of float, length 6
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water].
+    converged : bool
+        Status flag of the solver (``ier == 1``).  For ``solver='newton'``
+        it means ``max|F| < tol``.  For ``solver='fsolve'`` it is the MINPACK
+        step test, which does not bound the residual; check ``residual``
+        when a residual bound is needed.
+    ier : int
+        Solver status code: 1 for success.  For ``'fsolve'`` this is the
+        MINPACK ``ier``; for ``'newton'`` it is 1 or 0.
+    salinity : float
+        Total ion molality ``sum(mi)`` [mol/kg water].
+    ws : float
+        Ion mass fraction of the aqueous phase [%].
+    xs : float
+        Ion mole fraction of the aqueous phase [%].
+    Zw : float
+        Compressibility factor of the aqueous phase.
+    rho_w : float
+        Aqueous-phase density, including the ion volume shift [kg/m3].
+    eps_r : float
+        Relative permittivity (dielectric constant) of the aqueous phase.
+    x1w : float
+        H2O mole fraction in the aqueous phase.
+    x2w : float
+        CH4 mole fraction in the aqueous phase.
+    x3w : float
+        CO2 mole fraction in the aqueous phase.
+    mh : float
+        CH4 molality [mol/kg water].
+    wh : float
+        CH4 mass fraction of the aqueous phase [%].
+    mc : float
+        CO2 molality [mol/kg water].
+    wc : float
+        CO2 mass fraction of the aqueous phase [%].
+    Zh : float
+        Compressibility factor of the gas phase.
+    rho_h : float
+        Gas-phase density [kg/m3].
+    x1h : float
+        H2O mole fraction in the gas phase.
+    x2h : float
+        CH4 mole fraction in the gas phase.
+    x3h : float
+        CO2 mole fraction in the gas phase.
+    f_h2o : float
+        Fugacity of H2O [bar].
+    f_ch4 : float
+        Fugacity of CH4 [bar].
+    f_co2 : float
+        Fugacity of CO2 [bar].
+    solution : ndarray
+        Solution vector of ``residual_elv`` (layout set by ``YC``).
+    residual : float
+        ``max|residual_elv|`` at ``solution``.  Unlike ``converged``, this
+        measures the residual directly for both solvers.
+    """
     T: float          # K
     P: float          # bar
     YC: float         # water-free CO2 mole fraction in the gas phase
@@ -509,35 +656,64 @@ def _continuation_newton(guess, T, P, YC, mi, tol, maxiter, dm):
 
 def solve_elv(T, P, YC, mi, guess_dir=None, dm=0.2,
               solver="fsolve", tol=1e-10, maxiter=100, xtol=None):
-    """Compute the H2O-CH4-CO2-ions phase equilibrium with the eCPA EoS.
+    """Solve the eCPA phase equilibrium at a fixed water-free gas composition.
 
-    Non-interactive replacement for the original script's ``__main__`` block.
+    This is the calculation used for the parametrization of Paper II: the
+    water-free CO2 fraction of the gas, ``YC``, is given, and the water
+    content of the gas and the gas solubilities in the brine are solved
+    for.  The initial guess comes from the binary CO2-H2O and CH4-H2O
+    tables (``ms_ecpa.guess.build_initial_guess``).  For a brine, the ion
+    molalities are raised from zero to ``mi`` in steps, and each step
+    starts from the previous solution.
 
     Parameters
     ----------
-    T : float          absolute temperature [K], 283 < T < 533
-    P : float          pressure [bar], 1 < P < 1500
-    YC : float         water-free CO2 mole fraction in the gas phase, in [0, 1]
-    mi : sequence      ion molalities (Na, Cl, K, Ca, Mg, SO4) [mol/kg water]
-    guess_dir : path-like, optional   directory holding the binary guess tables
-    dm : float         salinity-continuation step [mol/kg] (default 0.2)
-    solver : str       'fsolve' (legacy MINPACK, default; fastest here) or
-                       'newton' (damped Newton + complex-step Jacobian; more
-                       accurate, provides an analytical-precision Jacobian, but
-                       ~3x slower per solve in pure Python)
-    tol : float        convergence tolerance on max|residual| (newton only)
-    maxiter : int      max Newton iterations per solve (newton only)
-    xtol : float, optional   step tolerance handed to fsolve (fsolve only).
-                       MINPACK's default 1.49e-8 applies when omitted; pass a
-                       smaller value to polish the root (1e-10 to 1e-12 buys
-                       3 to 6 orders on the residual here; below ~1e-13
-                       MINPACK gives up with ier = 3). It tightens the step
-                       test, not the residual -- read ``ELVResult.residual``
-                       to see what the residual at the answer actually is.
+    T : float
+        Temperature [K]; must satisfy 283 < T < 533.
+    P : float
+        Pressure [bar]; must satisfy 1 < P < 1500.
+    YC : float
+        Water-free CO2 mole fraction in the gas phase, in [0, 1].
+    mi : array_like, shape (6,)
+        Ion molalities (Na+, Cl-, K+, Ca2+, Mg2+, SO4 2-) [mol/kg water];
+        must be electrically neutral.
+    guess_dir : str or pathlib.Path, optional
+        Directory holding the binary guess tables.
+    dm : float
+        Salinity step [mol/kg].  With ``'fsolve'`` the ramp has
+        ``int(sum(mi) / dm) + 1`` equal steps; with ``'newton'`` it is the
+        first step, which then grows or shrinks.
+    solver : {"fsolve", "newton"}
+        ``'fsolve'``: MINPACK hybrd (the original solver; fastest here).
+        ``'newton'``: damped Newton with a complex-step Jacobian; more
+        accurate, about 3 times slower per solve in Python.
+    tol : float
+        Convergence tolerance on ``max|residual|`` (``'newton'`` only).
+    maxiter : int
+        Maximum Newton iterations per solve (``'newton'`` only).
+    xtol : float, optional
+        Step tolerance passed to fsolve (``'fsolve'`` only).  MINPACK's
+        default 1.49e-8 applies when omitted.  A smaller value refines the
+        root (1e-10 to 1e-12 lowers the residual by 3 to 6 orders of
+        magnitude here; below about 1e-13 MINPACK stops with ier = 3).  It
+        sets the step test, not the residual; ``ELVResult.residual`` gives
+        the residual at the answer.
 
     Returns
     -------
     ELVResult
+        Compositions, densities, permittivity and fugacities of both phases,
+        the solver status ``converged`` and the residual ``residual``.  A
+        salinity step that fails, or a solution with a gas-like aqueous
+        phase, gives ``converged=False``.
+
+    Raises
+    ------
+    ValueError
+        If ``mi`` does not have 6 entries or is not electrically neutral,
+        if T, P or YC is out of range, if ``solver`` is unknown, or if the
+        parameter set uses features this solver does not implement
+        (asymmetric ``Uref_ii``, nonzero ``S12A``).
     """
     mi = np.asarray(mi, dtype=float)
     if mi.shape != (6,):

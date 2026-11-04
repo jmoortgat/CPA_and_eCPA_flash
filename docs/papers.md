@@ -62,7 +62,10 @@ Electrolyte Cubic-Plus-Association Equation of State. *Energy & Fuels*
   mixed-salt brines, and enthalpies of CO₂ dissolution.
 - **Code.** [`multisalt/`](../multisalt/README.md). The parameters are in
   `multisalt/ms_ecpa/parameters.py`.
-- **Notebook.** [`ms_ecpa_parametrization_paper.ipynb`](../notebooks/ms_ecpa_parametrization_paper.ipynb).
+- **Notebooks.** [`ms_ecpa_parametrization_paper.ipynb`](../notebooks/ms_ecpa_parametrization_paper.ipynb)
+  (the executable paper) and
+  [`ms_ecpa_parametrization_tutorial.ipynb`](../notebooks/ms_ecpa_parametrization_tutorial.ipynb)
+  (a tutorial on the functions behind it).
 - **Reproduction.** The table in [`multisalt/README.md`](../multisalt/README.md)
   gives the command for each figure and table;
   [`multisalt/scripts/FIGURES_MAP.md`](../multisalt/scripts/FIGURES_MAP.md)
@@ -93,7 +96,10 @@ of State. *Energy & Fuels* **2026**, available online.
   Paper II. The flash is in `multisalt/ms_ecpa/flash.py` (two phases) and
   `multisalt/ms_ecpa/flash3.py` (three phases); the parameters for the
   additional gases are in the result files of `multisalt/pilot_studies/`.
-- **Notebook.** [`ms_ecpa_flash_paper.ipynb`](../notebooks/ms_ecpa_flash_paper.ipynb).
+- **Notebooks.** [`ms_ecpa_flash_paper.ipynb`](../notebooks/ms_ecpa_flash_paper.ipynb)
+  (the executable paper) and
+  [`ms_ecpa_flash_tutorial.ipynb`](../notebooks/ms_ecpa_flash_tutorial.ipynb)
+  (a tutorial on the stability and flash functions).
 - **Reproduction.** As for Paper II; the flash over the full grid is
   described in [`multisalt/sweep/README.md`](../multisalt/sweep/README.md).
   It is run on an HPC cluster with the SLURM scripts in

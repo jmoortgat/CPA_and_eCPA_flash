@@ -376,9 +376,9 @@ S12A = 0.0
 def set_ion_ion_du(ion_a, ion_b, dU):
     """Set the symmetric ion-ion HV reference energy DU_ab = DU_ba [J/mol].
 
-    ``ion_a``/``ion_b``: ion name in :data:`ION_INDEX` ("Na", "Cl", "K",
+    ``ion_a``/``ion_b``: ion name in ``ION_INDEX`` ("Na", "Cl", "K",
     "Ca", "Mg", "SO4") or integer index 0-5.  ``dU`` in J/mol (multiply a
-    literature DU/R [K] by :data:`R`).  Writes both (a, b) and (b, a) so
+    literature DU/R [K] by ``R``).  Writes both (a, b) and (b, a) so
     the matrix stays symmetric.  In-place update: modules that read
     ``parameters.Uref_ii`` through a live module reference (lnphi.py,
     eos.py) see the change immediately; snapshotting consumers (e.g.

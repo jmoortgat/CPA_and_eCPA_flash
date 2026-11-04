@@ -281,9 +281,10 @@ def ELV(x0, T, P, ms, params=None):
 
 # ── Jacobian ───────────────────────────────────────────────────────────────────
 def ELV_jac(x0, T, P, ms, params=None):
-    """
-    Exact 10×10 Jacobian of ELV via complex-step differentiation.
-    10× more accurate than finite differences at the same cost (10 ELV calls).
+    """Return the 10×10 Jacobian of ELV, computed by complex-step differentiation.
+
+    Complex-step derivatives have no subtractive cancellation, so they are
+    more accurate than finite differences at the same cost (10 ELV calls).
     """
     h  = 1e-20
     x0 = np.asarray(x0, dtype=complex)
