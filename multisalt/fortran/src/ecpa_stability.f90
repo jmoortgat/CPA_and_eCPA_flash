@@ -16,7 +16,12 @@ module ecpa_stability
 
   integer, parameter :: SIDE_AQ = 1, SIDE_GAS = 2
   integer, parameter :: MAXTRIALS = 8
-  integer, parameter :: MAXTRIALS2 = 2 * MAXTRIALS   ! trials incl. the brine-reference test
+  ! Wide panel, run when no standard trial is informative: 7 per gas plus
+  ! 3 for CH4+CO2 (mirrors _build_wide_trial_list).
+  integer, parameter :: MAXWIDE = 17
+  ! Every trial one call can run: standard + wide + the brine-reference
+  ! test (gas trials of the standard panel only).
+  integer, parameter :: MAXTRIALS_ALL = 2 * MAXTRIALS + MAXWIDE
 
   ! Evaluate aqueous stability trials on the flash's composition basis.
   ! See the note at the call site. Mirrors ms_ecpa/stability.py.
@@ -45,11 +50,15 @@ module ecpa_stability
      logical :: stable = .true.
      real(wp) :: tpd_min = 0.0_wp
      integer :: ntrials = 0
-     type(tpdres_t) :: trials(MAXTRIALS2)
+     type(tpdres_t) :: trials(MAXTRIALS_ALL)
      integer :: best_idx = 0            ! 0 = none (Python -1)
      real(wp) :: d_ref(3) = 0.0_wp
      integer :: ierr = 0                ! 0 ok; 1 reference lnphi failed everywhere
      integer :: ref_side = REF_GAS      ! reference of the trial that gave tpd_min
+     ! Converged trials that did not collapse to the feed. With best_idx = 0,
+     ! n_informative = 0 is Python's "INCONCLUSIVE" stable.
+     integer :: n_informative = 0
+     logical :: escalated = .false.     ! the wide panel was run
   end type stabres_t
 
   type :: stabflash_t
@@ -381,6 +390,42 @@ contains
   end subroutine build_trial_list
 
   ! ------------------------------------------------------------------
+  ! Wide panel across the composition range, for when every standard
+  ! trial collapsed to the feed or failed (mirrors _build_wide_trial_list).
+  ! ------------------------------------------------------------------
+  subroutine build_wide_trial_list(present, w0s, sides, ntr)
+    logical, intent(in) :: present(3)
+    real(wp), intent(out) :: w0s(3, MAXWIDE)
+    integer, intent(out) :: sides(MAXWIDE), ntr
+    real(wp), parameter :: f_gas(7) = [0.10_wp, 0.25_wp, 0.40_wp, 0.55_wp, &
+                                       0.70_wp, 0.85_wp, 0.95_wp]
+    real(wp), parameter :: f_mix(3) = [0.30_wp, 0.60_wp, 0.90_wp]
+    integer :: k, j
+
+    ntr = 0
+    if (.not. present(1)) return
+    do k = 2, 3
+       if (.not. present(k)) cycle
+       do j = 1, 7
+          ntr = ntr + 1
+          w0s(:, ntr) = 0.0_wp
+          w0s(k, ntr) = f_gas(j)
+          w0s(1, ntr) = 1.0_wp - f_gas(j)
+          sides(ntr) = merge(SIDE_GAS, SIDE_AQ, f_gas(j) >= 0.5_wp)
+       end do
+    end do
+    if (present(2) .and. present(3)) then
+       do j = 1, 3
+          ntr = ntr + 1
+          w0s(2, ntr) = 0.5_wp * f_mix(j)
+          w0s(3, ntr) = 0.5_wp * f_mix(j)
+          w0s(1, ntr) = 1.0_wp - f_mix(j)
+          sides(ntr) = merge(SIDE_GAS, SIDE_AQ, f_mix(j) >= 0.5_wp)
+       end do
+    end if
+  end subroutine build_wide_trial_list
+
+  ! ------------------------------------------------------------------
   ! michelsen_tpd (mirrors the Python function; tpd_threshold is the
   ! POSITIVE classification threshold as in the Python signature).
   ! ------------------------------------------------------------------
@@ -399,14 +444,12 @@ contains
     real(wp) :: P_Pa, z_ref(3), s, b_mix, B_mix_cap, Zh_B
     real(wp) :: Z_hints(7), lnphi_ref(3), v2(2), v3(3)
     real(wp) :: m_tot_ref, x1w_ref, sc_ref, x_aq_ref(3), x1w_brine
-    real(wp) :: d_ref(3), w0s(3, MAXTRIALS), W0(3)
-    real(wp) :: d_brine(3)
-    logical :: got_brine, ref_is_gas
-    integer :: sides(MAXTRIALS), ntr, i, i_t, nit
-    real(wp) :: tpd_min, z_present(3), w_arr(3), maxdiff
-    integer :: best_idx
-    logical :: trivial
-    type(tpdres_t) :: tr
+    real(wp) :: d_ref(3), w0s(3, MAXTRIALS)
+    real(wp) :: d_brine(3), w0w(3, MAXWIDE)
+    logical :: got_brine, ref_is_gas, stop_early
+    integer :: sides(MAXTRIALS), ntr, sidesw(MAXWIDE), ntrw, i, i_t, nit
+    real(wp) :: tpd_min, z_present(3)
+    integer :: best_idx, best_before
 
     res = stabres_t()
     present = (z > 0.0_wp)
@@ -488,39 +531,24 @@ contains
        end if
     end do
     res%ntrials = 0
+    res%n_informative = 0
     do i_t = 1, ntr
-       do i = 1, 3
-          if (present(i)) then
-             W0(i) = max(w0s(i, i_t), 1.0e-12_wp)
-          else
-             W0(i) = 0.0_wp
-          end if
-       end do
-       call tpd_ssi(par, d_ref, W0, T, Pbar, mi, sides(i_t), present, &
-                    accelerated, tol, maxiter, tr)
-       res%ntrials = res%ntrials + 1
-       res%trials(res%ntrials) = tr
-       w_arr = tr%w_frac
-       maxdiff = maxabs_nan(w_arr - z_present)
-       trivial = (maxdiff < trivial_w_atol)
-       ! A trial that did not converge has not found a stationary point:
-       ! its tpd is wherever the SSI loop happened to stop -- maxiter
-       ! exhaustion, a non-finite or non-positive sum_W, or a failed
-       ! lnphi_aq/lnphi_gas -- evaluated on a partially-updated W.  Such a
-       ! trial must not set tpd_min, nor become best_idx and so supply the
-       ! w_frac that seeds make_k_init_from_trial and the FIXED aqueous
-       ! composition of the dew-point rescue.  Mirrors the same guard in
-       ! ms_ecpa/stability.py::michelsen_tpd; the dual-trial block in
-       ! stability_flash below already requires tr%converged.
-       if (tr%converged) then
-          if ((.not. trivial) .and. ieee_is_finite(tr%tpd) .and. tr%tpd < tpd_min) then
-             tpd_min = tr%tpd
-             best_idx = res%ntrials
-          end if
-          if ((.not. trivial) .and. ieee_is_finite(tr%tpd) .and. &
-              tr%tpd < early_tpd) exit
-       end if
+       call run_trial(d_ref, w0s(:, i_t), sides(i_t), stop_early)
+       if (stop_early) exit
     end do
+
+    ! A panel in which every trial collapsed to the trivial solution, or
+    ! failed, has not established stability. Widen the search first.
+    if (res%n_informative == 0) then
+       call build_wide_trial_list(present, w0w, sidesw, ntrw)
+       if (ntrw > 0) then
+          res%escalated = .true.
+          do i_t = 1, ntrw
+             call run_trial(d_ref, w0w(:, i_t), sidesw(i_t), stop_early)
+             if (stop_early) exit
+          end do
+       end if
+    end if
 
     ! Water-rich feed reported stable: test it again against the brine at
     ! the feed composition, with the gas trials only. This can add a split
@@ -534,29 +562,13 @@ contains
              if (.not. present(i)) d_brine(i) = 0.0_wp
           end do
           if (sum(z_ref * d_brine) < sum(z_ref * d_ref)) then
+             best_before = best_idx
              do i_t = 1, ntr
                 if (sides(i_t) /= SIDE_GAS) cycle
-                if (res%ntrials >= MAXTRIALS2) exit
-                do i = 1, 3
-                   if (present(i)) then
-                      W0(i) = max(w0s(i, i_t), 1.0e-12_wp)
-                   else
-                      W0(i) = 0.0_wp
-                   end if
-                end do
-                call tpd_ssi(par, d_brine, W0, T, Pbar, mi, sides(i_t), present, &
-                             accelerated, tol, maxiter, tr)
-                res%ntrials = res%ntrials + 1
-                res%trials(res%ntrials) = tr
-                maxdiff = maxabs_nan(tr%w_frac - z_present)
-                trivial = (maxdiff < trivial_w_atol)
-                if (tr%converged .and. (.not. trivial) .and. &
-                    ieee_is_finite(tr%tpd) .and. tr%tpd < tpd_min) then
-                   tpd_min = tr%tpd
-                   best_idx = res%ntrials
-                   res%ref_side = REF_BRINE
-                end if
+                call run_trial(d_brine, w0s(:, i_t), sides(i_t), stop_early)
+                if (stop_early) exit
              end do
+             if (best_idx /= best_before) res%ref_side = REF_BRINE
           end if
        end if
     end if
@@ -569,6 +581,54 @@ contains
     res%tpd_min = tpd_min
     res%best_idx = best_idx
     res%d_ref = d_ref
+
+  contains
+
+    ! One trial against reference d: store it, and update tpd_min,
+    ! best_idx and n_informative (mirrors _run_panel). stop = .true. when
+    ! the trial gives tpd < early_tpd, which ends the current panel.
+    subroutine run_trial(d, w_init, side, stop)
+      real(wp), intent(in) :: d(3), w_init(3)
+      integer, intent(in) :: side
+      logical, intent(out) :: stop
+      real(wp) :: W0(3)
+      type(tpdres_t) :: tr
+      logical :: trivial
+      integer :: j
+
+      stop = .false.
+      do j = 1, 3
+         if (present(j)) then
+            W0(j) = max(w_init(j), 1.0e-12_wp)
+         else
+            W0(j) = 0.0_wp
+         end if
+      end do
+      call tpd_ssi(par, d, W0, T, Pbar, mi, side, present, &
+                   accelerated, tol, maxiter, tr)
+      res%ntrials = res%ntrials + 1
+      res%trials(res%ntrials) = tr
+      trivial = (maxabs_nan(tr%w_frac - z_present) < trivial_w_atol)
+      ! A trial that did not converge has not found a stationary point:
+      ! its tpd is wherever the SSI loop happened to stop -- maxiter
+      ! exhaustion, a non-finite or non-positive sum_W, or a failed
+      ! lnphi_aq/lnphi_gas -- evaluated on a partially-updated W.  Such a
+      ! trial must not set tpd_min, nor become best_idx and so supply the
+      ! w_frac that seeds make_k_init_from_trial and the FIXED aqueous
+      ! composition of the dew-point rescue, nor count as informative.
+      ! Mirrors the same guard in ms_ecpa/stability.py::michelsen_tpd; the
+      ! dual-trial block in stability_flash below already requires
+      ! tr%converged.
+      if (.not. tr%converged) return
+      if (trivial .or. .not. ieee_is_finite(tr%tpd)) return
+      res%n_informative = res%n_informative + 1
+      if (tr%tpd < tpd_min) then
+         tpd_min = tr%tpd
+         best_idx = res%ntrials
+      end if
+      stop = (tr%tpd < early_tpd)
+    end subroutine run_trial
+
   end subroutine michelsen_tpd
 
   ! ------------------------------------------------------------------
