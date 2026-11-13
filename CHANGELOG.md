@@ -3,7 +3,7 @@
 All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.1.0] — 2026-11-03
+## [1.1.0] — 2026-11-13
 
 ### Added
 - **`multisalt/`: ms-eCPA, the code of Papers II and III of this series**
@@ -78,6 +78,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   but cannot remove one. No number in Papers II and III changes; see
   `multisalt/PUBLISHED_VS_RELEASED.md`. `StabilityResult.reference` records
   which reference gave `tpd_min`.
+- Fortran kernel (`multisalt/fortran/src/ecpa_stability.f90`): when no trial of
+  the standard panel converges away from the feed, the stability test now runs
+  the wide panel of trials across the composition range, as the Python code
+  does; the brine-reference test stops at the first strongly negative trial, as
+  in Python. On 3,402 states (423–623 K, 100–1500 bar, CO2, CH4 and their
+  mixture, salt-free, NaCl and CaCl2) no result changes, and Python and Fortran
+  agree on all 454 states that run the wide panel.
 
 ## [1.0.2] — 2026-09-13
 

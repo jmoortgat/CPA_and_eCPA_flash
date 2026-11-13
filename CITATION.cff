@@ -19,7 +19,7 @@ repository-code: "https://github.com/jmoortgat/CPA_and_eCPA_flash"
 doi: 10.5281/zenodo.22212018
 license: MIT
 version: 1.1.0
-date-released: 2026-11-03
+date-released: 2026-11-13
 preferred-citation:
   type: article
   title: >-
