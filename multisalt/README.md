@@ -12,7 +12,7 @@ produce the figures and tables of Papers II and III of this series:
 - **Paper III.** J. Moortgat, F. M. Coelho, A. Firoozabadi. Phase Equilibria of
   CO2, CH4, N2, H2, C2H6, C3H8, and Mixtures in Multisalt Brines: Robust
   Stability and Flash Computations with an Ion-Specific Electrolyte
-  Cubic-Plus-Association Equation of State. *Energy & Fuels* **2026**.
+  Cubic-Plus-Association Equation of State. *Energy & Fuels* **2026**, 40 (45), 24867–24882.
   [doi:10.1021/acs.energyfuels.6c04569](https://doi.org/10.1021/acs.energyfuels.6c04569)
 
 Paper I (CO2 + H2O + NaCl) is the `code/` package at the root of this

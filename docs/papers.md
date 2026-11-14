@@ -9,7 +9,7 @@ numbering is ours; the journals do not use it.
 |---|---|---|---|---|
 | Paper I | *Ind. Eng. Chem. Res.* 2026, 65, 20081–20103 | eCPA for CO₂ + H₂O + NaCl | [`code/`](../code/README.md) (package `ecpa`) | [`ecpa_flash_paper.ipynb`](../notebooks/ecpa_flash_paper.ipynb) |
 | Paper II | *Energy Fuels* 2026, 40, 23472–23484 | ms-eCPA, parametrization and validation | [`multisalt/`](../multisalt/README.md) (package `ms_ecpa`) | [`ms_ecpa_parametrization_paper.ipynb`](../notebooks/ms_ecpa_parametrization_paper.ipynb) |
-| Paper III | *Energy Fuels* 2026, available online | ms-eCPA, stability and flash computations, more gases | [`multisalt/`](../multisalt/README.md) (package `ms_ecpa`) | [`ms_ecpa_flash_paper.ipynb`](../notebooks/ms_ecpa_flash_paper.ipynb) |
+| Paper III | *Energy Fuels* 2026, 40, 24867–24882 | ms-eCPA, stability and flash computations, more gases | [`multisalt/`](../multisalt/README.md) (package `ms_ecpa`) | [`ms_ecpa_flash_paper.ipynb`](../notebooks/ms_ecpa_flash_paper.ipynb) |
 
 Each executable paper is a Jupyter notebook with the full text of the
 article and its Supporting Information, and code cells that regenerate every
@@ -84,7 +84,7 @@ Electrolyte Cubic-Plus-Association Equation of State. *Energy & Fuels*
 J. Moortgat, F. M. Coelho, A. Firoozabadi. Phase Equilibria of CO₂, CH₄, N₂,
 H₂, C₂H₆, C₃H₈, and Mixtures in Multisalt Brines: Robust Stability and Flash
 Computations with an Ion-Specific Electrolyte Cubic-Plus-Association Equation
-of State. *Energy & Fuels* **2026**, available online.
+of State. *Energy & Fuels* **2026**, 40 (45), 24867–24882.
 [doi:10.1021/acs.energyfuels.6c04569](https://doi.org/10.1021/acs.energyfuels.6c04569)
 ([article page](https://pubs.acs.org/enfuem/article/doi/10.1021/acs.energyfuels.6c04569/5462396/Phase-Equilibria-of-CO2-CH4-N2-H2-C2H6-C3H8-and))
 

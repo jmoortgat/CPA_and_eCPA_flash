@@ -19,7 +19,7 @@ Paper III, in order of publication:
 |---|---|---|---|
 | **Paper I** | Fast and Robust Phase Equilibrium Computations for CO₂ + H₂O + NaCl Mixtures Using the Electrolyte Cubic-Plus-Association Equation of State. *Ind. Eng. Chem. Res.* **2026**, 65, 20081–20103. [doi:10.1021/acs.iecr.6c02626](https://doi.org/10.1021/acs.iecr.6c02626) | eCPA for CO₂ + H₂O + NaCl: [`code/`](code/README.md) | [`ecpa_flash_paper.ipynb`](notebooks/ecpa_flash_paper.ipynb) |
 | **Paper II** | Phase Equilibria of CO₂ and CH₄ in Multisalt Brines: Parametrization and Validation of an Ion-Specific Electrolyte Cubic-Plus-Association Equation of State. *Energy Fuels* **2026**, 40, 23472–23484. [doi:10.1021/acs.energyfuels.6c04568](https://doi.org/10.1021/acs.energyfuels.6c04568) | ms-eCPA: [`multisalt/`](multisalt/README.md) | [`ms_ecpa_parametrization_paper.ipynb`](notebooks/ms_ecpa_parametrization_paper.ipynb) |
-| **Paper III** | Phase Equilibria of CO₂, CH₄, N₂, H₂, C₂H₆, C₃H₈, and Mixtures in Multisalt Brines: Robust Stability and Flash Computations with an Ion-Specific Electrolyte Cubic-Plus-Association Equation of State. *Energy Fuels* **2026**, available online. [doi:10.1021/acs.energyfuels.6c04569](https://doi.org/10.1021/acs.energyfuels.6c04569) | ms-eCPA: [`multisalt/`](multisalt/README.md) | [`ms_ecpa_flash_paper.ipynb`](notebooks/ms_ecpa_flash_paper.ipynb) |
+| **Paper III** | Phase Equilibria of CO₂, CH₄, N₂, H₂, C₂H₆, C₃H₈, and Mixtures in Multisalt Brines: Robust Stability and Flash Computations with an Ion-Specific Electrolyte Cubic-Plus-Association Equation of State. *Energy Fuels* **2026**, 40, 24867–24882. [doi:10.1021/acs.energyfuels.6c04569](https://doi.org/10.1021/acs.energyfuels.6c04569) | ms-eCPA: [`multisalt/`](multisalt/README.md) | [`ms_ecpa_flash_paper.ipynb`](notebooks/ms_ecpa_flash_paper.ipynb) |
 
 - [`docs/papers.md`](docs/papers.md): each paper, its code, how to
   reproduce its figures and tables, and which published values the released
@@ -163,6 +163,9 @@ releases).
              Ion-Specific Electrolyte Cubic-Plus-Association Equation of State},
   journal = {Energy \& Fuels},
   year    = {2026},
+  volume  = {40},
+  number  = {45},
+  pages   = {24867--24882},
   doi     = {10.1021/acs.energyfuels.6c04569}
 }
 ```
